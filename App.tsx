@@ -61,7 +61,7 @@ const AUTO_SYNC_INTERVAL = 120000;
 export const formatToIndianDate = (dateInput: any): string => {
   if (!dateInput) return '';
   const s = String(dateInput).trim();
-  const ddmmyyyyMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  const ddmmyyyyMatch = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
   if (ddmmyyyyMatch) return `${ddmmyyyyMatch[1].padStart(2, '0')}/${ddmmyyyyMatch[2].padStart(2, '0')}/${ddmmyyyyMatch[3]}`;
   try {
     const d = new Date(dateInput);
@@ -73,7 +73,7 @@ export const formatToIndianDate = (dateInput: any): string => {
 export const formatToIndianDateTime = (dateInput: any): string => {
   if (!dateInput) return '';
   const s = String(dateInput).trim();
-  if (/^\d{1,2}\/\d{1,2}\/\d{4} \d{1,2}:\d{1,2}/.test(s)) return s;
+  if (/^\d{1,2}[/-]\d{1,2}[/-]\d{4} \d{1,2}:\d{1,2}/.test(s)) return s.replace(/-/g, '/');
   try {
     const d = new Date(dateInput);
     if (isNaN(d.getTime())) return s;
@@ -82,6 +82,14 @@ export const formatToIndianDateTime = (dateInput: any): string => {
     const m = d.getMinutes();
     return `${datePart} ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   } catch { return s; }
+};
+
+// Helper for filter comparisons
+export const parseToISO = (str: string) => {
+    if (!str) return '';
+    const parts = str.split(' ')[0].split(/[/-]/);
+    if (parts.length !== 3) return str;
+    return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
 };
 
 async function safeJsonParse(response: Response, sourceName: string) {
@@ -157,7 +165,7 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Structured filter state for Logs triggered from Dashboard
-  const [logDashboardFilter, setLogDashboardFilter] = useState<{ type: string; value: string } | null>(null);
+  const [logDashboardFilter, setLogDashboardFilter] = useState<{ type: string; value: string; dateFrom?: string; dateTo?: string } | null>(null);
 
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isTaskModalVendorMode, setIsTaskModalVendorMode] = useState(false);
@@ -323,6 +331,7 @@ export default function App() {
                 taskDate: formatToIndianDate(l.taskDate || l.TaskDate || ''),
                 updateDate: formatToIndianDateTime(l.updateDate || l.UpdateDate || ''),
                 clientName: rawClient,
+                assignees: String(l.assignees || l.Assignees || ''),
                 project: (rawClient && !rawProject.includes('(')) 
                     ? `${rawProject} (${rawClient})` 
                     : rawProject
@@ -584,6 +593,8 @@ export default function App() {
   });
 
   const handleDashboardFilterChange = (type: string, value: string) => {
+    const today = new Date().toISOString().split('T')[0];
+
     if (type === 'vendor') {
         setActiveTab('pending-vendor-tasks');
         setFilterVendor(value);
@@ -595,13 +606,13 @@ export default function App() {
         setFilterProject(value);
     } else if (type === 'employee-log') {
         setActiveTab('action-log');
-        setLogDashboardFilter({ type: 'owner', value: value });
+        setLogDashboardFilter({ type: 'assignee', value: value, dateFrom: today, dateTo: today });
     } else if (type === 'vendor-log') {
         setActiveTab('vendor-action-log');
-        setLogDashboardFilter({ type: 'vendor', value: value });
+        setLogDashboardFilter({ type: 'vendor', value: value, dateFrom: today, dateTo: today });
     } else if (type === 'recurring-log') {
         setActiveTab('recurring-actions');
-        setLogDashboardFilter({ type: 'assignee', value: value });
+        setLogDashboardFilter({ type: 'assignee', value: value, dateFrom: today, dateTo: today });
     }
   };
 

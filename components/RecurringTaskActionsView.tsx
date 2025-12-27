@@ -8,7 +8,7 @@ import autoTable from 'jspdf-autotable';
 interface RecurringTaskActionsViewProps {
   actions: RecurringTaskAction[];
   onDeleteAction: (logId: number, taskId: number) => void;
-  dashboardFilter?: { type: string; value: string } | null;
+  dashboardFilter?: { type: string; value: string; dateFrom?: string; dateTo?: string } | null;
   onClearDashboardFilter?: () => void;
 }
 
@@ -38,7 +38,12 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
   useEffect(() => {
     if (dashboardFilter && dashboardFilter.type === 'assignee') {
         setFilterAssignee(dashboardFilter.value);
-        setSearchTerm(''); // Clear search for focused drill-down
+        setSearchTerm(''); 
+        
+        if (dashboardFilter.dateFrom) {
+            setFilterDate(dashboardFilter.dateFrom);
+            setShowFilters(true);
+        }
     }
   }, [dashboardFilter]);
 
@@ -76,7 +81,20 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
       const matchesCategory = filterCategory === 'All' || action.category === filterCategory;
       const matchesAssignee = filterAssignee === 'All' || action.assignee === filterAssignee;
       const matchesStatus = filterStatus === 'All' || action.status === filterStatus;
-      const matchesDate = !filterDate || String(action.updatedOn).includes(filterDate);
+      
+      let matchesDate = true;
+      if (filterDate) {
+          // Compare yyyy-mm-dd input with dd/mm/yyyy data
+          const inputDate = filterDate; // yyyy-mm-dd
+          const actionDateParts = action.updatedOn.split('/');
+          if (actionDateParts.length === 3) {
+              const actionISO = `${actionDateParts[2]}-${actionDateParts[1].padStart(2, '0')}-${actionDateParts[0].padStart(2, '0')}`;
+              matchesDate = actionISO === inputDate;
+          } else {
+              matchesDate = String(action.updatedOn).includes(filterDate);
+          }
+      }
+      
       return matchesCategory && matchesAssignee && matchesStatus && matchesDate;
     });
   }, [actions, searchTerm, filterCategory, filterAssignee, filterStatus, filterDate]);

@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
-import { Plus, UserPlus, Folder, CheckSquare, Clock, AlertTriangle, CheckCircle, Users, Building2, Truck, FileText, RotateCcw, LayoutList } from 'lucide-react';
+import { Plus, UserPlus, Folder, CheckSquare, Clock, AlertTriangle, CheckCircle, Users, Building2, Truck, FileText, RotateCcw, LayoutList, History } from 'lucide-react';
 import { StatCard } from './StatCard';
 import { QuickAction } from './QuickAction';
 import { PendingTable } from './PendingTable';
 import { Task, User, Project, ActionLogEntry, RecurringTaskAction } from '../types';
+import { parseToISO } from '../App';
 
 interface DashboardProps {
   onOpenNewTask: () => void;
@@ -94,31 +95,53 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return Array.from(map.values());
   }, [tasks]);
 
-  // Data for the 3 new sections
+  // Robust "Today" ISO string for consistent filtering
+  const isoToday = useMemo(() => new Date().toISOString().split('T')[0], []);
+
+  // Filter and count Daily Task Updates (By Assignee) for Today
   const dailyUpdates = useMemo(() => {
     const map = new Map<string, number>();
-    actionLogs.filter(l => !l.vendor).forEach(log => {
-      const names = log.owner.split(',').map(s => s.trim());
-      names.forEach(n => map.set(n, (map.get(n) || 0) + 1));
-    });
-    return Array.from(map.entries()).map(([name, count]) => ({ name, count }));
-  }, [actionLogs]);
+    actionLogs
+      .filter(l => !l.vendor && parseToISO(l.updateDate) === isoToday)
+      .forEach(log => {
+        // Correctly handle multiple assignees if stored as comma-separated string
+        const names = (log.assignees || '').split(',').map(s => s.trim()).filter(Boolean);
+        names.forEach(n => map.set(n, (map.get(n) || 0) + 1));
+      });
+    return Array.from(map.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [actionLogs, isoToday]);
 
+  // Filter and count Vendor Task Updates (By Vendor) for Today
   const vendorUpdates = useMemo(() => {
     const map = new Map<string, number>();
-    actionLogs.filter(l => !!l.vendor).forEach(log => {
-      if (log.vendor) map.set(log.vendor, (map.get(log.vendor) || 0) + 1);
-    });
-    return Array.from(map.entries()).map(([name, count]) => ({ name, count }));
-  }, [actionLogs]);
+    actionLogs
+      .filter(l => !!l.vendor && parseToISO(l.updateDate) === isoToday)
+      .forEach(log => {
+        if (log.vendor) {
+          map.set(log.vendor, (map.get(log.vendor) || 0) + 1);
+        }
+      });
+    return Array.from(map.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [actionLogs, isoToday]);
 
+  // Filter and count Recurring Task Updates (By Assignee) for Today
   const recurringUpdates = useMemo(() => {
     const map = new Map<string, number>();
-    recurringActions.forEach(action => {
-      map.set(action.assignee, (map.get(action.assignee) || 0) + 1);
-    });
-    return Array.from(map.entries()).map(([name, count]) => ({ name, count }));
-  }, [recurringActions]);
+    recurringActions
+      .filter(a => parseToISO(a.updatedOn) === isoToday)
+      .forEach(action => {
+        if (action.assignee) {
+          map.set(action.assignee, (map.get(action.assignee) || 0) + 1);
+        }
+      });
+    return Array.from(map.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [recurringActions, isoToday]);
 
   const SectionHeader = ({ title, icon }: { title: string; icon: React.ReactNode }) => (
     <div className="flex items-center gap-2 mb-4">
@@ -170,91 +193,125 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="bg-blue-50/70 p-6 rounded-2xl border-2 border-blue-300 shadow-sm">
         <SectionHeader title="Live Statistics" icon={<Clock size={20}/>} />
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-            <StatCard title="Total Tasks" value={stats.totalTasks} icon={<CheckSquare size={18} />} iconBgColor="bg-blue-100" iconColor="text-blue-600" onClick={() => onNavigate('all-tasks')}/>
-            <StatCard title="Pending" value={stats.pendingTasks} icon={<Clock size={18} />} iconBgColor="bg-red-50" iconColor="text-red-600" onClick={() => onNavigate('pending')}/>
-            <StatCard title="Overdue" value={stats.overdueTasks} icon={<AlertTriangle size={18} />} iconBgColor="bg-red-100" iconColor="text-red-700" onClick={() => onNavigate('pending')}/>
-            <StatCard title="Completed" value={stats.completedTasks} icon={<CheckCircle size={18} />} iconBgColor="bg-green-100" iconColor="text-green-600" onClick={() => onNavigate('completed')}/>
-            <StatCard title="Total Users" value={stats.totalUsers} icon={<Users size={18} />} iconBgColor="bg-indigo-100" iconColor="text-indigo-600" onClick={() => onNavigate('users')}/>
+            <StatCard 
+              title="Total Tasks" 
+              value={stats.totalTasks} 
+              icon={<CheckSquare size={20}/>} 
+              iconBgColor="bg-blue-100" 
+              iconColor="text-blue-600" 
+            />
+            <StatCard 
+              title="Pending" 
+              value={stats.pendingTasks} 
+              icon={<Clock size={20}/>} 
+              iconBgColor="bg-amber-100" 
+              iconColor="text-amber-600" 
+              onClick={() => onNavigate('pending')}
+            />
+            <StatCard 
+              title="Overdue" 
+              value={stats.overdueTasks} 
+              icon={<AlertTriangle size={20}/>} 
+              iconBgColor="bg-red-100" 
+              iconColor="text-red-600" 
+            />
+            <StatCard 
+              title="Completed" 
+              value={stats.completedTasks} 
+              icon={<CheckCircle size={20}/>} 
+              iconBgColor="bg-green-100" 
+              iconColor="text-green-600" 
+              onClick={() => onNavigate('completed')}
+            />
+            <StatCard 
+              title="Total Users" 
+              value={stats.totalUsers} 
+              icon={<Users size={20}/>} 
+              iconBgColor="bg-indigo-100" 
+              iconColor="text-indigo-600" 
+              onClick={() => onNavigate('users')}
+            />
         </div>
       </div>
 
-      {/* Primary Tables Section */}
+      {/* Main Analysis Tables - Vertically Stacked */}
       <div className="grid grid-cols-1 gap-8">
         <PendingTable 
-          title="Assigneewise Pending Tasks" data={assigneeData} headerLabel="Employee"
+          title="Pending by Assignee" 
+          headerLabel="Assignee Name" 
+          data={assigneeData} 
           onRowClick={(name) => onFilterChange('assignee', name)}
-          className="bg-sky-50/50"
         />
         <PendingTable 
-          title="Projectwise Pending Tasks" data={projectData} headerLabel="Project"
+          title="Pending by Project" 
+          headerLabel="Project Name" 
+          data={projectData} 
           onRowClick={(name) => onFilterChange('project', name)}
-          className="bg-blue-50/50"
         />
         <PendingTable 
-          title="Vendorwise Pending Tasks" data={vendorData} headerLabel="Vendor"
+          title="Pending by Vendor" 
+          headerLabel="Vendor Name" 
+          data={vendorData} 
           onRowClick={(name) => onFilterChange('vendor', name)}
-          className="bg-indigo-50/30"
+          className="bg-orange-50/30"
         />
       </div>
 
-      {/* New Update Summary Tables Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-cyan-50 p-6 rounded-2xl border-2 border-blue-300 shadow-sm flex flex-col h-full">
-             <SectionHeader title="Daily Task Updates" icon={<FileText size={18}/>} />
-             <div className="overflow-hidden border border-blue-200 rounded-xl bg-white flex-1">
-                 <table className="w-full text-left">
-                    <thead className="bg-blue-600 text-white text-[10px] uppercase font-bold">
-                        <tr><th className="px-4 py-2">Employee</th><th className="px-4 py-2 text-center">Updates</th></tr>
-                    </thead>
-                    <tbody className="divide-y divide-blue-100">
-                        {dailyUpdates.map((u, i) => (
-                           <tr key={i} onClick={() => onFilterChange('employee-log', u.name)} className="hover:bg-blue-50 cursor-pointer transition-colors border-l-4 border-transparent hover:border-blue-600">
-                              <td className="px-4 py-2.5 text-xs font-bold text-blue-900">{u.name}</td>
-                              <td className="px-4 py-2.5 text-xs text-center font-black text-blue-600">{u.count}</td>
-                           </tr>
-                        ))}
-                    </tbody>
-                 </table>
-             </div>
-          </div>
+      {/* Today's Activity Recap */}
+      <div className="space-y-6">
+        <SectionHeader title="Today's Activity Recap" icon={<History size={20}/>} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+           {/* Employee Updates */}
+           <div className="bg-white p-5 rounded-2xl border-2 border-blue-200 shadow-sm flex flex-col">
+              <div className="flex items-center gap-2 mb-4 border-b border-blue-50 pb-2">
+                 <Users size={18} className="text-indigo-600" />
+                 <h4 className="text-sm font-black text-indigo-900 uppercase">Employee Updates</h4>
+              </div>
+              <div className="flex-1 space-y-2">
+                 {dailyUpdates.map(u => (
+                    <div key={u.name} onClick={() => onFilterChange('employee-log', u.name)} className="flex items-center justify-between p-2.5 hover:bg-indigo-50 rounded-xl cursor-pointer transition-colors border border-indigo-100 bg-indigo-50/10 shadow-sm">
+                       <span className="text-xs font-bold text-indigo-900">{u.name}</span>
+                       <span className="bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-full font-black shadow-sm">{u.count}</span>
+                    </div>
+                 ))}
+                 {dailyUpdates.length === 0 && <p className="text-[10px] text-gray-400 italic text-center py-4 uppercase font-bold">No updates today</p>}
+              </div>
+           </div>
 
-          <div className="bg-emerald-50/30 p-6 rounded-2xl border-2 border-blue-300 shadow-sm flex flex-col h-full">
-             <SectionHeader title="Vendor Task Updates" icon={<Building2 size={18}/>} />
-             <div className="overflow-hidden border border-blue-200 rounded-xl bg-white flex-1">
-                 <table className="w-full text-left">
-                    <thead className="bg-emerald-600 text-white text-[10px] uppercase font-bold">
-                        <tr><th className="px-4 py-2">Vendor</th><th className="px-4 py-2 text-center">Updates</th></tr>
-                    </thead>
-                    <tbody className="divide-y divide-blue-100">
-                        {vendorUpdates.map((u, i) => (
-                           <tr key={i} onClick={() => onFilterChange('vendor-log', u.name)} className="hover:bg-emerald-50 cursor-pointer transition-colors border-l-4 border-transparent hover:border-emerald-600">
-                              <td className="px-4 py-2.5 text-xs font-bold text-emerald-900">{u.name}</td>
-                              <td className="px-4 py-2.5 text-xs text-center font-black text-emerald-600">{u.count}</td>
-                           </tr>
-                        ))}
-                    </tbody>
-                 </table>
-             </div>
-          </div>
+           {/* Vendor Updates */}
+           <div className="bg-white p-5 rounded-2xl border-2 border-orange-200 shadow-sm flex flex-col">
+              <div className="flex items-center gap-2 mb-4 border-b border-orange-50 pb-2">
+                 <Truck size={18} className="text-orange-600" />
+                 <h4 className="text-sm font-black text-orange-900 uppercase">Vendor Updates</h4>
+              </div>
+              <div className="flex-1 space-y-2">
+                 {vendorUpdates.map(u => (
+                    <div key={u.name} onClick={() => onFilterChange('vendor-log', u.name)} className="flex items-center justify-between p-2.5 hover:bg-orange-50 rounded-xl cursor-pointer transition-colors border border-orange-100 bg-orange-50/10 shadow-sm">
+                       <span className="text-xs font-bold text-orange-900">{u.name}</span>
+                       <span className="bg-orange-600 text-white text-[10px] px-2 py-0.5 rounded-full font-black shadow-sm">{u.count}</span>
+                    </div>
+                 ))}
+                 {vendorUpdates.length === 0 && <p className="text-[10px] text-gray-400 italic text-center py-4 uppercase font-bold">No updates today</p>}
+              </div>
+           </div>
 
-          <div className="bg-indigo-50/50 p-6 rounded-2xl border-2 border-blue-300 shadow-sm flex flex-col h-full">
-             <SectionHeader title="Recurring Updates" icon={<RotateCcw size={18}/>} />
-             <div className="overflow-hidden border border-blue-200 rounded-xl bg-white flex-1">
-                 <table className="w-full text-left">
-                    <thead className="bg-indigo-600 text-white text-[10px] uppercase font-bold">
-                        <tr><th className="px-4 py-2">Assignee</th><th className="px-4 py-2 text-center">Updates</th></tr>
-                    </thead>
-                    <tbody className="divide-y divide-blue-100">
-                        {recurringUpdates.map((u, i) => (
-                           <tr key={i} onClick={() => onFilterChange('recurring-log', u.name)} className="hover:bg-indigo-50 cursor-pointer transition-colors border-l-4 border-transparent hover:border-indigo-600">
-                              <td className="px-4 py-2.5 text-xs font-bold text-indigo-900">{u.name}</td>
-                              <td className="px-4 py-2.5 text-xs text-center font-black text-indigo-600">{u.count}</td>
-                           </tr>
-                        ))}
-                    </tbody>
-                 </table>
-             </div>
-          </div>
+           {/* Recurring Task Updates */}
+           <div className="bg-white p-5 rounded-2xl border-2 border-emerald-200 shadow-sm flex flex-col">
+              <div className="flex items-center gap-2 mb-4 border-b border-emerald-50 pb-2">
+                 <RotateCcw size={18} className="text-emerald-600" />
+                 <h4 className="text-sm font-black text-emerald-900 uppercase">Recurring Updates</h4>
+              </div>
+              <div className="flex-1 space-y-2">
+                 {recurringUpdates.map(u => (
+                    <div key={u.name} onClick={() => onFilterChange('recurring-log', u.name)} className="flex items-center justify-between p-2.5 hover:bg-emerald-50 rounded-xl cursor-pointer transition-colors border border-emerald-100 bg-emerald-50/10 shadow-sm">
+                       <span className="text-xs font-bold text-emerald-900">{u.name}</span>
+                       <span className="bg-emerald-600 text-white text-[10px] px-2 py-0.5 rounded-full font-black shadow-sm">{u.count}</span>
+                    </div>
+                 ))}
+                 {recurringUpdates.length === 0 && <p className="text-[10px] text-gray-400 italic text-center py-4 uppercase font-bold">No updates today</p>}
+              </div>
+           </div>
+        </div>
       </div>
     </div>
   );

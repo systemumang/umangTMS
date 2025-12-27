@@ -2,14 +2,14 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Search, FileText, LayoutGrid, LayoutList, Calendar, User, Clock, AlertCircle, Filter, ArrowUpDown, ArrowUp, ArrowDown, X, Trash2 } from 'lucide-react';
 import { ActionLogEntry, Project } from '../types';
 import { SearchableSelect } from './SearchableSelect';
-import { formatToIndianDate, formatToIndianDateTime } from '../App';
+import { formatToIndianDate, formatToIndianDateTime, parseToISO } from '../App';
 
 interface ActionLogViewProps {
   logs?: ActionLogEntry[];
   isVendorView?: boolean;
   onDeleteLog: (logId: number, taskId: number) => void;
   projects?: Project[];
-  dashboardFilter?: { type: string; value: string } | null;
+  dashboardFilter?: { type: string; value: string; dateFrom?: string; dateTo?: string } | null;
   onClearDashboardFilter?: () => void;
 }
 
@@ -46,11 +46,19 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
     if (dashboardFilter) {
       if (dashboardFilter.type === 'owner') {
           setFilterOwner(dashboardFilter.value);
-          setSearchTerm(''); // Clear search as filter is applied
+          setSearchTerm(''); 
       } else if (dashboardFilter.type === 'vendor') {
           setFilterVendor(dashboardFilter.value);
           setSearchTerm('');
+      } else if (dashboardFilter.type === 'assignee') {
+          setFilterAssignee(dashboardFilter.value);
+          setSearchTerm('');
       }
+
+      if (dashboardFilter.dateFrom) setUpdateDateFrom(dashboardFilter.dateFrom);
+      if (dashboardFilter.dateTo) setUpdateDateTo(dashboardFilter.dateTo);
+      
+      if (dashboardFilter.dateFrom || dashboardFilter.dateTo) setShowFilters(true);
     }
   }, [dashboardFilter]);
 
@@ -93,14 +101,9 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
         if (!matchesSearch) return false;
       }
       
-      if (updateDateFrom || updateDateTo) {
-          const parts = log.updateDate.split(' ')[0].split('/');
-          if (parts.length === 3) {
-            const logISO = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-            if (updateDateFrom && logISO < updateDateFrom) return false;
-            if (updateDateTo && logISO > updateDateTo) return false;
-          }
-      }
+      const logISO = parseToISO(log.updateDate);
+      if (updateDateFrom && logISO < updateDateFrom) return false;
+      if (updateDateTo && logISO > updateDateTo) return false;
 
       if (filterStatus !== 'All Status' && log.status !== filterStatus) return false;
       if (filterOwner !== 'All Owners' && !log.owner.includes(filterOwner)) return false;

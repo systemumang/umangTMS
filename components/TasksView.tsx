@@ -6,6 +6,7 @@ import { EditTaskModal } from './EditTaskModal';
 import { BulkUpdateModal } from './BulkUpdateModal';
 import { Task, User, Project, Category, Vendor, VendorCategory } from '../types';
 import { SearchableSelect } from './SearchableSelect';
+import { parseToISO } from '../App';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -166,10 +167,13 @@ export const TasksView: React.FC<TasksViewProps> = ({
       if (!matchesFilter(task, 'assignee', filterAssignee)) return false;
       if (isVendorView && filterVendor && !matchesFilter(task, 'vendor', filterVendor)) return false;
 
-      if (dateFrom && task.date < dateFrom) return false;
-      if (dateTo && task.date > dateTo) return false;
-      if (lastUpdateFrom && (!task.lastUpdateDate || task.lastUpdateDate < lastUpdateFrom)) return false;
-      if (lastUpdateTo && (!task.lastUpdateDate || task.lastUpdateDate > lastUpdateTo)) return false;
+      const taskISO = parseToISO(task.date);
+      if (dateFrom && taskISO < dateFrom) return false;
+      if (dateTo && taskISO > dateTo) return false;
+
+      const updateISO = parseToISO(task.lastUpdateDate || '');
+      if (lastUpdateFrom && (!updateISO || updateISO < lastUpdateFrom)) return false;
+      if (lastUpdateTo && (!updateISO || updateISO > lastUpdateTo)) return false;
 
       return true;
     });
@@ -474,7 +478,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
         onClose={() => setIsBulkUpdateModalOpen(false)} 
         count={selectedIds.length} 
         onUpdate={handleBulkUpdate} 
-        users={users}
+        users={users} 
         vendors={vendors}
         isVendorView={isVendorView}
         mode={bulkMode}

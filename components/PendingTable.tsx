@@ -81,11 +81,10 @@ export const PendingTable: React.FC<PendingTableProps> = ({ title, headerLabel, 
                 >
                     <div className="flex justify-between items-start mb-3">
                         <div>
-                            <span className="text-[10px] font-extrabold text-blue-400 uppercase tracking-widest">{headerLabel}</span>
                             <h4 className="text-base font-bold text-blue-800">{row.name}</h4>
                         </div>
                         <div className="bg-blue-600 text-white px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm">
-                            {row.total} Total
+                            {row.total}
                         </div>
                     </div>
                     
@@ -96,10 +95,9 @@ export const PendingTable: React.FC<PendingTableProps> = ({ title, headerLabel, 
                         </div>
                         <div className="text-center p-2 bg-green-50 border border-green-100 rounded-lg">
                             <div className="text-[9px] font-bold text-green-400 uppercase tracking-tighter mb-0.5">In Progress</div>
-                            <div className="font-black text-green-600">{row.inProgress}</div>
+                            <div className="font-black text-green-900">{row.inProgress}</div>
                         </div>
                     </div>
-                    <button className="w-full mt-3 py-1.5 border border-blue-600 text-blue-600 text-[10px] font-bold uppercase rounded hover:bg-blue-50">View Tasks</button>
                 </div>
             ))
         ) : (
