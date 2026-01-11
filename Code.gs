@@ -118,7 +118,6 @@ function doPost(e) {
         break;
       case 'addMaster': 
         result = handleAddMaster(params.target, payload); 
-        // Fixed double message: logic refined here
         if (params.target === 'RecurringTasks') {
            handleRecurringTaskNotification(payload, true);
         }
@@ -128,7 +127,6 @@ function doPost(e) {
         break;
       case 'updateMaster': 
         result = handleUpdateMaster(params.target, payload); 
-        // Removed notification from updateMaster to prevent duplicates when RecurringActions handles it
         break;
       case 'deleteRecord': 
         result = handleDeleteRecord(params.target, payload.id); 
@@ -178,6 +176,7 @@ function handleAddTask(data) {
     const client = data.clientName || '-';
     const project = data.project || '-';
     const taskTitle = data.title || data.task;
+    const owner = data.owner || '-';
     
     // Check for self-assignment + Admin role
     const ownerRole = getUserRole(data.owner);
@@ -188,6 +187,7 @@ function handleAddTask(data) {
     if (isVendor) {
       msg = `*New Vendor Task*\n\n` +
             `*Task:* ${escapeMarkdown(taskTitle)}\n` +
+            `*Owner:* ${escapeMarkdown(owner)}\n` +
             `*Vendor:* ${escapeMarkdown(data.vendor)}\n` +
             `*Project:* ${escapeMarkdown(project)}\n` +
             `*Client:* ${escapeMarkdown(client)}\n` +
@@ -196,6 +196,7 @@ function handleAddTask(data) {
     } else {
       msg = `*New Task Assigned*\n\n` +
             `*Task:* ${escapeMarkdown(taskTitle)}\n` +
+            `*Owner:* ${escapeMarkdown(owner)}\n` +
             `*Client:* ${escapeMarkdown(client)}\n` +
             `*Project:* ${escapeMarkdown(project)}\n` +
             `*Due Date:* ${formatDateDMY(data.dueDate)}\n` +
@@ -274,11 +275,32 @@ function handleUpdateTask(data) {
     // Update Notification
     try {
       const config = getMASConfig();
-      const updateMsg = `📝 *Task Updated*\n\n` +
-                        `*Task:* ${escapeMarkdown(data.title || data.task)}\n` +
-                        `*Status:* ${data.status}\n` +
-                        `*Remarks:* ${escapeMarkdown(data.lastUpdateRemarks || '-')}\n` +
-                        `*Updated At:* ${timestamp}`;
+      const client = data.clientName || '-';
+      const project = data.project || '-';
+      const owner = data.owner || '-';
+
+      let updateMsg;
+      if (isVendor) {
+        updateMsg = `📝 *Vendor Task Updated*\n\n` +
+                    `*Task:* ${escapeMarkdown(data.title || data.task)}\n` +
+                    `*Owner:* ${escapeMarkdown(owner)}\n` +
+                    `*Vendor:* ${escapeMarkdown(data.vendor || '-')}\n` +
+                    `*Project:* ${escapeMarkdown(project)}\n` +
+                    `*Client:* ${escapeMarkdown(client)}\n` +
+                    `*Status:* ${data.status}\n` +
+                    `*Remarks:* ${escapeMarkdown(data.lastUpdateRemarks || '-')}\n` +
+                    `*Updated At:* ${timestamp}`;
+      } else {
+        updateMsg = `📝 *Task Updated*\n\n` +
+                    `*Task:* ${escapeMarkdown(data.title || data.task)}\n` +
+                    `*Owner:* ${escapeMarkdown(owner)}\n` +
+                    `*Assignees:* ${escapeMarkdown(data.assignees || '-')}\n` +
+                    `*Project:* ${escapeMarkdown(project)}\n` +
+                    `*Client:* ${escapeMarkdown(client)}\n` +
+                    `*Status:* ${data.status}\n` +
+                    `*Remarks:* ${escapeMarkdown(data.lastUpdateRemarks || '-')}\n` +
+                    `*Updated At:* ${timestamp}`;
+      }
       
       const ownerRole = getUserRole(data.owner);
       const isSelfAssignment = data.assignees && data.owner && data.assignees.trim() === data.owner.trim();

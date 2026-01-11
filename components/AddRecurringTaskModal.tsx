@@ -136,7 +136,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
             <div className="space-y-1">
-              <label className="text-sm font-medium text-black">Task Title *</label>
+              <label className="text-sm font-medium text-black">Task Title</label>
               <input 
                 type="text"
                 required
@@ -148,7 +148,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
             </div>
             <div className="grid grid-cols-2 gap-4">
               <SearchableSelect 
-                label="Category *"
+                label="Category"
                 options={categoryOptions}
                 value={formData.category}
                 onChange={(val) => setFormData(p => ({ ...p, category: val }))}
@@ -156,7 +156,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
                 placeholder="Select category"
               />
               <SearchableSelect 
-                label="Assignee *"
+                label="Assignee"
                 options={userOptions}
                 value={formData.assignee}
                 onChange={(val) => setFormData(p => ({ ...p, assignee: val }))}
