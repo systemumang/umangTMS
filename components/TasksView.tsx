@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Download, FileText, Search, CheckSquare, LayoutGrid, LayoutList, Filter, X, Clock, AlertTriangle, Users, Trash2, AlertCircle } from 'lucide-react';
+import { Plus, Download, FileText, Search, CheckSquare, LayoutGrid, LayoutList, Filter, X, Clock, AlertTriangle, Users, Trash2, AlertCircle, Tags } from 'lucide-react';
 import { TaskTable } from './TaskTable';
 import { UpdateTaskModal } from './UpdateTaskModal';
 import { EditTaskModal } from './EditTaskModal';
@@ -34,27 +34,26 @@ interface TasksViewProps {
   syncingIds?: Set<number>;
   currentUser?: User | null;
   vendorCategories: VendorCategory[];
-  // Master Addition State Props
   lastAddedCategory?: string;
   lastAddedProject?: string;
   lastAddedVendorCategory?: string;
   onClearLastAdded?: () => void;
-  
-  // Controlled Filters from App
-  filterStatus: string;
-  setFilterStatus: (val: string) => void;
-  filterPriority: string;
-  setFilterPriority: (val: string) => void;
-  filterProject: string;
-  setFilterProject: (val: string) => void;
-  filterClient: string;
-  setFilterClient: (val: string) => void;
-  filterOwner: string;
-  setFilterOwner: (val: string) => void;
-  filterAssignee: string;
-  setFilterAssignee: (val: string) => void;
-  filterVendor?: string;
-  setFilterVendor?: (val: string) => void;
+  filterStatus: string[];
+  setFilterStatus: (val: string[]) => void;
+  filterPriority: string[];
+  setFilterPriority: (val: string[]) => void;
+  filterProject: string[];
+  setFilterProject: (val: string[]) => void;
+  filterClient: string[];
+  setFilterClient: (val: string[]) => void;
+  filterOwner: string[];
+  setFilterOwner: (val: string[]) => void;
+  filterAssignee: string[];
+  setFilterAssignee: (val: string[]) => void;
+  filterCategory: string[];
+  setFilterCategory: (val: string[]) => void;
+  filterVendor?: string[];
+  setFilterVendor?: (val: string[]) => void;
   dateFrom: string;
   setDateFrom: (val: string) => void;
   dateTo: string;
@@ -90,7 +89,6 @@ export const TasksView: React.FC<TasksViewProps> = ({
   syncingIds = new Set(),
   currentUser,
   vendorCategories = [],
-  // Destructure master addition state
   lastAddedCategory = '',
   lastAddedProject = '',
   lastAddedVendorCategory = '',
@@ -101,7 +99,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
   filterClient, setFilterClient,
   filterOwner, setFilterOwner,
   filterAssignee, setFilterAssignee,
-  filterVendor = 'All Vendors', setFilterVendor,
+  filterCategory, setFilterCategory,
+  filterVendor = [], setFilterVendor,
   dateFrom, setDateFrom,
   dateTo, setDateTo,
   lastUpdateFrom, setLastUpdateFrom,
@@ -111,7 +110,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isBulkUpdateModalOpen, setIsBulkUpdateModalOpen] = useState(false);
-  const [bulkMode, setBulkMode] = useState<'status' | 'priority' | 'assignee'>('status');
+  const [bulkMode, setBulkMode] = useState<'status' | 'priority' | 'assignee' | 'category'>('status');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [mobileViewMode, setMobileViewMode] = useState<'card' | 'table'>('card');
@@ -121,33 +120,51 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   
   const isAdmin = currentUser?.role === 'Admin';
-
-  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
   useEffect(() => {
     setSelectedIds([]);
     setCurrentPage(1);
-  }, [filterType, filterStatus, filterPriority, filterProject, filterClient, filterOwner, filterAssignee, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, searchTerm]);
+  }, [filterType, filterStatus, filterPriority, filterProject, filterClient, filterOwner, filterAssignee, filterCategory, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, searchTerm]);
 
-  const matchesFilter = (task: Task, filterKey: string, value: string) => {
-    if (!value || value.startsWith('All')) return true;
+  // Helper for generating filter summary string for reports
+  const getFilterSummary = () => {
+    const active: string[] = [];
+    if (filterStatus.length > 0) active.push(`Status: ${filterStatus.join(', ')}`);
+    if (filterPriority.length > 0) active.push(`Priority: ${filterPriority.join(', ')}`);
+    if (filterProject.length > 0) active.push(`Projects: ${filterProject.length} items`);
+    if (filterClient.length > 0) active.push(`Clients: ${filterClient.length} items`);
+    if (filterCategory.length > 0) active.push(`Category: ${filterCategory.join(', ')}`);
+    if (filterAssignee.length > 0) active.push(`Assignee: ${filterAssignee.join(', ')}`);
+    if (isVendorView && filterVendor.length > 0) active.push(`Vendor: ${filterVendor.join(', ')}`);
+    if (dateFrom || dateTo) active.push(`Date: ${dateFrom || 'start'} to ${dateTo || 'end'}`);
+    if (searchTerm) active.push(`Search: "${searchTerm}"`);
+    return active.length > 0 ? active.join(' | ') : 'None';
+  };
+
+  const matchesFilter = (task: Task, filterKey: string, values: string[]) => {
+    if (!values || values.length === 0) return true;
     switch(filterKey) {
         case 'status': 
-          if (value === 'Overdue') {
-              if (task.status === 'Completed' || !task.dueDate) return false;
-              const dueISO = parseToISO(task.dueDate);
-              const todayISO = new Date().toISOString().split('T')[0];
-              return dueISO && dueISO < todayISO;
+          if (values.includes('Overdue')) {
+              if (values.length === 1) {
+                  if (task.status === 'Completed' || !task.dueDate) return false;
+                  const dueISO = parseToISO(task.dueDate);
+                  const todayISO = new Date().toISOString().split('T')[0];
+                  return dueISO && dueISO < todayISO;
+              }
+              const isOverdue = task.status !== 'Completed' && task.dueDate && parseToISO(task.dueDate) < new Date().toISOString().split('T')[0];
+              return values.includes(task.status) || isOverdue;
           }
-          return task.status === value;
-        case 'priority': return task.priority === value;
-        case 'project': return task.project === value;
-        case 'client': return task.clientName === value;
-        case 'owner': return String(task.owner || '').includes(value);
-        case 'assignee': return String(task.assignees || '').includes(value);
-        case 'vendor': return task.vendor === value;
+          return values.includes(task.status);
+        case 'priority': return values.includes(task.priority);
+        case 'project': return values.includes(task.project);
+        case 'category': return values.includes(task.category || '');
+        case 'client': return values.includes(task.clientName || '');
+        case 'owner': return values.some(v => String(task.owner || '').includes(v));
+        case 'assignee': return values.some(v => String(task.assignees || '').includes(v));
+        case 'vendor': return values.includes(task.vendor || '');
         default: return true;
     }
   };
@@ -157,7 +174,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
       if (filterType === 'pending') {
           const project = projects.find(p => p.name === task.project || `${p.name} (${p.client})` === task.project);
           if (project && project.status === 'Inactive') return false;
-          if (task.status === 'Completed' && filterStatus !== 'Overdue') return false;
+          if (task.status === 'Completed' && filterStatus.length === 0) return false;
       }
       if (filterType === 'completed' && task.status !== 'Completed') return false;
 
@@ -172,6 +189,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
       if (!matchesFilter(task, 'status', filterStatus)) return false;
       if (!matchesFilter(task, 'priority', filterPriority)) return false;
       if (!matchesFilter(task, 'project', filterProject)) return false;
+      if (!matchesFilter(task, 'category', filterCategory)) return false;
       if (!matchesFilter(task, 'client', filterClient)) return false;
       if (!matchesFilter(task, 'owner', filterOwner)) return false;
       if (!matchesFilter(task, 'assignee', filterAssignee)) return false;
@@ -187,7 +205,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
       return true;
     });
-  }, [tasks, projects, filterType, searchTerm, filterStatus, filterPriority, filterProject, filterClient, filterOwner, filterAssignee, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, isVendorView]);
+  }, [tasks, projects, filterType, searchTerm, filterStatus, filterPriority, filterProject, filterCategory, filterClient, filterOwner, filterAssignee, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, isVendorView]);
 
   const finalSortedTasks = useMemo(() => {
     return [...filteredTasks].sort((a, b) => {
@@ -204,101 +222,135 @@ export const TasksView: React.FC<TasksViewProps> = ({
     return finalSortedTasks.slice(startIndex, startIndex + itemsPerPage);
   }, [finalSortedTasks, currentPage]);
 
+  const handleExportExcelLocal = () => {
+    const filterText = `Applied Filters: ${getFilterSummary()}`;
+    const generatedOn = `Generated on: ${new Date().toLocaleString('en-GB')}`;
+
+    const headers = ['Date', 'Task', 'Notes', 'Category', 'Responsible', 'Owner', 'Project', 'Client Name', 'Status', 'Last Update Date', 'Last Update Remark', 'Priority', 'Due Date'];
+    
+    const csvRows = [
+        `"${filterText}"`,
+        `"${generatedOn}"`,
+        headers.join(','),
+        ...finalSortedTasks.map(t => {
+            const isNotStarted = t.status === 'Not Yet Started';
+            const lastDate = isNotStarted ? '' : (t.lastUpdateDate || '');
+            const lastRemark = isNotStarted ? '' : (t.lastUpdateRemarks || '');
+            const resp = isVendorView ? (t.vendor || '-') : (t.assignees || '-');
+
+            return [
+                `"${t.date}"`,
+                `"${(t.title || '').replace(/"/g, '""')}"`,
+                `"${(t.remarks || '').replace(/"/g, '""')}"`,
+                `"${t.category || '-'}"`,
+                `"${resp}"`,
+                `"${t.owner}"`,
+                `"${t.project.split(' (')[0]}"`,
+                `"${t.clientName || ''}"`,
+                `"${t.status}"`,
+                `"${lastDate}"`,
+                `"${lastRemark.replace(/"/g, '""')}"`,
+                `"${t.priority}"`,
+                `"${t.dueDate}"`
+            ].join(',');
+        })
+    ].join('\n');
+
+    const blob = new Blob([csvRows], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.click();
+  };
+
   const handleDownloadPDF = () => {
     const doc = new jsPDF('l', 'mm', 'a4');
     doc.setFontSize(18);
-    doc.text(`${title} Report`, 14, 20);
+    doc.setTextColor(79, 70, 229); 
+    doc.text(`${title} Report`, 14, 15);
+    
     doc.setFontSize(10);
-    doc.text(`Generated on: ${new Date().toLocaleString('en-GB')}`, 14, 26);
+    doc.setTextColor(50, 50, 50);
+    doc.text(`Generated on: ${new Date().toLocaleString('en-GB')}`, 14, 21);
+    
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    const filterSummary = getFilterSummary();
+    const splitFilters = doc.splitTextToSize(`Active Filters: ${filterSummary}`, 260);
+    doc.text(splitFilters, 14, 27);
 
-    const headers = [['S.No', 'Date', 'Task', 'Project', 'Client', 'Responsible', 'Status', 'Due Date']];
-    const data = finalSortedTasks.map((t, i) => [
-      i + 1,
-      formatToIndianDate(t.date),
-      t.title,
-      t.project.split(' (')[0],
-      t.clientName || '-',
-      isVendorView ? (t.vendor || '-') : (t.assignees || '-'),
-      t.status,
-      formatToIndianDate(t.dueDate)
-    ]);
+    const headers = [['S.No', 'Date', 'Task', 'Project', 'Responsible', 'Status', 'Last Update Date', 'Last Update Remark', 'Due Date']];
+    
+    const data = finalSortedTasks.map((t, i) => {
+      const isNotStarted = t.status === 'Not Yet Started';
+      return [
+        i + 1,
+        formatToIndianDate(t.date),
+        t.title,
+        t.project.split(' (')[0],
+        isVendorView ? (t.vendor || '-') : (t.assignees || '-'),
+        t.status,
+        isNotStarted ? '' : formatToIndianDate(t.lastUpdateDate || ''),
+        isNotStarted ? '' : (t.lastUpdateRemarks || ''),
+        formatToIndianDate(t.dueDate)
+      ];
+    });
 
     autoTable(doc, {
       head: headers,
       body: data,
-      startY: 32,
-      styles: { fontSize: 8, cellPadding: 2 },
+      startY: 32 + (splitFilters.length * 4),
+      styles: { fontSize: 7, cellPadding: 2, overflow: 'linebreak' },
       headStyles: { fillColor: [79, 70, 229] },
+      columnStyles: {
+        2: { cellWidth: 40 }, 
+        7: { cellWidth: 40 }  
+      }
     });
 
     doc.save(`${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
-  const projectOptions = useMemo(() => {
-      const opts = projects.map(p => {
-          const uniqueValue = `${p.name.trim()} (${p.client.trim()})`;
-          return { value: uniqueValue, label: uniqueValue };
-      });
-      return [{ value: 'All Projects', label: 'All Projects' }, ...opts];
-  }, [projects]);
-
+  const statusOptions = [
+    { value: 'Not Yet Started', label: 'Not Yet Started' },
+    { value: 'In Progress', label: 'In Progress' },
+    { value: 'Completed', label: 'Completed' },
+    { value: 'Overdue', label: 'Overdue' }
+  ];
+  const priorityOptions = [
+    { value: 'High', label: 'High' },
+    { value: 'Medium', label: 'Medium' },
+    { value: 'Low', label: 'Low' }
+  ];
+  const categoryOptions = useMemo(() => categories.map(c => ({ value: c.name, label: c.name })), [categories]);
+  const projectOptions = useMemo(() => projects.map(p => {
+      const val = `${p.name.trim()} (${p.client.trim()})`;
+      return { value: val, label: val };
+  }), [projects]);
   const clientOptions = useMemo(() => {
-      const uniqueClients = Array.from(new Set(projects.map(p => p.client.trim()))).filter(Boolean);
-      const opts = (uniqueClients as string[]).map(c => ({ value: c, label: c }));
-      return [{ value: 'All Clients', label: 'All Clients' }, ...opts];
+      const unique = Array.from(new Set(projects.map(p => p.client.trim()))).filter(Boolean);
+      return (unique as string[]).map(c => ({ value: c, label: c }));
   }, [projects]);
-
-  const ownerOptions = useMemo(() => {
-      const opts = users.filter(u => u.isActive).map(u => ({ value: u.name, label: u.name }));
-      return [{ value: 'All Owners', label: 'All Owners' }, ...opts];
-  }, [users]);
-
-  const assigneeOptions = useMemo(() => {
-      const opts = users.filter(u => u.isActive).map(u => ({ value: u.name, label: u.name }));
-      return [{ value: 'All Assignees', label: 'All Assignees' }, ...opts];
-  }, [users]);
-
-  const vendorOptions = useMemo(() => {
-      const opts = vendors.map(v => ({ value: v.name, label: v.name }));
-      return [{ value: 'All Vendors', label: 'All Vendors' }, ...opts];
-  }, [vendors]);
+  const ownerOptions = useMemo(() => users.filter(u => u.isActive).map(u => ({ value: u.name, label: u.name })), [users]);
+  const assigneeOptions = useMemo(() => users.filter(u => u.isActive).map(u => ({ value: u.name, label: u.name })), [users]);
+  const vendorOptions = useMemo(() => vendors.map(v => ({ value: v.name, label: v.name })), [vendors]);
 
   const totalPages = Math.ceil(filteredTasks.length / itemsPerPage);
+  const handleUpdateTaskClick = (task: Task) => { setSelectedTask(task); setIsUpdateModalOpen(true); };
+  const handleEditTaskClick = (task: Task) => { setSelectedTask(task); setIsEditModalOpen(true); };
+  const openBulkUpdate = (mode: 'status' | 'priority' | 'assignee' | 'category') => { setBulkMode(mode); setIsBulkUpdateModalOpen(true); };
+  const handleBulkUpdate = (updates: Partial<Task>) => { onBulkUpdateTask(selectedIds, updates); setSelectedIds([]); };
+  const confirmBulkDelete = () => { selectedIds.forEach(id => onDeleteTask(id, isVendorView)); setSelectedIds([]); setShowBulkDeleteConfirm(false); };
 
-  const handleUpdateTaskClick = (task: Task) => {
-    setSelectedTask(task);
-    setIsUpdateModalOpen(true);
-  };
-
-  const handleEditTaskClick = (task: Task) => {
-      setSelectedTask(task);
-      setIsEditModalOpen(true);
-  };
-
-  const openBulkUpdate = (mode: 'status' | 'priority' | 'assignee') => {
-    setBulkMode(mode);
-    setIsBulkUpdateModalOpen(true);
-  };
-
-  const handleBulkUpdate = (updates: Partial<Task>) => {
-    onBulkUpdateTask(selectedIds, updates);
-    setSelectedIds([]);
-  };
-
-  const confirmBulkDelete = () => {
-    selectedIds.forEach(id => onDeleteTask(id, isVendorView));
-    setSelectedIds([]);
-    setShowBulkDeleteConfirm(false);
-  };
-
-  const handleClearFilters = () => {
-    setFilterStatus('All Status');
-    setFilterPriority('All Priorities');
-    setFilterProject('All Projects');
-    setFilterClient('All Clients');
-    setFilterOwner('All Owners');
-    setFilterAssignee('All Assignees');
-    if (setFilterVendor) setFilterVendor('All Vendors');
+  const handleClearFiltersLocal = () => {
+    setFilterStatus([]);
+    setFilterPriority([]);
+    setFilterProject([]);
+    setFilterCategory([]);
+    setFilterClient([]);
+    setFilterOwner([]);
+    setFilterAssignee([]);
+    if (setFilterVendor) setFilterVendor([]);
     setDateFrom('');
     setDateTo('');
     setLastUpdateFrom('');
@@ -307,21 +359,21 @@ export const TasksView: React.FC<TasksViewProps> = ({
   };
 
   const activeFilterBadges = useMemo(() => {
-      const badges = [];
-      if (filterStatus !== 'All Status') badges.push({ label: `Status: ${filterStatus}`, clear: () => setFilterStatus('All Status') });
-      if (filterPriority !== 'All Priorities') badges.push({ label: `Priority: ${filterPriority}`, clear: () => setFilterPriority('All Priorities') });
-      if (filterProject !== 'All Projects') badges.push({ label: `Project: ${filterProject}`, clear: () => setFilterProject('All Projects') });
-      if (filterClient !== 'All Clients') badges.push({ label: `Client: ${filterClient}`, clear: () => setFilterClient('All Clients') });
-      if (filterOwner !== 'All Owners') badges.push({ label: `Owner: ${filterOwner}`, clear: () => setFilterOwner('All Owners') });
-      if (filterAssignee !== 'All Assignees') badges.push({ label: `Assignee: ${filterAssignee}`, clear: () => setFilterAssignee('All Assignees') });
-      if (isVendorView && filterVendor !== 'All Vendors') badges.push({ label: `Vendor: ${filterVendor}`, clear: () => setFilterVendor?.('All Vendors') });
+      const badges: { label: string; clear: () => void }[] = [];
+      if (filterStatus.length > 0) badges.push({ label: `Status: ${filterStatus.join(', ')}`, clear: () => setFilterStatus([]) });
+      if (filterPriority.length > 0) badges.push({ label: `Priority: ${filterPriority.join(', ')}`, clear: () => setFilterPriority([]) });
+      if (filterCategory.length > 0) badges.push({ label: `Category: ${filterCategory.join(', ')}`, clear: () => setFilterCategory([]) });
+      if (filterProject.length > 0) badges.push({ label: `Project: ${filterProject.length} selected`, clear: () => setFilterProject([]) });
+      if (filterClient.length > 0) badges.push({ label: `Client: ${filterClient.length} selected`, clear: () => setFilterClient([]) });
+      if (filterOwner.length > 0) badges.push({ label: `Owner: ${filterOwner.join(', ')}`, clear: () => setFilterOwner([]) });
+      if (filterAssignee.length > 0) badges.push({ label: `Assignee: ${filterAssignee.join(', ')}`, clear: () => setFilterAssignee([]) });
+      if (isVendorView && filterVendor.length > 0) badges.push({ label: `Vendor: ${filterVendor.join(', ')}`, clear: () => setFilterVendor?.([]) });
       return badges;
-  }, [filterStatus, filterPriority, filterProject, filterClient, filterOwner, filterAssignee, filterVendor, isVendorView]);
+  }, [filterStatus, filterPriority, filterCategory, filterProject, filterClient, filterOwner, filterAssignee, filterVendor, isVendorView]);
 
   const getFilterClass = (isActive: boolean) => 
     `w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-colors ${isActive ? 'bg-indigo-50 border-indigo-500 text-indigo-700 font-medium' : 'bg-white border-indigo-300 text-black'}`;
 
-  const enableSelection = filterType === 'pending' || isAdmin;
   const startEntry = filteredTasks.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
   const endEntry = Math.min(currentPage * itemsPerPage, filteredTasks.length);
 
@@ -334,7 +386,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
         </div>
 
         <div className="flex flex-wrap gap-2 items-center">
-          {selectedIds.length > 0 && enableSelection ? (
+          {selectedIds.length > 0 && isAdmin ? (
             <div className="flex flex-wrap gap-2 animate-in fade-in zoom-in duration-200">
                 <button onClick={() => openBulkUpdate('status')} className="flex items-center space-x-1 px-4 py-2 bg-indigo-50 text-indigo-700 border-2 border-indigo-200 rounded-md hover:bg-indigo-100 text-sm font-bold shadow-sm transition-colors uppercase tracking-wider">
                     <Clock size={16} /><span>Status ({selectedIds.length})</span>
@@ -342,37 +394,26 @@ export const TasksView: React.FC<TasksViewProps> = ({
                 <button onClick={() => openBulkUpdate('priority')} className="flex items-center space-x-1 px-4 py-2 bg-indigo-50 text-indigo-700 border-2 border-indigo-200 rounded-md hover:bg-indigo-100 text-sm font-bold shadow-sm transition-colors uppercase tracking-wider">
                     <AlertTriangle size={16} /><span>Priority</span>
                 </button>
+                <button onClick={() => openBulkUpdate('category')} className="flex items-center space-x-1 px-4 py-2 bg-indigo-50 text-indigo-700 border-2 border-indigo-200 rounded-md hover:bg-indigo-100 text-sm font-bold shadow-sm transition-colors uppercase tracking-wider">
+                    <Tags size={16} /><span>Category</span>
+                </button>
                 <button onClick={() => openBulkUpdate('assignee')} className="flex items-center space-x-1 px-4 py-2 bg-indigo-50 text-indigo-700 border-2 border-indigo-200 rounded-md hover:bg-indigo-100 text-sm font-bold shadow-sm transition-colors uppercase tracking-wider">
                     <Users size={16} /><span>Assignee</span>
                 </button>
-                {isAdmin && (
-                  <button onClick={() => setShowBulkDeleteConfirm(true)} className="flex items-center space-x-1 px-4 py-2 bg-red-600 text-white border-2 border-red-700 rounded-md hover:bg-red-700 text-sm font-bold shadow-sm transition-colors uppercase tracking-wider">
-                    <Trash2 size={16} /><span>Bulk Delete</span>
-                  </button>
-                )}
+                <button onClick={() => setShowBulkDeleteConfirm(true)} className="flex items-center space-x-1 px-4 py-2 bg-red-600 text-white border-2 border-red-700 rounded-md hover:bg-red-700 text-sm font-bold shadow-sm transition-colors uppercase tracking-wider">
+                  <Trash2 size={16} /><span>Bulk Delete</span>
+                </button>
             </div>
           ) : (
             <button onClick={() => onAddTask(isVendorView)} className="flex items-center space-x-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium shadow-sm transition-colors"><Plus size={16} /><span>Add Task</span></button>
           )}
-          <button onClick={() => onExportExcel(finalSortedTasks)} className="flex items-center space-x-1 px-3 py-2 bg-white border border-indigo-600 text-indigo-600 rounded-md hover:bg-indigo-50 text-sm font-medium shadow-sm transition-colors"><FileText size={16} className="text-green-600" /><span>Excel</span></button>
+          <button onClick={handleExportExcelLocal} className="flex items-center space-x-1 px-3 py-2 bg-white border border-indigo-600 text-indigo-600 rounded-md hover:bg-indigo-50 text-sm font-medium shadow-sm transition-colors"><FileText size={16} className="text-green-600" /><span>Excel</span></button>
           <button onClick={handleDownloadPDF} className="flex items-center space-x-1 px-3 py-2 bg-white border border-indigo-600 text-indigo-600 rounded-md hover:bg-indigo-50 text-sm font-medium shadow-sm transition-colors"><Download size={16} className="text-red-500" /><span>PDF</span></button>
           <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center space-x-1 px-3 py-2 border rounded-md text-sm font-medium shadow-sm transition-all duration-200 ${showFilters ? 'bg-indigo-600 border-indigo-700 text-white ring-2 ring-indigo-200' : 'bg-indigo-50 border-indigo-300 text-indigo-600 hover:bg-indigo-100'}`} title="Toggle Filters"><Filter size={16} /></button>
           
           <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200 shadow-sm">
-              <button
-                onClick={() => setMobileViewMode('card')}
-                className={`p-1.5 rounded-md transition-all ${mobileViewMode === 'card' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-indigo-400'}`}
-                title="Card View"
-              >
-                <LayoutGrid size={18} />
-              </button>
-              <button
-                onClick={() => setMobileViewMode('table')}
-                className={`p-1.5 rounded-md transition-all ${mobileViewMode === 'table' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-indigo-400'}`}
-                title="Table View"
-              >
-                <LayoutList size={18} />
-              </button>
+              <button onClick={() => setMobileViewMode('card')} className={`p-1.5 rounded-md transition-all ${mobileViewMode === 'card' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-indigo-400'}`} title="Card View"><LayoutGrid size={18} /></button>
+              <button onClick={() => setMobileViewMode('table')} className={`p-1.5 rounded-md transition-all ${mobileViewMode === 'table' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`} title="Table View"><LayoutList size={18} /></button>
           </div>
         </div>
       </div>
@@ -401,41 +442,14 @@ export const TasksView: React.FC<TasksViewProps> = ({
         </div>
         
         <div className={`${showFilters ? 'grid' : 'hidden'} grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end`}>
-             <div className="col-span-1 space-y-1">
-                <label className="text-xs font-semibold text-indigo-600 uppercase tracking-wider block">Status</label>
-                <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className={getFilterClass(filterStatus !== 'All Status')}>
-                    <option>All Status</option><option>Not Yet Started</option><option>In Progress</option><option>Completed</option><option>Overdue</option>
-                </select>
-             </div>
-             <div className="col-span-1 space-y-1">
-                <label className="text-xs font-semibold text-indigo-600 uppercase tracking-wider block">Priority</label>
-                <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)} className={getFilterClass(filterPriority !== 'All Priorities')}>
-                    <option>All Priorities</option><option>High</option><option>Medium</option><option>Low</option>
-                </select>
-             </div>
-             {!isVendorView && (
-                 <div className="col-span-2 sm:col-span-1 space-y-1 text-indigo-600 font-semibold uppercase tracking-wider">
-                     <SearchableSelect label="Project" options={projectOptions} value={filterProject} onChange={setFilterProject} className="text-sm"/>
-                 </div>
-             )}
-             {!isVendorView && (
-                 <div className="col-span-2 sm:col-span-1 space-y-1 text-indigo-600 font-semibold uppercase tracking-wider">
-                     <SearchableSelect label="Client" options={clientOptions} value={filterClient} onChange={setFilterClient} className="text-sm"/>
-                 </div>
-             )}
-              <div className="col-span-1 space-y-1 text-indigo-600 font-semibold uppercase tracking-wider">
-                 <SearchableSelect label="Owner" options={ownerOptions} value={filterOwner} onChange={setFilterOwner} className="text-sm"/>
-             </div>
-             {!isVendorView && (
-                 <div className="col-span-1 space-y-1 text-indigo-600 font-semibold uppercase tracking-wider">
-                     <SearchableSelect label="Assignee" options={assigneeOptions} value={filterAssignee} onChange={setFilterAssignee} className="text-sm"/>
-                </div>
-             )}
-             {isVendorView && setFilterVendor && (
-                 <div className="col-span-1 space-y-1 text-indigo-600 font-semibold uppercase tracking-wider">
-                     <SearchableSelect label="Vendor" options={vendorOptions} value={filterVendor} onChange={setFilterVendor} className="text-sm"/>
-                 </div>
-             )}
+             <SearchableSelect label="Status" options={statusOptions} value={filterStatus} onChange={setFilterStatus} multiple={true} placeholder="All Statuses" className="text-sm"/>
+             <SearchableSelect label="Priority" options={priorityOptions} value={filterPriority} onChange={setFilterPriority} multiple={true} placeholder="All Priorities" className="text-sm"/>
+             <SearchableSelect label="Category" options={categoryOptions} value={filterCategory} onChange={setFilterCategory} multiple={true} placeholder="All Categories" className="text-sm"/>
+             {!isVendorView && <SearchableSelect label="Project" options={projectOptions} value={filterProject} onChange={setFilterProject} multiple={true} placeholder="All Projects" className="text-sm"/>}
+             {!isVendorView && <SearchableSelect label="Client" options={clientOptions} value={filterClient} onChange={setFilterClient} multiple={true} placeholder="All Clients" className="text-sm"/>}
+             <SearchableSelect label="Owner" options={ownerOptions} value={filterOwner} onChange={setFilterOwner} multiple={true} placeholder="All Owners" className="text-sm"/>
+             {!isVendorView && <SearchableSelect label="Assignee" options={assigneeOptions} value={filterAssignee} onChange={setFilterAssignee} multiple={true} placeholder="All Assignees" className="text-sm"/>}
+             {isVendorView && setFilterVendor && <SearchableSelect label="Vendor" options={vendorOptions} value={filterVendor} onChange={setFilterVendor} multiple={true} placeholder="All Vendors" className="text-sm"/>}
             <div className="col-span-1 relative">
                  <label className="text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1 block">Created From</label>
                  <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className={getFilterClass(dateFrom !== '')}/>
@@ -445,83 +459,25 @@ export const TasksView: React.FC<TasksViewProps> = ({
                 <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className={getFilterClass(dateTo !== '')}/>
             </div>
             <div className="col-span-1">
-                <button onClick={handleClearFilters} className="w-full px-3 py-2 bg-red-600 text-white border border-red-700 rounded-md hover:bg-red-700 text-sm font-medium transition-colors h-[38px] flex items-center justify-center" title="Clear Filters">Clear Filters</button>
+                <button onClick={handleClearFiltersLocal} className="w-full px-3 py-2 bg-red-600 text-white border border-red-700 rounded-md hover:bg-red-700 text-sm font-medium transition-colors h-[38px] flex items-center justify-center" title="Clear Filters">Clear Filters</button>
             </div>
         </div>
       </div>
 
-      <TaskTable 
-        tasks={paginatedTasks} 
-        onUpdateTask={handleUpdateTaskClick}
-        onEditTask={handleEditTaskClick}
-        onDeleteTask={onDeleteTask}
-        selectedIds={selectedIds}
-        onSelectionChange={setSelectedIds}
-        onViewHistory={onViewHistory}
-        showSelection={enableSelection}
-        isVendorView={isVendorView}
-        viewMode={mobileViewMode}
-        projects={projects}
-        syncingIds={syncingIds}
-        currentUser={currentUser}
-        sortKey={sortKey}
-        sortDir={sortDir}
-        onSort={(key, dir) => { setSortKey(key); setSortDir(dir); }}
-        startIndex={startEntry}
-      />
+      <TaskTable tasks={paginatedTasks} onUpdateTask={handleUpdateTaskClick} onEditTask={handleEditTaskClick} onDeleteTask={onDeleteTask} selectedIds={selectedIds} onSelectionChange={setSelectedIds} onViewHistory={onViewHistory} showSelection={isAdmin} isVendorView={isVendorView} viewMode={mobileViewMode} projects={projects} syncingIds={syncingIds} currentUser={currentUser} sortKey={sortKey} sortDir={sortDir} onSort={(key, dir) => { setSortKey(key); setSortDir(dir); }} startIndex={startEntry} />
       
       <div className="flex justify-between items-center text-xs text-indigo-600 font-bold px-1 uppercase tracking-wider">
           <span>Showing {startEntry} to {endEntry} of {filteredTasks.length} entries</span>
           <div className="flex space-x-2">
-              <button 
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                className="px-4 py-1.5 bg-indigo-600 text-white rounded shadow hover:bg-indigo-700 disabled:opacity-50 transition-colors uppercase text-[10px]" 
-                disabled={currentPage === 1}
-              >
-                Previous
-              </button>
-              <button 
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                className="px-4 py-1.5 bg-indigo-600 text-white rounded shadow hover:bg-indigo-700 disabled:opacity-50 transition-colors uppercase text-[10px]"
-                disabled={currentPage === totalPages || totalPages === 0}
-              >
-                Next
-              </button>
+              <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} className="px-4 py-1.5 bg-indigo-600 text-white rounded shadow hover:bg-indigo-700 disabled:opacity-50 transition-colors uppercase text-[10px]" disabled={currentPage === 1}>Previous</button>
+              <button onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} className="px-4 py-1.5 bg-indigo-600 text-white rounded shadow hover:bg-indigo-700 disabled:opacity-50 transition-colors uppercase text-[10px]" disabled={currentPage === totalPages || totalPages === 0}>Next</button>
           </div>
       </div>
 
       <UpdateTaskModal isOpen={isUpdateModalOpen} onClose={() => setIsUpdateModalOpen(false)} task={selectedTask} onUpdate={onUpdateTask} users={users} vendors={vendors}/>
-      <EditTaskModal 
-        isOpen={isEditModalOpen} 
-        onClose={() => setIsEditModalOpen(false)} 
-        task={selectedTask} 
-        onSave={onEditTask} 
-        onAddCategory={onAddCategory} 
-        onAddProject={onAddProject} 
-        onAddVendorCategory={onAddVendorCategory!} 
-        users={users} 
-        categories={categories} 
-        projects={projects} 
-        vendors={vendors} 
-        vendorCategories={vendorCategories}
-        isVendorView={isVendorView}
-        lastAddedCategory={lastAddedCategory}
-        lastAddedProject={lastAddedProject}
-        lastAddedVendorCategory={lastAddedVendorCategory}
-        onClearLastAdded={onClearLastAdded}
-      />
-      <BulkUpdateModal 
-        isOpen={isBulkUpdateModalOpen} 
-        onClose={() => setIsBulkUpdateModalOpen(false)} 
-        count={selectedIds.length} 
-        onUpdate={handleBulkUpdate} 
-        users={users} 
-        vendors={vendors}
-        isVendorView={isVendorView}
-        mode={bulkMode}
-      />
+      <EditTaskModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} task={selectedTask} onSave={onEditTask} onAddCategory={onAddCategory} onAddProject={onAddProject} onAddVendorCategory={onAddVendorCategory!} users={users} categories={categories} projects={projects} vendors={vendors} vendorCategories={vendorCategories} isVendorView={isVendorView} lastAddedCategory={lastAddedCategory} lastAddedProject={lastAddedProject} lastAddedVendorCategory={lastAddedVendorCategory} onClearLastAdded={onClearLastAdded} />
+      <BulkUpdateModal isOpen={isBulkUpdateModalOpen} onClose={() => setIsBulkUpdateModalOpen(false)} count={selectedIds.length} onUpdate={handleBulkUpdate} users={users} vendors={vendors} categories={categories} isVendorView={isVendorView} mode={bulkMode} />
 
-      {/* Custom Confirmation for Bulk Delete */}
       {showBulkDeleteConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200">
@@ -531,24 +487,11 @@ export const TasksView: React.FC<TasksViewProps> = ({
                  </div>
                  <div>
                     <h3 className="text-xl font-bold text-gray-900 uppercase">Confirm Bulk Delete</h3>
-                    <p className="text-sm text-gray-500 mt-2">
-                       Are you sure you want to delete <strong>{selectedIds.length}</strong> selected tasks? 
-                       <br/>This action cannot be undone.
-                    </p>
+                    <p className="text-sm text-gray-500 mt-2">Are you sure you want to delete <strong>{selectedIds.length}</strong> selected tasks? <br/>This action cannot be undone.</p>
                  </div>
                  <div className="flex gap-3 pt-2">
-                    <button 
-                       onClick={() => setShowBulkDeleteConfirm(false)}
-                       className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors uppercase text-sm"
-                    >
-                       Cancel
-                    </button>
-                    <button 
-                       onClick={confirmBulkDelete}
-                       className="flex-1 py-3 px-4 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-200 uppercase text-sm"
-                    >
-                       Delete All
-                    </button>
+                    <button onClick={() => setShowBulkDeleteConfirm(false)} className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors uppercase text-sm">Cancel</button>
+                    <button onClick={confirmBulkDelete} className="flex-1 py-3 px-4 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-200 uppercase text-sm">Delete All</button>
                  </div>
               </div>
            </div>

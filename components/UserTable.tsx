@@ -46,8 +46,8 @@ export const UserTable: React.FC<UserTableProps> = ({ users, onToggleStatus, onD
     return sortableItems;
   }, [users, sortConfig]);
 
-  const thClass = "px-6 py-4 text-xs font-semibold text-white uppercase tracking-wider border-r border-indigo-500 last:border-r-0 cursor-pointer hover:bg-indigo-700 transition-colors select-none";
-  const tdClass = "px-6 py-4 text-sm text-gray-900 border-r border-gray-200 last:border-r-0";
+  const thClass = "px-6 py-4 text-xs font-semibold text-white uppercase tracking-wider border-r border-indigo-500 last:border-r-0 cursor-pointer hover:bg-indigo-700 transition-colors select-none whitespace-normal";
+  const tdClass = "px-6 py-4 text-sm text-gray-900 border-r border-gray-200 last:border-r-0 whitespace-normal break-words";
 
   return (
     <>
@@ -83,7 +83,7 @@ export const UserTable: React.FC<UserTableProps> = ({ users, onToggleStatus, onD
               <th className={thClass} onClick={() => requestSort('isActive')}>
                 <div className="flex items-center justify-center">Status {getSortIcon('isActive')}</div>
               </th>
-              <th className="px-6 py-4 text-xs font-semibold text-white uppercase tracking-wider border-r border-indigo-500 last:border-r-0 text-center">Actions</th>
+              <th className="px-6 py-4 text-xs font-semibold text-white uppercase tracking-wider border-r border-indigo-500 last:border-r-0 text-center whitespace-normal">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -95,7 +95,7 @@ export const UserTable: React.FC<UserTableProps> = ({ users, onToggleStatus, onD
                 <td className={tdClass}>{user.mobile}</td>
                 <td className={tdClass}>
                    {user.telegramUserName ? (
-                       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs border border-blue-100">
+                       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs border border-blue-100 whitespace-normal break-words">
                            <Send size={12} />
                            @{user.telegramUserName}
                        </span>
@@ -136,8 +136,8 @@ export const UserTable: React.FC<UserTableProps> = ({ users, onToggleStatus, onD
                     <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-lg">{user.name.charAt(0).toUpperCase()}</div>
                         <div>
-                            <h3 className="font-bold text-gray-900">{user.name}</h3>
-                            <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <h3 className="font-bold text-gray-900 whitespace-normal break-words">{user.name}</h3>
+                            <div className="flex items-center gap-1 text-xs text-gray-500 whitespace-normal break-words">
                                 <Shield size={12} />
                                 <span>{user.role}</span>
                             </div>
@@ -148,11 +148,11 @@ export const UserTable: React.FC<UserTableProps> = ({ users, onToggleStatus, onD
                     </button>
                 </div>
                 <div className="space-y-2 text-sm text-gray-600 mb-4">
-                     <div className="flex items-center gap-2"><Mail size={14} className="text-gray-400" /><span>{user.email}</span></div>
-                     <div className="flex items-center gap-2"><Phone size={14} className="text-gray-400" /><span>{user.mobile}</span></div>
-                     <div className="flex items-center gap-2"><Briefcase size={14} className="text-gray-400" /><span>{user.designation || 'N/A'}</span></div>
-                     {user.telegramUserName && <div className="flex items-center gap-2"><Send size={14} className="text-blue-400" /><span>@{user.telegramUserName}</span></div>}
-                     <div className="flex items-center gap-2 font-mono text-xs bg-gray-50 p-1 rounded"><span className="text-gray-400 uppercase font-bold text-[10px]">Pass:</span> <span>{user.password || '-'}</span></div>
+                     <div className="flex items-center gap-2 whitespace-normal break-words"><Mail size={14} className="text-gray-400" /><span>{user.email}</span></div>
+                     <div className="flex items-center gap-2 whitespace-normal break-words"><Phone size={14} className="text-gray-400" /><span>{user.mobile}</span></div>
+                     <div className="flex items-center gap-2 whitespace-normal break-words"><Briefcase size={14} className="text-gray-400" /><span>{user.designation || 'N/A'}</span></div>
+                     {user.telegramUserName && <div className="flex items-center gap-2 whitespace-normal break-words"><Send size={14} className="text-blue-400" /><span>@{user.telegramUserName}</span></div>}
+                     <div className="flex items-center gap-2 font-mono text-xs bg-gray-50 p-1 rounded whitespace-normal break-words"><span className="text-gray-400 uppercase font-bold text-[10px]">Pass:</span> <span>{user.password || '-'}</span></div>
                 </div>
                 <div className="flex gap-2 pt-3 border-t border-gray-100">
                      <button onClick={() => onEditUser(user)} className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"><Edit2 size={16} />Edit</button>

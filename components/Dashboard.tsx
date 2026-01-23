@@ -1,10 +1,10 @@
 
 import React, { useMemo } from 'react';
-import { Plus, UserPlus, Folder, CheckSquare, Clock, AlertTriangle, CheckCircle, Users, Building2, Truck, FileText, RotateCcw, LayoutList, History, ShieldAlert } from 'lucide-react';
+import { Plus, UserPlus, Folder, CheckSquare, Clock, AlertTriangle, CheckCircle, Users, Building2, Truck, FileText, RotateCcw, LayoutList, History, ShieldAlert, Tags } from 'lucide-react';
 import { StatCard } from './StatCard';
 import { QuickAction } from './QuickAction';
 import { PendingTable } from './PendingTable';
-import { Task, User, Project, ActionLogEntry, RecurringTaskAction } from '../types';
+import { Task, User, Project, ActionLogEntry, RecurringTaskAction, Category } from '../types';
 import { parseToISO } from '../App';
 
 interface DashboardProps {
@@ -19,6 +19,7 @@ interface DashboardProps {
   tasks: Task[];
   users: User[];
   projects: Project[];
+  categories: Category[];
   actionLogs?: ActionLogEntry[];
   recurringActions?: RecurringTaskAction[];
 }
@@ -35,6 +36,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   tasks, 
   users, 
   projects,
+  categories,
   actionLogs = [],
   recurringActions = []
 }) => {
@@ -44,7 +46,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const totalTasks = regularTasks.length;
     const pendingTasks = regularTasks.filter(t => t.status !== 'Completed').length;
     
-    // Fix: Proper date comparison for Overdue count
     const todayISO = new Date().toISOString().split('T')[0];
     const overdueTasks = regularTasks.filter(t => {
       if (t.status === 'Completed' || !t.dueDate) return false;
@@ -71,7 +72,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
         if (task.status === 'In Progress' || task.status === 'Started') entry.inProgress += 1;
       });
     });
-    return Array.from(map.values());
+    // Requirement 2: Sorted alphabetically
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [tasks]);
 
   const priorityData = useMemo(() => {
@@ -106,8 +108,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
       if (task.status === 'Not Yet Started') entry.notStarted += 1;
       if (task.status === 'In Progress' || task.status === 'Started') entry.inProgress += 1;
     });
-    return Array.from(map.values());
+    // Requirement 2: Sorted alphabetically
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [tasks, projects]);
+
+  const categoryData = useMemo(() => {
+    const map = new Map<string, { name: string; total: number; notStarted: number; inProgress: number }>();
+    tasks.forEach(task => {
+      if (!!(task.vendor && task.vendor.trim() !== '')) return;
+      if (task.status === 'Completed') return;
+      const categoryName = task.category || 'Uncategorized';
+      if (!map.has(categoryName)) map.set(categoryName, { name: categoryName, total: 0, notStarted: 0, inProgress: 0 });
+      const entry = map.get(categoryName)!;
+      entry.total += 1;
+      if (task.status === 'Not Yet Started') entry.notStarted += 1;
+      if (task.status === 'In Progress' || task.status === 'Started') entry.inProgress += 1;
+    });
+    // Requirement 2: Sorted alphabetically
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [tasks]);
 
   const vendorData = useMemo(() => {
     const map = new Map<string, { name: string; total: number; notStarted: number; inProgress: number }>();
@@ -121,12 +140,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
       if (task.status === 'Not Yet Started') entry.notStarted += 1;
       if (task.status === 'In Progress' || task.status === 'Started') entry.inProgress += 1;
     });
-    return Array.from(map.values());
+    // Requirement 2: Sorted alphabetically
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [tasks]);
 
   const isoToday = useMemo(() => {
     const now = new Date();
-    return now.toLocaleDateString('en-CA'); // Returns YYYY-MM-DD reliably
+    return now.toLocaleDateString('en-CA');
   }, []);
 
   const dailyUpdates = useMemo(() => {
@@ -191,126 +211,45 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="space-y-8 pb-10">
-      {/* Header */}
       <div className="flex justify-center md:justify-center lg:justify-center">
         <h2 className="text-3xl font-black text-blue-700 uppercase tracking-widest border-b-4 border-blue-600 pb-2">Task Dashboard</h2>
       </div>
 
-      {/* Quick Actions - Only for Admin */}
       {isAdmin && (
         <div className="bg-sky-50 p-6 rounded-2xl shadow-md border-2 border-blue-300">
           <SectionHeader title="Quick Control" icon={<LayoutList size={20}/>} />
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <QuickAction 
-              label="New Task" icon={<Plus size={18} />} 
-              colorClass="bg-blue-600 hover:bg-blue-700 text-white" 
-              onClick={onOpenNewTask}
-            />
-            <QuickAction 
-              label="Add User" icon={<UserPlus size={18} />} 
-              colorClass="bg-indigo-500 hover:bg-indigo-600 text-white" 
-              onClick={onOpenAddUser}
-            />
-            <QuickAction 
-              label="Add Vendor" icon={<Truck size={18} />} 
-              colorClass="bg-orange-500 hover:bg-orange-600 text-white" 
-              onClick={onOpenAddVendor}
-            />
-            <QuickAction 
-              label="Add Client" icon={<Building2 size={18} />} 
-              colorClass="bg-pink-500 hover:bg-pink-600 text-white" 
-              onClick={onOpenAddClient}
-            />
-            <QuickAction 
-              label="Add Project" icon={<Folder size={18} />} 
-              colorClass="bg-emerald-500 hover:bg-emerald-600 text-white" 
-              onClick={onOpenAddProject}
-            />
+            <QuickAction label="New Task" icon={<Plus size={18} />} colorClass="bg-blue-600 hover:bg-blue-700 text-white" onClick={onOpenNewTask}/>
+            <QuickAction label="Add User" icon={<UserPlus size={18} />} colorClass="bg-indigo-500 hover:bg-indigo-600 text-white" onClick={onOpenAddUser}/>
+            <QuickAction label="Add Vendor" icon={<Truck size={18} />} colorClass="bg-orange-500 hover:bg-orange-600 text-white" onClick={onOpenAddVendor}/>
+            <QuickAction label="Add Client" icon={<Building2 size={18} />} colorClass="bg-pink-500 hover:bg-pink-600 text-white" onClick={onOpenAddClient}/>
+            <QuickAction label="Add Project" icon={<Folder size={18} />} colorClass="bg-emerald-500 hover:bg-emerald-600 text-white" onClick={onOpenAddProject}/>
           </div>
         </div>
       )}
 
-      {/* Stats Cards */}
       <div className="bg-blue-50/70 p-6 rounded-2xl border-2 border-blue-300 shadow-sm">
         <SectionHeader title="Live Statistics" icon={<Clock size={20}/>} />
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-            <StatCard 
-              title="Total Tasks" 
-              value={stats.totalTasks} 
-              icon={<CheckSquare size={20}/>} 
-              iconBgColor="bg-blue-100" 
-              iconColor="text-blue-600" 
-            />
-            <StatCard 
-              title="Pending" 
-              value={stats.pendingTasks} 
-              icon={<Clock size={20}/>} 
-              iconBgColor="bg-amber-100" 
-              iconColor="text-amber-600" 
-              onClick={() => onNavigate('pending')}
-            />
-            <StatCard 
-              title="Overdue" 
-              value={stats.overdueTasks} 
-              icon={<AlertTriangle size={20}/>} 
-              iconBgColor="bg-red-100" 
-              iconColor="text-red-600" 
-              onClick={() => onFilterChange('status', 'Overdue')}
-            />
-            <StatCard 
-              title="Completed" 
-              value={stats.completedTasks} 
-              icon={<CheckCircle size={20}/>} 
-              iconBgColor="bg-green-100" 
-              iconColor="text-green-600" 
-              onClick={() => onNavigate('completed')}
-            />
-            <StatCard 
-              title="Total Users" 
-              value={stats.totalUsers} 
-              icon={<Users size={20}/>} 
-              iconBgColor="bg-indigo-100" 
-              iconColor="text-indigo-600" 
-              onClick={isAdmin ? () => onNavigate('users') : undefined}
-            />
+            <StatCard title="Total Tasks" value={stats.totalTasks} icon={<CheckSquare size={20}/>} iconBgColor="bg-blue-100" iconColor="text-blue-600" />
+            <StatCard title="Pending" value={stats.pendingTasks} icon={<Clock size={20}/>} iconBgColor="bg-amber-100" iconColor="text-amber-600" onClick={() => onNavigate('pending')}/>
+            <StatCard title="Overdue" value={stats.overdueTasks} icon={<AlertTriangle size={20}/>} iconBgColor="bg-red-100" iconColor="text-red-600" onClick={() => onFilterChange('status', 'Overdue')}/>
+            <StatCard title="Completed" value={stats.completedTasks} icon={<CheckCircle size={20}/>} iconBgColor="bg-green-100" iconColor="text-green-600" onClick={() => onNavigate('completed')}/>
+            <StatCard title="Total Users" value={stats.totalUsers} icon={<Users size={20}/>} iconBgColor="bg-indigo-100" iconColor="text-indigo-600" onClick={isAdmin ? () => onNavigate('users') : undefined}/>
         </div>
       </div>
 
-      {/* Main Analysis Tables - Vertically Stacked */}
       <div className="grid grid-cols-1 gap-8">
-        <PendingTable 
-          title="Pending by Assignee" 
-          headerLabel="Assignee Name" 
-          data={assigneeData} 
-          onRowClick={(name) => onFilterChange('assignee', name)}
-        />
-        <PendingTable 
-          title="Pending by Priority" 
-          headerLabel="Priority Level" 
-          data={priorityData} 
-          onRowClick={(name) => onFilterChange('priority', name)}
-          className="bg-indigo-50/30"
-        />
-        <PendingTable 
-          title="Pending by Project" 
-          headerLabel="Project Name" 
-          data={projectData} 
-          onRowClick={(name) => onFilterChange('project', name)}
-        />
-        <PendingTable 
-          title="Pending by Vendor" 
-          headerLabel="Vendor Name" 
-          data={vendorData} 
-          onRowClick={(name) => onFilterChange('vendor', name)}
-          className="bg-orange-50/30"
-        />
+        <PendingTable title="Pending by Assignee" headerLabel="Assignee Name" data={assigneeData} onRowClick={(name) => onFilterChange('assignee', name)}/>
+        <PendingTable title="Pending by Priority" headerLabel="Priority Level" data={priorityData} onRowClick={(name) => onFilterChange('priority', name)} className="bg-indigo-50/30"/>
+        <PendingTable title="Pending by Project" headerLabel="Project Name" data={projectData} onRowClick={(name) => onFilterChange('project', name)}/>
+        <PendingTable title="Pending by Categorywise" headerLabel="Category Name" data={categoryData} onRowClick={(name) => onFilterChange('category', name)} className="bg-indigo-50/30"/>
+        <PendingTable title="Pending by Vendor" headerLabel="Vendor Name" data={vendorData} onRowClick={(name) => onFilterChange('vendor', name)} className="bg-orange-50/30"/>
       </div>
 
-      {/* Today's Activity Recap */}
       <div className="space-y-6">
         <SectionHeader title="Today's Activity Recap" icon={<History size={20}/>} />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-           {/* Employee Updates */}
            <div className="bg-white p-5 rounded-2xl border-2 border-blue-200 shadow-sm flex flex-col">
               <div className="flex items-center gap-2 mb-4 border-b border-blue-50 pb-2">
                  <Users size={18} className="text-indigo-600" />
@@ -332,7 +271,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
            </div>
 
-           {/* Vendor Updates */}
            <div className="bg-white p-5 rounded-2xl border-2 border-orange-200 shadow-sm flex flex-col">
               <div className="flex items-center gap-2 mb-4 border-b border-orange-50 pb-2">
                  <Truck size={18} className="text-orange-600" />
@@ -354,7 +292,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
            </div>
 
-           {/* Recurring Task Updates */}
            <div className="bg-white p-5 rounded-2xl border-2 border-emerald-200 shadow-sm flex flex-col">
               <div className="flex items-center gap-2 mb-4 border-b border-emerald-50 pb-2">
                  <RotateCcw size={18} className="text-emerald-600" />

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { Footer } from './components/Footer';
@@ -33,7 +33,7 @@ import { RecurringTaskHistoryModal } from './components/RecurringTaskHistoryModa
 import { AddRecurringTaskModal } from './components/AddRecurringTaskModal';
 import { UpdateRecurringTaskModal } from './components/UpdateRecurringTaskModal';
 import { EditRecurringTaskModal } from './components/EditRecurringTaskModal';
-import { TelegramSetupView } from './components/TelegramSetupView'; // Import new component
+import { TelegramSetupView } from './components/TelegramSetupView'; 
 import { 
   LayoutDashboard, 
   CheckSquare, 
@@ -54,12 +54,35 @@ import {
   AlertCircle,
   X,
   Hammer,
-  Send // Import Send icon
+  Send 
 } from 'lucide-react';
 import { NavItem, Task, User, Designation, Category, Project, Client, ActionLogEntry, Vendor, VendorCategory, RecurringTask, RecurringTaskAction, AppSettings } from './types';
 
 const MASTER_REGISTRY_URL = "https://script.google.com/macros/s/AKfycbwMVcMdqWGSyqJGLQH9ld724K_kov5J35riarbzEiMAlnDTToig0CMv3chc-amHOa1F/exec";
 const AUTO_SYNC_INTERVAL = 120000;
+
+const navItems: NavItem[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+  { id: 'all-tasks', label: 'All Tasks', icon: <CheckSquare size={20} />, section: 'Tasks' },
+  { id: 'pending', label: 'Pending Tasks', icon: <Clock size={20} />, section: 'Tasks' },
+  { id: 'completed', label: 'Completed Tasks', icon: <CheckCircle size={20} />, section: 'Tasks' },
+  { id: 'action-log', label: 'Action Log', icon: <History size={20} />, section: 'Tasks' },
+  { id: 'due-recurring-tasks', label: 'Due Recurring', icon: <AlertCircle size={20} />, section: 'Recurring Tasks' },
+  { id: 'recurring-tasks', label: 'Recurring Rules', icon: <RotateCcw size={20} />, section: 'Recurring Tasks' },
+  { id: 'recurring-actions', label: 'Recurring Log', icon: <History size={20} />, section: 'Recurring Tasks' },
+  { id: 'pending-vendor-tasks', label: 'Vendor Pending', icon: <Hammer size={20} />, section: 'Vendor' },
+  { id: 'vendor-tasks', label: 'Vendor All', icon: <Layers size={20} />, section: 'Vendor' },
+  { id: 'completed-vendor-tasks', label: 'Vendor History', icon: <CheckCircle size={20} />, section: 'Vendor' },
+  { id: 'vendor-action-log', label: 'Vendor Log', icon: <History size={20} />, section: 'Vendor' },
+  { id: 'users', label: 'Users', icon: <Users size={20} />, section: 'Master' },
+  { id: 'clients', label: 'Clients', icon: <Building2 size={20} />, section: 'Master' },
+  { id: 'projects', label: 'Projects', icon: <Briefcase size={20} />, section: 'Master' },
+  { id: 'categories', label: 'Categories', icon: <Tags size={20} />, section: 'Master' },
+  { id: 'vendor-categories', label: 'Vendor Categories', icon: <Tags size={20} />, section: 'Master' },
+  { id: 'vendors', label: 'Vendors', icon: <Truck size={20} />, section: 'Master' },
+  { id: 'settings', label: 'Settings', icon: <Settings size={20} />, section: 'Master' },
+  { id: 'telegram-setup', label: 'Telegram Setup', icon: <Send size={20} />, section: 'Master' },
+];
 
 export const formatToIndianDate = (dateInput: any): string => {
   if (!dateInput) return '';
@@ -135,6 +158,13 @@ export default function App() {
 
   const isAdmin = currentUser?.role === 'Admin';
 
+  // Navigation Logic based on Role
+  const filteredNavItems = useMemo(() => {
+    if (isAdmin) return navItems;
+    // Hide 'Master' section for Employees
+    return navItems.filter(item => item.section !== 'Master');
+  }, [isAdmin]);
+
   const [activeTab, setActiveTab] = useState(() => {
     return 'dashboard';
   });
@@ -145,7 +175,7 @@ export default function App() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [layoutMode, setLayoutMode] = useState<'side' | 'top'>(() => (localStorage.getItem('taskpro_layout') as any) || 'side');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [syncingIds, setSyncingIds] = new useState<Set<number>>(new Set());
+  const [syncingIds, setSyncingIds] = useState<Set<number>>(new Set());
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -163,17 +193,55 @@ export default function App() {
     masPassword: '', metaAccessToken: '', metaPhoneNumberId: '', metaWabaId: '', metaVerifyToken: ''
   });
 
+  // Data subsets based on user role
+  const visibleTasks = useMemo(() => {
+    if (!currentUser) return [];
+    if (isAdmin) return tasks;
+    return tasks.filter(t => {
+      const isOwner = String(t.owner || '').trim() === currentUser.name;
+      const isAssignee = String(t.assignees || '').split(',').map(s => s.trim()).includes(currentUser.name);
+      const isVendor = String(t.vendor || '').trim() === currentUser.name;
+      return isOwner || isAssignee || isVendor;
+    });
+  }, [tasks, currentUser, isAdmin]);
+
+  const visibleActionLogs = useMemo(() => {
+    if (!currentUser) return [];
+    if (isAdmin) return actionLogs;
+    return actionLogs.filter(l => {
+      const isOwner = String(l.owner || '').trim() === currentUser.name;
+      const isAssignee = String(l.assignees || '').split(',').map(s => s.trim()).includes(currentUser.name);
+      const isVendor = String(l.vendor || '').trim() === currentUser.name;
+      return isOwner || isAssignee || isVendor;
+    });
+  }, [actionLogs, currentUser, isAdmin]);
+
+  const visibleRecurringTasks = useMemo(() => {
+    if (!currentUser) return [];
+    if (isAdmin) return recurringTasks;
+    // For recurring tasks, check only assignee
+    return recurringTasks.filter(t => String(t.assignee || '').trim() === currentUser.name);
+  }, [recurringTasks, currentUser, isAdmin]);
+
+  const visibleRecurringActions = useMemo(() => {
+    if (!currentUser) return [];
+    if (isAdmin) return recurringActions;
+    return recurringActions.filter(a => String(a.assignee || '').trim() === currentUser.name);
+  }, [recurringActions, currentUser, isAdmin]);
+
   const [lastAddedCategory, setLastAddedCategory] = useState<string>('');
   const [lastAddedProject, setLastAddedProject] = useState<string>('');
   const [lastAddedVendorCategory, setLastAddedVendorCategory] = useState<string>('');
 
-  const [filterStatus, setFilterStatus] = useState('All Status');
-  const [filterPriority, setFilterPriority] = useState('All Priorities');
-  const [filterProject, setFilterProject] = useState('All Projects');
-  const [filterClient, setFilterClient] = useState('All Clients');
-  const [filterOwner, setFilterOwner] = useState('All Owners');
-  const [filterAssignee, setFilterAssignee] = useState('All Assignees');
-  const [filterVendor, setFilterVendor] = useState('All Vendors');
+  const [filterStatus, setFilterStatus] = useState<string[]>([]);
+  const [filterPriority, setFilterPriority] = useState<string[]>([]);
+  const [filterProject, setFilterProject] = useState<string[]>([]);
+  const [filterClient, setFilterClient] = useState<string[]>([]);
+  const [filterOwner, setFilterOwner] = useState<string[]>([]);
+  const [filterAssignee, setFilterAssignee] = useState<string[]>([]);
+  const [filterVendor, setFilterVendor] = useState<string[]>([]);
+  const [filterCategory, setFilterCategory] = useState<string[]>([]);
+  
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [lastUpdateFrom, setLastUpdateFrom] = useState('');
@@ -199,6 +267,29 @@ export default function App() {
   const [selectedTaskForHistory, setSelectedTaskForHistory] = useState<Task | null>(null);
   const [selectedRecurringTask, setSelectedRecurringTask] = useState<RecurringTask | null>(null);
 
+  const isDashboardNavigation = useRef(false);
+
+  useEffect(() => {
+    if (isDashboardNavigation.current) {
+        isDashboardNavigation.current = false;
+        return;
+    }
+    setFilterStatus([]);
+    setFilterPriority([]);
+    setFilterProject([]);
+    setFilterClient([]);
+    setFilterOwner([]);
+    setFilterAssignee([]);
+    setFilterVendor([]);
+    setFilterCategory([]);
+    setDateFrom('');
+    setDateTo('');
+    setLastUpdateFrom('');
+    setLastUpdateTo('');
+    setSearchTerm('');
+    setLogDashboardFilter(null);
+  }, [activeTab]);
+
   const apiPost = async (action: string, data: any, target?: string) => {
     if (!apiUrl) return { success: false, error: 'No API URL configured' };
     setIsSyncing(true);
@@ -223,7 +314,6 @@ export default function App() {
         finalData.vendor = data.vendor || '';
         finalData.vendorCategory = data.vendorCategory || '';
         
-        // Always derive project name and client name from the 'project' field (which should be 'Project (Client)')
         const projectValue = String(data.project || '');
         const projMatch = projectValue.match(/(.*)\s\((.*)\)/);
         if (projMatch) {
@@ -231,33 +321,30 @@ export default function App() {
             finalData.clientName = projMatch[2].trim(); 
         } else {
             finalData.project = projectValue;
-            finalData.clientName = data.clientName || ''; // Fallback if no client in project string
+            finalData.clientName = data.clientName || '';
         }
         
         finalData['due Date'] = data.dueDate || '';
-        finalData['last Update'] = timestamp;
-        finalData.lastUpdateDate = timestamp; 
+        
+        if (!data.skipTimestamp) {
+            finalData['last Update'] = timestamp;
+            finalData.lastUpdateDate = timestamp; 
+            finalData['remark'] = data.lastUpdateRemarks || data.remarks || data.Remarks || '';
+        }
+        
         finalData.taskDate = data.date || shortDate;
-        finalData['remark'] = data.lastUpdateRemarks || data.remarks || data.Remarks || '';
         finalData['date'] = data.date || shortDate;
     }
 
     if (action === 'addMaster' || action === 'updateMaster') {
         finalData.id = data.id || data.ID || 0;
-        
-        // Point 4 Fix: Ensure taskID is mapped correctly for recurring actions or similar tables
         if (data.taskId) {
             finalData.taskID = data.taskId;
             finalData.recurringTaskId = data.taskId;
         }
-
         const gst = data.gstNumber || data.GSTNumber || data.gSTNumber || '';
-        if (gst) {
-            finalData.gSTNumber = gst;
-        }
-        if ('password' in data) { 
-          finalData.password = data.password;
-        }
+        if (gst) finalData.gSTNumber = gst;
+        if ('password' in data) finalData.password = data.password;
     }
 
     const payload = {
@@ -505,140 +592,112 @@ export default function App() {
     }
   };
 
-  const handleInstantAddCategory = async (cat: Omit<Category, 'id'>) => {
-    const tempId = Date.now();
-    setCategories(prev => [...prev, { ...cat, id: tempId }]);
-    setLastAddedCategory(cat.name);
-    await apiPost('addMaster', cat, 'Categories');
-  };
-
-  const handleInstantAddProject = async (p: Omit<Project, 'id'>) => {
-    const tempId = Date.now();
-    setProjects(prev => [...prev, { ...p, id: tempId }]);
-    setLastAddedProject(`${p.name} (${p.client})`);
-    await apiPost('addMaster', p, 'Projects');
-  };
-
-  const handleInstantAddClient = async (c: Omit<Client, 'id'>) => {
-    const tempId = Date.now();
-    setClients(prev => [...prev, { ...c, id: tempId }]);
-    await apiPost('addMaster', c, 'Clients');
-  };
-
-  const handleInstantAddVendorCategory = async (vc: Omit<VendorCategory, 'id'>) => {
-    const tempId = Date.now();
-    setVendorCategories(prev => [...prev, { ...vc, id: tempId }]);
-    setLastAddedVendorCategory(vc.name);
-    await apiPost('addMaster', vc, 'VendorCategories');
-  };
-
-  if (!currentUser || !apiUrl) return <LoginView onLogin={handleLogin} isAuthenticating={isLoading} savedWorkspaceId={workspaceId} />;
-
-  if (isLoading && tasks.length === 0) {
-    return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-white">
-        <div className="relative">
-          <div className="h-24 w-24 rounded-full border-4 border-indigo-50 border-t-indigo-600 animate-spin"></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <img src="https://i.ibb.co/YBSjM7Gg/Chat-GPT-Image-Dec-18-2025-10-23-18-AM.png" className="h-10 w-10" alt="Logo" />
-          </div>
-        </div>
-        <p className="mt-6 text-indigo-600 font-bold animate-pulse uppercase tracking-widest text-xs">Initializing TaskPro...</p>
-        <p className="text-gray-400 text-[10px] mt-2 tracking-wide uppercase">Connecting to Database</p>
-      </div>
-    );
-  }
-
-  const visibleTasks = tasks.filter(t => {
-    if (isAdmin) return true;
-    const userName = currentUser?.name || '';
-    const owner = String(t.owner || '');
-    const assignees = String(t.assignees || '');
-    
-    const isVendorTask = t.vendor && t.vendor.trim() !== '';
-    if (isVendorTask) return owner.includes(userName);
-    return owner.includes(userName) || assignees.includes(userName);
-  });
-
-  const visibleActionLogs = actionLogs.filter(l => {
-    if (isAdmin) return true;
-    const userName = currentUser?.name || '';
-    const owner = String(l.owner || '');
-    const assignees = String(l.assignees || '');
-    
-    if (l.vendor) return owner.includes(userName);
-    return owner.includes(userName) || assignees.includes(userName);
-  });
-
-  const visibleRecurringTasks = recurringTasks.filter(t => {
-    if (isAdmin) return true;
-    const userName = currentUser?.name || '';
-    return String(t.assignee || '').includes(userName);
-  });
-
-  const visibleRecurringActions = recurringActions.filter(a => {
-    if (isAdmin) return true;
-    const userName = currentUser?.name || '';
-    return String(a.assignee || '').includes(userName);
-  });
-
-  const navItems: NavItem[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
-    { id: 'all-tasks', label: 'All Tasks', icon: <CheckSquare size={20} />, section: 'Tasks' },
-    { id: 'pending', label: 'Pending Tasks', icon: <Clock size={20} />, section: 'Tasks' },
-    { id: 'completed', label: 'Completed Tasks', icon: <CheckCircle size={20} />, section: 'Tasks' },
-    { id: 'action-log', label: 'Task Update Log', icon: <FileText size={20} />, section: 'Tasks' },
-    { id: 'vendors', label: 'Vendors', icon: <Hammer size={20} />, section: 'Vendor' },
-    { id: 'vendor-categories', label: 'Vendor Task Categories', icon: <Layers size={20} />, section: 'Vendor' },
-    { id: 'vendor-tasks', label: 'All Vendor Tasks', icon: <CheckSquare size={20} />, section: 'Vendor' },
-    { id: 'pending-vendor-tasks', label: 'Pending Vendor Tasks', icon: <Clock size={20} />, section: 'Vendor' },
-    { id: 'completed-vendor-tasks', label: 'Completed Vendor Tasks', icon: <CheckCircle size={20} />, section: 'Vendor' },
-    { id: 'vendor-action-log', label: 'Vendor Task Update Log', icon: <FileText size={20} />, section: 'Vendor' },
-    { id: 'due-recurring-tasks', label: 'Due Recurring Tasks', icon: <AlertCircle size={20} className="text-red-500" />, section: 'Recurring Tasks' },
-    { id: 'recurring-tasks', label: 'Recurring Tasks', icon: <RotateCcw size={20} />, section: 'Recurring Tasks' },
-    { id: 'recurring-actions', label: 'Recurring Tasks Actions', icon: <History size={20} />, section: 'Recurring Tasks' },
-    { id: 'users', label: 'Users', icon: <Users size={20} />, section: 'Master' },
-    { id: 'clients', label: 'Clients', icon: <Building2 size={20} />, section: 'Master' },
-    { id: 'projects', label: 'Projects', icon: <Folder size={20} />, section: 'Master' },
-    { id: 'categories', label: 'Categories', icon: <Tags size={20} />, section: 'Master' },
-    { id: 'settings', label: 'Settings', icon: <Settings size={20} />, section: 'Master' },
-    { id: 'telegram-setup', label: 'Telegram Setup', icon: <Send size={20} />, section: 'Master' } // New item
-  ].filter(item => {
-    if (isAdmin) return true;
-    const hiddenItemsForNonAdmin = ['users', 'clients', 'projects', 'categories', 'settings', 'vendors', 'telegram-setup']; // Hide telegram-setup for non-admin
-    return !hiddenItemsForNonAdmin.includes(item.id);
-  });
-
   const handleDashboardFilterChange = (type: string, value: string) => {
+    isDashboardNavigation.current = true;
     const today = new Date().toLocaleDateString('en-CA');
-    if (type === 'vendor') { setActiveTab('pending-vendor-tasks'); setFilterVendor(value); }
-    else if (type === 'assignee') { setActiveTab('pending'); setFilterAssignee(value); }
-    else if (type === 'project') { setActiveTab('pending'); setFilterProject(value); }
-    else if (type === 'priority') { setActiveTab('pending'); setFilterPriority(value); }
+    if (type === 'vendor') { setActiveTab('pending-vendor-tasks'); setFilterVendor([value]); }
+    else if (type === 'assignee') { setActiveTab('pending'); setFilterAssignee([value]); }
+    else if (type === 'project') { setActiveTab('pending'); setFilterProject([value]); }
+    else if (type === 'priority') { setActiveTab('pending'); setFilterPriority([value]); }
+    else if (type === 'category') { setActiveTab('pending'); setFilterCategory([value]); }
     else if (type === 'status') { 
         if (value === 'Overdue') setActiveTab('pending');
         else if (value === 'Completed') setActiveTab('completed');
         else setActiveTab('all-tasks');
-        setFilterStatus(value);
+        setFilterStatus([value]);
     }
     else if (type === 'employee-log') { setActiveTab('action-log'); setLogDashboardFilter({ type: 'assignee', value: value, dateFrom: today, dateTo: today }); }
     else if (type === 'vendor-log') { setActiveTab('vendor-action-log'); setLogDashboardFilter({ type: 'vendor', value: value, dateFrom: today, dateTo: today }); }
     else if (type === 'recurring-log') { setActiveTab('recurring-actions'); setLogDashboardFilter({ type: 'assignee', value: value, dateFrom: today, dateTo: today }); }
   };
 
+  const handleInstantAddCategory = async (cat: Omit<Category, 'id'>) => {
+    const tempId = Date.now();
+    const newCat = { ...cat, id: tempId } as Category;
+    setCategories(prev => [...prev, newCat]);
+    setLastAddedCategory(cat.name);
+    await apiPost('addMaster', cat, 'Categories');
+  };
+
+  const handleInstantAddVendorCategory = async (vcat: Omit<VendorCategory, 'id'>) => {
+    const tempId = Date.now();
+    const newVCat = { ...vcat, id: tempId } as VendorCategory;
+    setVendorCategories(prev => [...prev, newVCat]);
+    setLastAddedVendorCategory(vcat.name);
+    await apiPost('addMaster', vcat, 'VendorCategories');
+  };
+
+  const handleInstantAddProject = async (proj: Omit<Project, 'id'>) => {
+    const tempId = Date.now();
+    const newProj = { ...proj, id: tempId } as Project;
+    setProjects(prev => [...prev, newProj]);
+    setLastAddedProject(`${proj.name} (${proj.client})`);
+    await apiPost('addMaster', proj, 'Projects');
+  };
+
+  const handleInstantAddClient = async (client: Omit<Client, 'id'>) => {
+    const tempId = Date.now();
+    const newClient = { ...client, id: tempId } as Client;
+    setClients(prev => [...prev, newClient]);
+    await apiPost('addMaster', client, 'Clients');
+  };
+
   const renderContent = () => {
     const handleExportExcel = (tasksToExport: Task[]) => {
-      const headers = ['Date', 'Task', 'Notes', 'Assignees', 'Owner', 'Project', 'Client Name', 'Vendor', 'Vendor Category', 'Status', 'Last Update', 'Remark', 'Priority', 'Due Date'];
-      const csvContent = [headers.join(','), ...tasksToExport.map(task => [`"${task.date}"`, `"${(task.title || '').replace(/"/g, '""')}"`, `"${(task.remarks || '').replace(/"/g, '""')}"`, `"${task.assignees}"`, `"${task.owner}"`, `"${task.project.split(' (')[0]}"`, `"${task.clientName || ''}"`, `"${task.vendor || ''}"`, `"${task.vendorCategory || ''}"`, `"${task.status}"`, `"${task.lastUpdateDate || ''}"`, `"${(task.lastUpdateRemarks || '').replace(/"/g, '""')}"`, `"${task.priority}"`, `"${task.dueDate}"`].join(','))].join('\n');
+      const activeFilters: string[] = [];
+      if (filterStatus.length > 0) activeFilters.push(`Status: ${filterStatus.join(',')}`);
+      if (filterPriority.length > 0) activeFilters.push(`Priority: ${filterPriority.join(',')}`);
+      if (filterProject.length > 0) activeFilters.push(`Project: ${filterProject.length} selected`);
+      if (filterCategory.length > 0) activeFilters.push(`Category: ${filterCategory.join(',')}`);
+      if (filterAssignee.length > 0) activeFilters.push(`Assignee: ${filterAssignee.join(',')}`);
+      if (filterVendor.length > 0) activeFilters.push(`Vendor: ${filterVendor.join(',')}`);
+      if (dateFrom || dateTo) activeFilters.push(`Range: ${dateFrom || 'Start'} to ${dateTo || 'End'}`);
+      
+      const filterRow = activeFilters.length > 0 ? `Filters Applied: ${activeFilters.join(' | ')}` : "No Filters Applied";
+      const generatedRow = `Generated on: ${new Date().toLocaleString('en-GB')}`;
+
+      const headers = ['Date', 'Task', 'Notes', 'Assignees', 'Owner', 'Project', 'Client Name', 'Vendor', 'Vendor Category', 'Status', 'Last Update Date', 'Last Update Remark', 'Priority', 'Due Date'];
+      
+      const csvContent = [
+        `"${filterRow}"`,
+        `"${generatedRow}"`,
+        headers.join(','), 
+        ...tasksToExport.map(task => {
+          const isNotStarted = task.status === 'Not Yet Started';
+          const lastDate = isNotStarted ? '' : (task.lastUpdateDate || '');
+          const lastRemark = isNotStarted ? '' : (task.lastUpdateRemarks || '');
+
+          return [
+            `"${task.date}"`, 
+            `"${(task.title || '').replace(/"/g, '""')}"`, 
+            `"${(task.remarks || '').replace(/"/g, '""')}"`, 
+            `"${task.assignees}"`, 
+            `"${task.owner}"`, 
+            `"${task.project.split(' (')[0]}"`, 
+            `"${task.clientName || ''}"`, 
+            `"${task.vendor || ''}"`, 
+            `"${task.vendorCategory || ''}"`, 
+            `"${task.status}"`, 
+            `"${lastDate}"`, 
+            `"${lastRemark.replace(/"/g, '""')}"`, 
+            `"${task.priority}"`, 
+            `"${task.dueDate}"`
+          ].join(',');
+        })
+      ].join('\n');
+
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.setAttribute('download', `Export_${new Date().toISOString().split('T')[0]}.csv`); link.click();
+      const link = document.createElement('a'); 
+      link.href = URL.createObjectURL(blob); 
+      link.setAttribute('download', `TaskPro_Export_${new Date().toISOString().split('T')[0]}.csv`); 
+      link.click();
     };
 
     const commonTaskProps = {
       users, projects, vendors, categories, syncingIds, vendorCategories, currentUser,
       filterStatus, setFilterStatus, filterPriority, setFilterPriority, 
       filterProject, setFilterProject, filterClient, setFilterClient,
-      filterOwner, setFilterOwner, filterAssignee, setFilterAssignee, 
+      filterOwner, setFilterOwner, filterAssignee, setFilterAssignee, filterCategory, setFilterCategory,
       dateFrom, setDateFrom, dateTo, setDateTo,
       lastUpdateFrom, setLastUpdateFrom, lastUpdateTo, setLastUpdateTo, searchTerm, setSearchTerm, filterVendor, setFilterVendor,
       lastAddedCategory, lastAddedProject, lastAddedVendorCategory, onClearLastAdded: () => { setLastAddedCategory(''); setLastAddedProject(''); setLastAddedVendorCategory(''); },
@@ -655,14 +714,25 @@ export default function App() {
               if (task) {
                   const targetSheet = task.vendor && task.vendor.trim() !== '' ? 'VendorTasks' : 'MainTasks';
                   const finalUpdates = { ...updates };
-                  if (!finalUpdates.lastUpdateRemarks) {
-                      const changedFields = [];
-                      if (updates.priority) changedFields.push(`Priority to ${updates.priority}`);
-                      if (updates.assignees) changedFields.push(`Reassigned to ${updates.assignees}`);
-                      if (updates.status) changedFields.push(`Status to ${updates.status}`);
-                      finalUpdates.lastUpdateRemarks = `Bulk update: ${changedFields.join(', ')}`;
+                  
+                  const isMetadataOnly = (updates.priority || updates.category || updates.assignees || updates.vendor) && !updates.status;
+
+                  if (isMetadataOnly) {
+                      finalUpdates.skipTimestamp = true;
+                      finalUpdates.skipLog = true;
+                  } else {
+                      if (!finalUpdates.lastUpdateRemarks) {
+                          const changedFields = [];
+                          if (updates.priority) changedFields.push(`Priority to ${updates.priority}`);
+                          if (updates.assignees) changedFields.push(`Reassigned to ${updates.assignees}`);
+                          if (updates.status) changedFields.push(`Status to ${updates.status}`);
+                          if (updates.category) changedFields.push(`Category to ${updates.category}`);
+                          finalUpdates.lastUpdateRemarks = `Bulk update: ${changedFields.join(', ')}`;
+                      }
+                      if ((updates.priority || updates.assignees || updates.vendor || updates.category) && !updates.status) { 
+                          finalUpdates.skipLog = true; 
+                      }
                   }
-                  if ((updates.priority || updates.assignees || updates.vendor) && !updates.status) { finalUpdates.skipLog = true; }
                   await apiPost('updateTask', { ...task, ...finalUpdates }, targetSheet);
               }
           }
@@ -672,20 +742,20 @@ export default function App() {
     switch (activeTab) {
       case 'dashboard': 
         return <Dashboard 
-          isAdmin={isAdmin} tasks={visibleTasks} users={users} projects={projects} actionLogs={visibleActionLogs} recurringActions={visibleRecurringActions}
+          isAdmin={isAdmin} tasks={visibleTasks} users={users} projects={projects} categories={categories} actionLogs={visibleActionLogs} recurringActions={visibleRecurringActions}
           onNavigate={setActiveTab} onFilterChange={handleDashboardFilterChange} onOpenNewTask={() => { setIsTaskModalVendorMode(false); setIsTaskModalOpen(true); }} 
           onOpenAddUser={() => setIsUserModalOpen(true)} onOpenAddProject={() => setIsProjectModalOpen(true)} onOpenAddClient={() => setIsClientModalOpen(true)} onOpenAddVendor={() => setIsVendorModalOpen(true)} 
         />;
       case 'all-tasks': return <TasksView title="All Tasks" description="View and manage all your tasks" tasks={visibleTasks.filter(t => !t.vendor || t.vendor === '')} {...commonTaskProps} filterType="all" />;
       case 'pending': return <TasksView title="Pending Tasks" description="Tasks requiring attention" tasks={visibleTasks.filter(t => !t.vendor || t.vendor === '')} {...commonTaskProps} filterType="pending" />;
       case 'completed': return <TasksView title="Completed Tasks" description="History of finished tasks" tasks={visibleTasks.filter(t => !t.vendor || t.vendor === '')} {...commonTaskProps} filterType="completed" />;
-      case 'action-log': return <ActionLogView logs={visibleActionLogs.filter(l => !l.vendor)} projects={projects} onDeleteLog={(logId, taskId) => handleDeleteLog(logId, taskId, false)} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
+      case 'action-log': return <ActionLogView logs={visibleActionLogs.filter(l => !l.vendor || l.vendor === '')} projects={projects} onDeleteLog={(logId, taskId) => handleDeleteLog(logId, taskId, false)} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
       case 'vendors': if (!isAdmin) return null; return <VendorsView vendors={vendors} onAddVendor={(v) => { setVendors(p => [...p, { ...v, id: Date.now() } as any]); apiPost('addMaster', v, 'Vendors'); }} onDeleteVendor={(id) => { setVendors(p => p.filter(v => v.id !== id)); apiPost('deleteRecord', { id }, 'Vendors'); }} onEditVendor={(v) => { setVendors(p => p.map(x => x.id === v.id ? v : x)); apiPost('updateMaster', v, 'Vendors'); }} />;
-      case 'vendor-categories': return <VendorCategoriesView categories={vendorCategories} onAddCategory={() => setIsVendorCategoryModalOpen(true)} onDeleteCategory={(id) => { setVendorCategories(p => p.filter(c => c.id !== id)); apiPost('deleteRecord', { id }, 'VendorCategories'); }} onEditCategory={(vc) => { setVendorCategories(p => p.map(x => x.id === vc.id ? vc : x)); apiPost('updateMaster', vc, 'VendorCategories'); }} />;
+      case 'vendor-categories': if (!isAdmin) return null; return <VendorCategoriesView categories={vendorCategories} onAddCategory={() => setIsVendorCategoryModalOpen(true)} onDeleteCategory={(id) => { setVendorCategories(p => p.filter(c => c.id !== id)); apiPost('deleteRecord', { id }, 'VendorCategories'); }} onEditCategory={(vc) => { setVendorCategories(p => p.map(x => x.id === vc.id ? vc : x)); apiPost('updateMaster', vc, 'VendorCategories'); }} />;
       case 'vendor-tasks': return <TasksView title="All Vendor Tasks" description="Manage external vendor activities" tasks={visibleTasks.filter(t => t.vendor && t.vendor !== '')} {...commonTaskProps} isVendorView={true} filterType="all" />;
       case 'pending-vendor-tasks': return <TasksView title="Pending Vendor Tasks" description="Active vendor activities" tasks={visibleTasks.filter(t => t.vendor && t.vendor !== '')} {...commonTaskProps} isVendorView={true} filterType="pending" />;
       case 'completed-vendor-tasks': return <TasksView title="Completed Vendor Tasks" description="Finished vendor activities" tasks={visibleTasks.filter(t => t.vendor && t.vendor !== '')} {...commonTaskProps} isVendorView={true} filterType="completed" />;
-      case 'vendor-action-log': return <ActionLogView logs={visibleActionLogs.filter(l => l.vendor)} projects={projects} isVendorView={true} onDeleteLog={(logId, taskId) => handleDeleteLog(logId, taskId, true)} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
+      case 'vendor-action-log': return <ActionLogView logs={visibleActionLogs.filter(l => l.vendor && l.vendor !== '')} projects={projects} isVendorView={true} onDeleteLog={(logId, taskId) => handleDeleteLog(logId, taskId, true)} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
       case 'due-recurring-tasks': return <RecurringTasksView title="Due Recurring Tasks" filterType="due" tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={(id) => { setRecurringTasks(prev => prev.filter(t => t.id !== id)); apiPost('deleteRecord', { id }, 'RecurringTasks'); }} currentUser={currentUser} />;
       case 'recurring-tasks': return <RecurringTasksView title="Recurring Tasks" tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={(id) => { setRecurringTasks(prev => prev.filter(t => t.id !== id)); apiPost('deleteRecord', { id }, 'RecurringTasks'); }} currentUser={currentUser} />;
       case 'recurring-actions': return <RecurringTaskActionsView actions={visibleRecurringActions} onDeleteAction={(logId, taskId) => apiPost('deleteRecord', { id: logId, taskId: taskId }, 'RecurringActions')} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
@@ -694,19 +764,21 @@ export default function App() {
       case 'projects': if (!isAdmin) return null; return <ProjectsView projects={projects} clients={clients} onAddProject={handleInstantAddProject} onDeleteProject={(id) => { setProjects(p => p.filter(x => x.id !== id)); apiPost('deleteRecord', { id }, 'Projects'); }} onEditProject={(p) => { setProjects(prev => prev.map(x => x.id === p.id ? p : x)); apiPost('updateMaster', p, 'Projects'); }} onAddClient={() => setIsClientModalOpen(true)} onNavigateToProjectTasks={handleDashboardFilterChange.bind(null, 'project')} />;
       case 'categories': if (!isAdmin) return null; return <CategoriesView categories={categories} onAddCategory={() => setIsCategoryModalOpen(true)} onDeleteCategory={(id) => { setCategories(p => p.filter(c => c.id !== id)); apiPost('deleteRecord', { id }, 'Categories'); }} onEditCategory={(c) => { setCategories(p => p.map(x => x.id === c.id ? c : x)); apiPost('updateMaster', c, 'Categories'); }} />;
       case 'settings': if (!isAdmin) return null; return <SettingsView settings={settings} onUpdate={(s) => { setSettings(s); apiPost('updateMaster', s, 'AppSettings'); }} />;
-      case 'telegram-setup': if (!isAdmin) return null; return <TelegramSetupView />; // New Telegram Setup View
+      case 'telegram-setup': if (!isAdmin) return null; return <TelegramSetupView />;
       default: return null;
     }
   };
 
   const handleLayoutChange = (mode: 'side' | 'top') => { setLayoutMode(mode); localStorage.setItem('taskpro_layout', mode); };
 
+  if (!currentUser) return <LoginView onLogin={handleLogin} isAuthenticating={isLoading} savedWorkspaceId={workspaceId} />;
+
   return (
     <div className={`flex h-screen bg-gray-50 overflow-hidden flex-col ${layoutMode === 'side' ? 'md:flex-row' : 'md:flex-col'}`}>
       {layoutMode === 'side' ? (
-        <Sidebar items={navItems} activeTab={activeTab} onTabChange={setActiveTab} onLayoutChange={handleLayoutChange} layoutMode={layoutMode} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} lastSynced={lastSynced} isSyncing={isSyncing} onSync={fetchData} onLogout={() => { setCurrentUser(null); localStorage.removeItem('taskpro_user'); }} onExitWorkspace={() => { setCurrentUser(null); localStorage.clear(); }} workspaceId={workspaceId} />
+        <Sidebar items={filteredNavItems} activeTab={activeTab} onTabChange={setActiveTab} onLayoutChange={handleLayoutChange} layoutMode={layoutMode} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} lastSynced={lastSynced} isSyncing={isSyncing} onSync={fetchData} onLogout={() => { setCurrentUser(null); localStorage.removeItem('taskpro_user'); }} onExitWorkspace={() => { setCurrentUser(null); localStorage.clear(); }} workspaceId={workspaceId} />
       ) : (
-        <TopBar items={navItems} activeTab={activeTab} onTabChange={setActiveTab} onLayoutChange={handleLayoutChange} layoutMode={layoutMode} lastSynced={lastSynced} isSyncing={isSyncing} onSync={fetchData} />
+        <TopBar items={filteredNavItems} activeTab={activeTab} onTabChange={setActiveTab} onLayoutChange={handleLayoutChange} layoutMode={layoutMode} lastSynced={lastSynced} isSyncing={isSyncing} onSync={fetchData} />
       )}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
         {layoutMode === 'side' && (

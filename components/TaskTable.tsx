@@ -88,8 +88,8 @@ export const TaskTable: React.FC<TaskTableProps> = ({
     return formatToIndianDate(dateStr);
   };
 
-  const thClass = "px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider border-r border-blue-600 last:border-r-0 cursor-pointer hover:bg-blue-800 transition-colors select-none";
-  const tdClass = "px-4 py-3 text-sm text-black border-r border-gray-200 last:border-r-0 align-top";
+  const thClass = "px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider border-r border-blue-600 last:border-r-0 cursor-pointer hover:bg-blue-800 transition-colors select-none whitespace-normal";
+  const tdClass = "px-4 py-3 text-sm text-black border-r border-gray-200 last:border-r-0 align-top whitespace-normal break-words";
 
   return (
     <>
@@ -147,9 +147,9 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                       </td>
                     )}
                     <td className={`${tdClass} text-center font-bold text-blue-600`}>{startIndex + idx}</td>
-                    <td className={`${tdClass} whitespace-nowrap`}><div className="flex items-center gap-1">{isSyncing && <Loader2 className="animate-spin text-blue-500" size={12} />}{formatDate(task.date)}</div></td>
-                    <td className={`${tdClass} font-medium whitespace-normal min-w-[200px]`}>{task.title || '-'}</td>
-                    <td className={`${tdClass} whitespace-normal min-w-[150px]`}>{task.remarks || '-'}</td>
+                    <td className={`${tdClass}`}><div className="flex items-center gap-1">{isSyncing && <Loader2 className="animate-spin text-blue-500" size={12} />}{formatDate(task.date)}</div></td>
+                    <td className={`${tdClass} font-medium min-w-[200px]`}>{task.title || '-'}</td>
+                    <td className={`${tdClass} min-w-[150px]`}>{task.remarks || '-'}</td>
                     <td className={tdClass}>{displayCategory}</td>
                     {/* Display responsible party */}
                     <td className={tdClass}>
@@ -160,17 +160,17 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                     </td>
                     <td className={tdClass}>{task.owner}</td>
                     {/* Project and Client displayed explicitly */}
-                    <td className={`${tdClass} font-bold text-xs max-w-[120px] truncate`}>{task.project.split(' (')[0]}</td>
-                    <td className={`${tdClass} font-bold text-xs max-w-[120px] truncate`}>{task.clientName || '-'}</td>
+                    <td className={`${tdClass} font-bold text-xs`}>{task.project.split(' (')[0]}</td>
+                    <td className={`${tdClass} font-bold text-xs`}>{task.clientName || '-'}</td>
                     <td className={tdClass}><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>{task.status}</span></td>
-                    <td className={`${tdClass} whitespace-nowrap`}>
+                    <td className={`${tdClass}`}>
                         {task.status === 'Not Yet Started' ? '-' : (formatDate(task.lastUpdateDate || ''))}
                     </td>
-                    <td className={`${tdClass} whitespace-normal min-w-[150px]`}>
+                    <td className={`${tdClass} min-w-[150px]`}>
                         {task.status === 'Not Yet Started' ? '-' : (task.lastUpdateRemarks || '-')}
                     </td>
                     <td className={tdClass}>{task.priority}</td>
-                    <td className={`${tdClass} whitespace-nowrap`}>{formatDate(task.dueDate)}</td>
+                    <td className={`${tdClass}`}>{formatDate(task.dueDate)}</td>
                     <td className={tdClass}>
                       <div className="flex items-center space-x-2 justify-center">
                         <button onClick={() => onUpdateTask(task)} disabled={isSyncing} className="px-2 py-1 bg-blue-600 rounded text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-30">Update</button>
@@ -226,17 +226,17 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                 <div className="grid grid-cols-2 gap-x-3 gap-y-4">
                     <div className="space-y-1">
                         <span className="text-[10px] uppercase font-bold text-blue-900/60">Project</span>
-                        <div className="flex items-center gap-1.5 text-xs text-black font-bold uppercase truncate max-w-full">
+                        <div className="flex items-center gap-1.5 text-xs text-black font-bold uppercase whitespace-normal break-words">
                           <Layout size={12} className="text-orange-600 shrink-0" /> {task.project.split(' (')[0]}
                         </div>
                     </div>
                     <div className="space-y-1">
                         <span className="text-[10px] uppercase font-bold text-blue-900/60">Client</span>
-                        <div className="flex items-center gap-1.5 text-xs text-black font-bold uppercase"><Building2 size={12} className="text-pink-600" /> {task.clientName || '-'}</div>
+                        <div className="flex items-center gap-1.5 text-xs text-black font-bold uppercase whitespace-normal break-words"><Building2 size={12} className="text-pink-600" /> {task.clientName || '-'}</div>
                     </div>
                     <div className="space-y-1">
                         <span className="text-[10px] uppercase font-bold text-blue-900/60">Priority</span>
-                        <div className="flex items-center gap-1.5 text-xs text-black font-bold uppercase">
+                        <div className="flex items-center gap-1.5 text-xs text-black font-bold uppercase whitespace-normal break-words">
                             <AlertTriangle size={12} className={task.priority === 'High' ? 'text-red-500' : task.priority === 'Medium' ? 'text-amber-500' : 'text-blue-500'} /> 
                             {task.priority}
                         </div>
@@ -247,24 +247,24 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                       <>
                         <div className="space-y-1">
                             <span className="text-[10px] uppercase font-bold text-blue-900/60">Owner</span>
-                            <div className="flex items-center gap-1.5 text-xs text-black font-bold uppercase"><User size={12} className="text-blue-700" /> {task.owner}</div>
+                            <div className="flex items-center gap-1.5 text-xs text-black font-bold uppercase whitespace-normal break-words"><User size={12} className="text-blue-700" /> {task.owner}</div>
                         </div>
                         <div className="space-y-1">
                             <span className="text-[10px] uppercase font-bold text-blue-900/60">{isVendorTask ? 'Vendor' : 'Assignees'}</span>
-                            <div className="flex items-center gap-1.5 text-xs text-black font-bold uppercase">{responsiblePartyIcon} {responsiblePartyText}</div>
+                            <div className="flex items-center gap-1.5 text-xs text-black font-bold uppercase whitespace-normal break-words">{responsiblePartyIcon} {responsiblePartyText}</div>
                         </div>
                         
                         <div className="space-y-1">
                             <span className="text-[10px] uppercase font-bold text-blue-900/60">Category</span>
-                            <div className="flex items-center gap-1.5 text-xs text-black font-bold uppercase"><Tag size={12} className="text-green-600" /> {displayCategory}</div>
+                            <div className="flex items-center gap-1.5 text-xs text-black font-bold uppercase whitespace-normal break-words"><Tag size={12} className="text-green-600" /> {displayCategory}</div>
                         </div>
                         <div className="space-y-1">
                             <span className="text-[10px] uppercase font-bold text-blue-900/60">Task Date</span>
-                            <div className="flex items-center gap-1.5 text-xs text-black font-bold uppercase"><Calendar size={12} className="text-blue-900" /> {formatDate(task.date)}</div>
+                            <div className="flex items-center gap-1.5 text-xs text-black font-bold uppercase whitespace-normal break-words"><Calendar size={12} className="text-blue-900" /> {formatDate(task.date)}</div>
                         </div>
                         <div className="space-y-1">
                             <span className="text-[10px] uppercase font-bold text-blue-900/60">Update Date</span>
-                            <div className="flex items-center gap-1.5 text-xs text-black font-bold uppercase"><Clock size={12} className="text-indigo-600" /> {formatDate(task.lastUpdateDate || '')}</div>
+                            <div className="flex items-center gap-1.5 text-xs text-black font-bold uppercase whitespace-normal break-words"><Clock size={12} className="text-indigo-600" /> {formatDate(task.lastUpdateDate || '')}</div>
                         </div>
                       </>
                     )}
@@ -273,13 +273,13 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                 {isExpanded && task.remarks && task.remarks.trim() !== '' && (
                   <div className="flex items-start gap-2 bg-blue-50 p-2 rounded-lg text-blue-700 border border-blue-100 mt-2">
                       <Info size={14} className="mt-0.5 shrink-0 opacity-70" />
-                      <p className="text-xs italic leading-relaxed">{task.remarks}</p>
+                      <p className="text-xs italic leading-relaxed whitespace-normal break-words">{task.remarks}</p>
                   </div>
                 )}
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                <span className={`flex items-center justify-center text-center px-2 py-1.5 rounded-full text-[8px] font-extrabold uppercase whitespace-nowrap min-w-[90px] ${task.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-blue-800 text-white'}`}>
+                <span className={`flex items-center justify-center text-center px-2 py-1.5 rounded-full text-[8px] font-extrabold uppercase whitespace-normal break-words min-w-[90px] ${task.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-blue-800 text-white'}`}>
                     {task.status}
                 </span>
                 <div className="flex items-center gap-2">

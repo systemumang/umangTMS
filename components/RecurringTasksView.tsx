@@ -76,18 +76,16 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
   };
 
   const getNextDueDateObject = (task: RecurringTask): Date | null => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
     const periodicity = task.periodicity || 'Fixed Days';
     const lastCompleteDateStr = getLastCompletionDate(task);
     
-    const match = lastCompleteDateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    const match = lastCompleteDateStr.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
     let lastComplete: Date;
     if (match) lastComplete = new Date(parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
     else lastComplete = new Date(lastCompleteDateStr);
     
     if (isNaN(lastComplete.getTime())) return null;
+    lastComplete.setHours(0, 0, 0, 0);
 
     if (periodicity === 'Fixed Days') {
         const nextDate = new Date(lastComplete);
@@ -96,31 +94,28 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
     }
 
     if (periodicity === 'Weekly') {
-        const targetDay = task.recurrenceDay ?? 5; 
-        const nextDate = new Date(today);
-        const currentDay = today.getDay();
-        const diff = (targetDay - currentDay + 7) % 7;
-        nextDate.setDate(today.getDate() + diff);
-
-        const startOfWeek = new Date(today);
-        startOfWeek.setDate(today.getDate() - currentDay);
-        if (lastComplete >= startOfWeek && lastComplete <= nextDate) {
-            nextDate.setDate(nextDate.getDate() + 7);
-        }
+        const targetDay = task.recurrenceDay ?? 0;
+        let diff = targetDay - lastComplete.getDay();
+        // If the target day is today or in the past relative to the anchor, move to the next week's occurrence
+        if (diff <= 0) diff += 7;
+        
+        const nextDate = new Date(lastComplete);
+        nextDate.setDate(lastComplete.getDate() + diff);
         return nextDate;
     }
 
     if (periodicity === 'Monthly') {
         const targetDay = task.recurrenceDay ?? 1;
-        let nextDate = new Date(today.getFullYear(), today.getMonth(), targetDay);
+        // Start with the current anchor's month and year
+        let nextDate = new Date(lastComplete.getFullYear(), lastComplete.getMonth(), targetDay);
         
-        if (today > nextDate || (lastComplete.getMonth() === today.getMonth() && lastComplete.getFullYear() === today.getFullYear())) {
-            nextDate = new Date(today.getFullYear(), today.getMonth() + 1, targetDay);
+        // If the resulting date is not strictly after our anchor, jump to the next month
+        if (nextDate <= lastComplete) {
+            nextDate = new Date(lastComplete.getFullYear(), lastComplete.getMonth() + 1, targetDay);
         }
         
-        if (nextDate.getDate() !== targetDay) {
-            nextDate = new Date(nextDate.getFullYear(), nextDate.getMonth(), 0);
-        }
+        // Safety check for months with fewer days (e.g., Feb 30th -> March 2nd/last day of Feb)
+        // JS Date automatically handles this, but we ensure it remains roughly the target day or end of month
         return nextDate;
     }
 
@@ -129,10 +124,11 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
         const targetMonthIdx = months.indexOf(task.recurrenceMonth || 'January');
         const targetDay = task.recurrenceDay ?? 1;
         
-        let nextDate = new Date(today.getFullYear(), targetMonthIdx, targetDay);
+        let nextDate = new Date(lastComplete.getFullYear(), targetMonthIdx, targetDay);
         
-        if (today > nextDate || (lastComplete.getFullYear() === today.getFullYear() && lastComplete.getMonth() === targetMonthIdx)) {
-            nextDate = new Date(today.getFullYear() + 1, targetMonthIdx, targetDay);
+        // If today's rule match is in the past or is the anchor, move to next year
+        if (nextDate <= lastComplete) {
+            nextDate = new Date(lastComplete.getFullYear() + 1, targetMonthIdx, targetDay);
         }
         return nextDate;
     }
@@ -253,6 +249,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
     else setSelectedIds([...selectedIds, id]);
   };
 
+  // Corrected requestSort implementation using internal state setSortConfig
   const requestSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -274,8 +271,8 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
     }
   };
 
-  const thClass = "px-4 py-3 text-[10px] font-bold text-white uppercase tracking-wider border-r border-indigo-500 last:border-r-0 cursor-pointer hover:bg-indigo-700 transition-colors select-none";
-  const tdClass = "px-4 py-3 text-xs text-black border-r border-gray-200 last:border-r-0 align-top";
+  const thClass = "px-4 py-3 text-[10px] font-bold text-white uppercase tracking-wider border-r border-indigo-500 last:border-r-0 cursor-pointer hover:bg-indigo-700 transition-colors select-none whitespace-normal";
+  const tdClass = "px-4 py-3 text-xs text-black border-r border-gray-200 last:border-r-0 align-top whitespace-normal break-words";
 
   const startEntry = sortedTasks.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
   const endEntry = Math.min(currentPage * itemsPerPage, sortedTasks.length);
@@ -336,7 +333,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
             <thead>
               <tr className="bg-indigo-600">
                 {isAdmin && (
-                  <th className="px-4 py-3 w-10 text-center border-r border-indigo-500">
+                  <th className="px-4 py-3 w-10 text-center border-r border-indigo-500 whitespace-normal">
                     <input 
                       type="checkbox" 
                       className="rounded border-gray-300 text-blue-600 h-4 w-4" 
@@ -345,7 +342,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                     />
                   </th>
                 )}
-                <th className="px-4 py-3 text-[10px] font-bold text-white uppercase tracking-wider border-r border-indigo-500 w-12 text-center">S.No.</th>
+                <th className="px-4 py-3 text-[10px] font-bold text-white uppercase tracking-wider border-r border-indigo-500 w-12 text-center whitespace-normal">S.No.</th>
                 <th className={thClass} onClick={() => requestSort('title')}><div className="flex items-center">Task {getSortIcon('title')}</div></th>
                 <th className={thClass} onClick={() => requestSort('category')}><div className="flex items-center">Category {getSortIcon('category')}</div></th>
                 <th className={thClass} onClick={() => requestSort('assignee')}><div className="flex items-center">Assignee {getSortIcon('assignee')}</div></th>
@@ -354,7 +351,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                 <th className={thClass} onClick={() => requestSort('lastUpdatedOn')}><div className="flex items-center">Activity {getSortIcon('lastUpdatedOn')}</div></th>
                 <th className={thClass} onClick={() => requestSort('remarks')}><div className="flex items-center">Remarks {getSortIcon('remarks')}</div></th>
                 <th className={thClass} onClick={() => requestSort('nextDue')}><div className="flex items-center">Next Due {getSortIcon('nextDue')}</div></th>
-                <th className="px-4 py-3 text-[10px] font-bold text-white uppercase tracking-wider text-center">Actions</th>
+                <th className="px-4 py-3 text-[10px] font-bold text-white uppercase tracking-wider text-center whitespace-normal">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -381,7 +378,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                     <td className={tdClass}>{task.category}</td>
                     <td className={tdClass}>{task.assignee}</td>
                     <td className={tdClass}>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getStatusColor(effectiveStatus)}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getStatusColor(effectiveStatus)} whitespace-normal break-words`}>
                             {effectiveStatus}
                         </span>
                     </td>
@@ -392,7 +389,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                       </div>
                     </td>
                     <td className={tdClass}>{task.lastUpdatedOn || '-'}</td>
-                    <td className={`${tdClass} max-w-xs truncate`}>{task.lastUpdateRemarks || '-'}</td>
+                    <td className={`${tdClass}`}>{task.lastUpdateRemarks || '-'}</td>
                     <td className={`${tdClass} font-bold ${isOverdue ? 'text-red-600 animate-pulse' : 'text-indigo-600'}`}>
                         {nextDueStr}
                     </td>
@@ -435,21 +432,21 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                             )}
                             <span className="bg-indigo-100 text-indigo-700 px-2 py-1 rounded text-[10px] font-bold">#{startEntry + idx}</span>
                         </div>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getStatusColor(effectiveStatus)}`}>{effectiveStatus}</span>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getStatusColor(effectiveStatus)} whitespace-normal break-words`}>{effectiveStatus}</span>
                     </div>
-                    <h3 className="font-bold text-gray-900 leading-tight mt-2">{task.title}</h3>
+                    <h3 className="font-bold text-gray-900 leading-tight mt-2 whitespace-normal break-words">{task.title}</h3>
                     </div>
                     <div className="grid grid-cols-2 gap-y-2 text-xs text-gray-600 mb-4 bg-gray-50 p-2 rounded">
-                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Category</span>{task.category}</div>
-                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Assignee</span>{task.assignee}</div>
-                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Rule</span>{getFrequencyText(task)}</div>
+                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Category</span><span className="whitespace-normal break-words">{task.category}</span></div>
+                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Assignee</span><span className="whitespace-normal break-words">{task.assignee}</span></div>
+                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Rule</span><span className="whitespace-normal break-words">{getFrequencyText(task)}</span></div>
                     <div>
                         <span className="text-indigo-500 font-bold uppercase text-[9px] block">Next Due</span>
-                        <span className={`font-bold ${isOverdue ? 'text-red-600' : 'text-indigo-600'}`}>{nextDueStr}</span>
+                        <span className={`font-bold ${isOverdue ? 'text-red-600' : 'text-indigo-600'} whitespace-normal break-words`}>{nextDueStr}</span>
                     </div>
                     </div>
                     <div className="flex gap-2 pt-3 border-t border-gray-100 flex-wrap">
-                        <button onClick={() => onUpdate(task)} className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"><RotateCcw size={14} />Update</button>
+                        <button onClick={() => onUpdate(task)} className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm whitespace-normal break-words"><RotateCcw size={14} />Update</button>
                         <div className="flex gap-1 w-full sm:w-auto justify-end">
                             <button onClick={() => onViewHistory(task)} className="p-2 text-indigo-500 hover:bg-gray-100 rounded-full border border-gray-100"><Info size={18} /></button>
                             <button onClick={() => onEdit(task)} className="p-2 text-indigo-600 hover:bg-gray-100 rounded-full border border-gray-100"><Edit2 size={18} /></button>

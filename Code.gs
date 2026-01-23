@@ -171,55 +171,63 @@ function handleAddTask(data) {
 
   // Notification Logic
   try {
-    const config = getMASConfig();
-    const creationTime = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy hh:mm a");
-    const client = data.clientName || '-';
-    const project = data.project || '-';
-    const taskTitle = data.title || data.task;
     const owner = data.owner || '-';
+    const ownerRole = getUserRole(data.owner);
+    const assignees = (data.assignees || '').toString().trim();
+    const vendor = (data.vendor || '').toString().trim();
     
     // Check for self-assignment + Admin role
-    const ownerRole = getUserRole(data.owner);
-    const isSelfAssignment = data.assignees && data.owner && data.assignees.trim() === data.owner.trim();
-    const skipPersonalMsg = isSelfAssignment && ownerRole === 'Admin';
+    const isSelfAssignment = isVendor 
+      ? (vendor === owner.trim())
+      : (assignees === owner.trim());
+    
+    const skipAllNotifications = isSelfAssignment && ownerRole === 'Admin';
 
-    let msg;
-    if (isVendor) {
-      msg = `*New Vendor Task*\n\n` +
-            `*Task:* ${escapeMarkdown(taskTitle)}\n` +
-            `*Owner:* ${escapeMarkdown(owner)}\n` +
-            `*Vendor:* ${escapeMarkdown(data.vendor)}\n` +
-            `*Project:* ${escapeMarkdown(project)}\n` +
-            `*Client:* ${escapeMarkdown(client)}\n` +
-            `*Due Date:* ${formatDateDMY(data.dueDate)}\n` +
-            `*Created At:* ${creationTime}`;
-    } else {
-      msg = `*New Task Assigned*\n\n` +
-            `*Task:* ${escapeMarkdown(taskTitle)}\n` +
-            `*Owner:* ${escapeMarkdown(owner)}\n` +
-            `*Client:* ${escapeMarkdown(client)}\n` +
-            `*Project:* ${escapeMarkdown(project)}\n` +
-            `*Due Date:* ${formatDateDMY(data.dueDate)}\n` +
-            `*Assignees:* ${escapeMarkdown(data.assignees || 'Not assigned')}\n` +
-            `*Created At:* ${creationTime}`;
-    }
+    if (!skipAllNotifications) {
+      const config = getMASConfig();
+      const creationTime = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy hh:mm a");
+      const client = data.clientName || '-';
+      const project = data.project || '-';
+      const taskTitle = data.title || data.task;
 
-    if (!skipPersonalMsg) {
-        if (isVendor && data.vendor) {
-          const vendorMobile = getVendorMobile(data.vendor);
-          if (vendorMobile) sendpersonalMessage(msg, vendorMobile, config.username, config.password);
-        } else if (data.assignees) {
-          data.assignees.split(',').forEach(name => {
-            const mobile = getUserMobile(name.trim());
-            if (mobile) sendpersonalMessage(msg, mobile, config.username, config.password);
-          });
-        }
-    }
+      let msg;
+      if (isVendor) {
+        msg = `*New Vendor Task*\n\n` +
+              `*Task:* ${escapeMarkdown(taskTitle)}\n` +
+              `*Owner:* ${escapeMarkdown(owner)}\n` +
+              `*Vendor:* ${escapeMarkdown(data.vendor)}\n` +
+              `*Project:* ${escapeMarkdown(project)}\n` +
+              `*Client:* ${escapeMarkdown(client)}\n` +
+              `*Due Date:* ${formatDateDMY(data.dueDate)}\n` +
+              `*Created At:* ${creationTime}`;
+      } else {
+        msg = `*New Task Assigned*\n\n` +
+              `*Task:* ${escapeMarkdown(taskTitle)}\n` +
+              `*Owner:* ${escapeMarkdown(owner)}\n` +
+              `*Client:* ${escapeMarkdown(client)}\n` +
+              `*Project:* ${escapeMarkdown(project)}\n` +
+              `*Due Date:* ${formatDateDMY(data.dueDate)}\n` +
+              `*Assignees:* ${escapeMarkdown(data.assignees || 'Not assigned')}\n` +
+              `*Created At:* ${creationTime}`;
+      }
 
-    const rawProjectName = project.trim();
-    if (rawProjectName && rawProjectName !== '-') {
-      sendToProjectWhatsAppGroup(rawProjectName, msg);
-      sendToProjectTelegramGroup(rawProjectName, msg);
+      // Send Personal WhatsApp
+      if (isVendor && data.vendor) {
+        const vendorMobile = getVendorMobile(data.vendor);
+        if (vendorMobile) sendpersonalMessage(msg, vendorMobile, config.username, config.password);
+      } else if (data.assignees) {
+        data.assignees.split(',').forEach(name => {
+          const mobile = getUserMobile(name.trim());
+          if (mobile) sendpersonalMessage(msg, mobile, config.username, config.password);
+        });
+      }
+
+      // Send to Project Groups
+      const rawProjectName = project.trim();
+      if (rawProjectName && rawProjectName !== '-') {
+        sendToProjectWhatsAppGroup(rawProjectName, msg);
+        sendToProjectTelegramGroup(rawProjectName, msg);
+      }
     }
   } catch (e) { Logger.log("Notification Error: " + e.message); }
 
@@ -246,9 +254,25 @@ function handleUpdateTask(data) {
   headers.forEach((h, i) => {
     const hLower = h.toString().trim().toLowerCase().replace(/[^a-z0-9]/g, '');
     if (hLower === 'id' || hLower === 'date') return;
-    if (hLower === 'lastupdatedate') { sheet.getRange(rowIndex, i + 1).setValue(new Date()); return; }
+    
+    // Respect skipTimestamp flag to prevent updating LastUpdateDate
+    if (hLower === 'lastupdatedate') { 
+        if (!normalizedData.skiptimestamp) {
+            sheet.getRange(rowIndex, i + 1).setValue(new Date()); 
+        }
+        return; 
+    }
+    
+    // Respect skipTimestamp flag for LastUpdateRemarks
+    if (hLower === 'lastupdateremarks' && data.lastUpdateRemarks !== undefined) { 
+        if (!normalizedData.skiptimestamp) {
+            sheet.getRange(rowIndex, i + 1).setValue(data.lastUpdateRemarks); 
+        }
+        return; 
+    }
+
     if (hLower === 'vendorcategory' && data.vendorCategory !== undefined) { sheet.getRange(rowIndex, i + 1).setValue(data.vendorCategory); return; }
-    if (hLower === 'lastupdateremarks' && data.lastUpdateRemarks !== undefined) { sheet.getRange(rowIndex, i + 1).setValue(data.lastUpdateRemarks); return; }
+    
     if (normalizedData[hLower] !== undefined) { sheet.getRange(rowIndex, i + 1).setValue(normalizedData[hLower]); }
   });
   
@@ -274,45 +298,56 @@ function handleUpdateTask(data) {
 
     // Update Notification
     try {
-      const config = getMASConfig();
-      const client = data.clientName || '-';
-      const project = data.project || '-';
       const owner = data.owner || '-';
-
-      let updateMsg;
-      if (isVendor) {
-        updateMsg = `📝 *Vendor Task Updated*\n\n` +
-                    `*Task:* ${escapeMarkdown(data.title || data.task)}\n` +
-                    `*Owner:* ${escapeMarkdown(owner)}\n` +
-                    `*Vendor:* ${escapeMarkdown(data.vendor || '-')}\n` +
-                    `*Project:* ${escapeMarkdown(project)}\n` +
-                    `*Client:* ${escapeMarkdown(client)}\n` +
-                    `*Status:* ${data.status}\n` +
-                    `*Remarks:* ${escapeMarkdown(data.lastUpdateRemarks || '-')}\n` +
-                    `*Updated At:* ${timestamp}`;
-      } else {
-        updateMsg = `📝 *Task Updated*\n\n` +
-                    `*Task:* ${escapeMarkdown(data.title || data.task)}\n` +
-                    `*Owner:* ${escapeMarkdown(owner)}\n` +
-                    `*Assignees:* ${escapeMarkdown(data.assignees || '-')}\n` +
-                    `*Project:* ${escapeMarkdown(project)}\n` +
-                    `*Client:* ${escapeMarkdown(client)}\n` +
-                    `*Status:* ${data.status}\n` +
-                    `*Remarks:* ${escapeMarkdown(data.lastUpdateRemarks || '-')}\n` +
-                    `*Updated At:* ${timestamp}`;
-      }
-      
       const ownerRole = getUserRole(data.owner);
-      const isSelfAssignment = data.assignees && data.owner && data.assignees.trim() === data.owner.trim();
-      const skipPersonalMsg = isSelfAssignment && ownerRole === 'Admin';
+      const assignees = (data.assignees || '').toString().trim();
+      const vendor = (data.vendor || '').toString().trim();
+      
+      // Check for self-assignment + Admin role
+      const isSelfAssignment = isVendor 
+        ? (vendor === owner.trim())
+        : (assignees === owner.trim());
+      
+      const skipAllNotifications = isSelfAssignment && ownerRole === 'Admin';
 
-      if (data.owner && !skipPersonalMsg) {
-        const ownerMobile = getUserMobile(data.owner);
-        if (ownerMobile) sendpersonalMessage(updateMsg, ownerMobile, config.username, config.password);
-      }
-      if (data.project) {
-        sendToProjectWhatsAppGroup(data.project, updateMsg);
-        sendToProjectTelegramGroup(data.project, updateMsg);
+      if (!skipAllNotifications) {
+        const config = getMASConfig();
+        const client = data.clientName || '-';
+        const project = data.project || '-';
+
+        let updateMsg;
+        if (isVendor) {
+          updateMsg = `📝 *Vendor Task Updated*\n\n` +
+                      `*Task:* ${escapeMarkdown(data.title || data.task)}\n` +
+                      `*Owner:* ${escapeMarkdown(owner)}\n` +
+                      `*Vendor:* ${escapeMarkdown(data.vendor || '-')}\n` +
+                      `*Project:* ${escapeMarkdown(project)}\n` +
+                      `*Client:* ${escapeMarkdown(client)}\n` +
+                      `*Status:* ${data.status}\n` +
+                      `*Remarks:* ${escapeMarkdown(data.lastUpdateRemarks || '-')}\n` +
+                      `*Updated At:* ${timestamp}`;
+        } else {
+          updateMsg = `📝 *Task Updated*\n\n` +
+                      `*Task:* ${escapeMarkdown(data.title || data.task)}\n` +
+                      `*Owner:* ${escapeMarkdown(owner)}\n` +
+                      `*Assignees:* ${escapeMarkdown(data.assignees || '-')}\n` +
+                      `*Project:* ${escapeMarkdown(project)}\n` +
+                      `*Client:* ${escapeMarkdown(client)}\n` +
+                      `*Status:* ${data.status}\n` +
+                      `*Remarks:* ${escapeMarkdown(data.lastUpdateRemarks || '-')}\n` +
+                      `*Updated At:* ${timestamp}`;
+        }
+        
+        // Send to Owner
+        if (data.owner) {
+          const ownerMobile = getUserMobile(data.owner);
+          if (ownerMobile) sendpersonalMessage(updateMsg, ownerMobile, config.username, config.password);
+        }
+        // Send to Project Groups
+        if (data.project) {
+          sendToProjectWhatsAppGroup(data.project, updateMsg);
+          sendToProjectTelegramGroup(data.project, updateMsg);
+        }
       }
     } catch (e) { Logger.log("Update Notification Error: " + e.message); }
   }

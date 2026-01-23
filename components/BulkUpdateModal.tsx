@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
-import { Task, User, Vendor } from '../types';
+import { Task, User, Vendor, Category } from '../types';
 import { SearchableSelect } from './SearchableSelect';
 
 interface BulkUpdateModalProps {
@@ -11,8 +11,9 @@ interface BulkUpdateModalProps {
   onUpdate: (updates: Partial<Task>) => void;
   users: User[];
   vendors?: Vendor[];
+  categories?: Category[];
   isVendorView?: boolean;
-  mode: 'status' | 'priority' | 'assignee';
+  mode: 'status' | 'priority' | 'assignee' | 'category';
 }
 
 export const BulkUpdateModal: React.FC<BulkUpdateModalProps> = ({ 
@@ -22,13 +23,15 @@ export const BulkUpdateModal: React.FC<BulkUpdateModalProps> = ({
   onUpdate, 
   users, 
   vendors = [],
+  categories = [],
   isVendorView = false,
   mode
 }) => {
-  const [formData, setFormData] = useState<{status: string; priority: string; remarks: string}>({
+  const [formData, setFormData] = useState<{status: string; priority: string; remarks: string; category: string}>({
     status: '',
     priority: '',
-    remarks: ''
+    remarks: '',
+    category: ''
   });
   const [reassignSelection, setReassignSelection] = useState<string | string[]>(isVendorView ? '' : []);
   const [error, setError] = useState('');
@@ -36,7 +39,7 @@ export const BulkUpdateModal: React.FC<BulkUpdateModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-        setFormData({ status: '', priority: '', remarks: '' });
+        setFormData({ status: '', priority: '', remarks: '', category: '' });
         setReassignSelection(isVendorView ? '' : []);
         setError('');
         setIsConfirming(false);
@@ -57,6 +60,7 @@ export const BulkUpdateModal: React.FC<BulkUpdateModalProps> = ({
     let hasValidInput = false;
     if (mode === 'status' && formData.status) hasValidInput = true;
     if (mode === 'priority' && formData.priority) hasValidInput = true;
+    if (mode === 'category' && formData.category) hasValidInput = true;
     if (mode === 'assignee') {
         const selCount = Array.isArray(reassignSelection) ? reassignSelection.length : (reassignSelection ? 1 : 0);
         if (selCount > 0) hasValidInput = true;
@@ -85,6 +89,10 @@ export const BulkUpdateModal: React.FC<BulkUpdateModalProps> = ({
         updates.priority = formData.priority;
         updates.lastUpdateRemarks = `Bulk Priority change to ${formData.priority}`;
     }
+    if (mode === 'category' && formData.category) {
+        updates.category = formData.category;
+        updates.lastUpdateRemarks = `Bulk Category change to ${formData.category}`;
+    }
     if (mode === 'assignee') {
         const val = Array.isArray(reassignSelection) ? reassignSelection.join(', ') : reassignSelection;
         if (val) {
@@ -100,11 +108,13 @@ export const BulkUpdateModal: React.FC<BulkUpdateModalProps> = ({
 
   const userOptions = users.filter(u => u.isActive).map(u => ({ value: u.name, label: u.name }));
   const vendorOptions = vendors.map(v => ({ value: v.name, label: v.name }));
+  const categoryOptions = categories.map(c => ({ value: c.name, label: c.name }));
 
   const getTitle = () => {
     switch(mode) {
         case 'status': return 'Bulk Status Update';
         case 'priority': return 'Bulk Priority Update';
+        case 'category': return 'Bulk Category Update';
         case 'assignee': return isVendorView ? 'Bulk Vendor Update' : 'Bulk Assignee Update';
     }
   };
@@ -163,6 +173,18 @@ export const BulkUpdateModal: React.FC<BulkUpdateModalProps> = ({
                           <option value="Medium">Medium</option>
                           <option value="Low">Low</option>
                       </select>
+                  </div>
+              )}
+
+              {mode === 'category' && (
+                  <div className="space-y-1">
+                      <SearchableSelect 
+                        label="New Category"
+                        options={categoryOptions}
+                        value={formData.category}
+                        onChange={(val) => setFormData(prev => ({...prev, category: val}))}
+                        placeholder="Select Category..."
+                      />
                   </div>
               )}
 

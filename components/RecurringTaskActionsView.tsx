@@ -142,8 +142,8 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
     if (onClearDashboardFilter) onClearDashboardFilter();
   };
 
-  const thClass = "px-4 py-3 text-[10px] font-black text-white uppercase tracking-widest border-r border-blue-500 last:border-r-0 cursor-pointer hover:bg-blue-700 transition-colors select-none";
-  const tdClass = "px-4 py-3 text-xs text-black border-r border-blue-50 last:border-r-0 align-top";
+  const thClass = "px-4 py-3 text-[10px] font-black text-white uppercase tracking-widest border-r border-blue-500 last:border-r-0 cursor-pointer hover:bg-blue-700 transition-colors select-none whitespace-normal";
+  const tdClass = "px-4 py-3 text-xs text-black border-r border-blue-50 last:border-r-0 align-top whitespace-normal break-words";
 
   const startEntry = sortedActions.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
   const endEntry = Math.min(currentPage * itemsPerPage, sortedActions.length);
@@ -189,13 +189,13 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
              <div key={action.id} className="bg-white border-2 border-blue-200 rounded-xl p-4 shadow-sm space-y-3 relative">
                 <div className="flex justify-between items-start">
                     <div className="space-y-1 max-w-[70%]">
-                        <h4 className="text-sm font-black text-blue-900 leading-tight">{action.taskTitle}</h4>
-                        <div className="flex items-center gap-1.5 text-[10px] text-blue-600 font-bold uppercase">
+                        <h4 className="text-sm font-black text-blue-900 leading-tight whitespace-normal break-words">{action.taskTitle}</h4>
+                        <div className="flex items-center gap-1.5 text-[10px] text-blue-600 font-bold uppercase whitespace-normal break-words">
                             <Calendar size={12} />
                             {action.updatedOn}
                         </div>
                     </div>
-                    <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border border-blue-100 ${getStatusColor(action.status)}`}>
+                    <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border border-blue-100 whitespace-normal break-words ${getStatusColor(action.status)}`}>
                         {action.status}
                     </span>
                 </div>
@@ -203,20 +203,20 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
                 <div className="grid grid-cols-2 gap-2 py-2 border-y border-blue-50">
                     <div className="space-y-0.5">
                         <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Assignee</span>
-                        <div className="flex items-center gap-1 text-[10px] text-blue-900 font-bold">
+                        <div className="flex items-center gap-1 text-[10px] text-blue-900 font-bold whitespace-normal break-words">
                             <User size={10} /> {action.assignee}
                         </div>
                     </div>
                     <div className="space-y-0.5">
                         <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Category</span>
-                        <div className="flex items-center gap-1 text-[10px] text-blue-900 font-bold">
+                        <div className="flex items-center gap-1 text-[10px] text-blue-900 font-bold whitespace-normal break-words">
                             <Tag size={10} /> {action.category}
                         </div>
                     </div>
                 </div>
 
                 <div className="bg-blue-50/50 p-2 rounded-lg border border-blue-100">
-                    <p className="text-[11px] text-blue-800 italic leading-relaxed">"{action.remarks}"</p>
+                    <p className="text-[11px] text-blue-800 italic leading-relaxed whitespace-normal break-words">"{action.remarks}"</p>
                 </div>
 
                 <button onClick={() => onDeleteAction(action.id, action.taskId)} className="absolute bottom-4 right-4 p-2 text-red-500 hover:bg-red-50 rounded-lg">
@@ -232,14 +232,14 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-blue-600">
-                <th className="px-4 py-3 text-[10px] font-black text-white uppercase tracking-widest border-r border-blue-500 w-12 text-center">S.No.</th>
+                <th className="px-4 py-3 text-[10px] font-black text-white uppercase tracking-widest border-r border-blue-500 w-12 text-center whitespace-normal">S.No.</th>
                 <th className={thClass} onClick={() => requestSort('taskTitle')}><div className="flex items-center">Task {getSortIcon('taskTitle')}</div></th>
                 <th className={thClass} onClick={() => requestSort('category')}><div className="flex items-center">Category {getSortIcon('category')}</div></th>
                 <th className={thClass} onClick={() => requestSort('assignee')}><div className="flex items-center">Assignee {getSortIcon('assignee')}</div></th>
                 <th className={thClass} onClick={() => requestSort('status')}><div className="flex items-center">Status {getSortIcon('status')}</div></th>
                 <th className={thClass} onClick={() => requestSort('updatedOn')}><div className="flex items-center">Date {getSortIcon('updatedOn')}</div></th>
                 <th className={thClass} onClick={() => requestSort('remarks')}><div className="flex items-center">Remarks {getSortIcon('remarks')}</div></th>
-                <th className="px-4 py-3 text-[10px] font-black text-white uppercase tracking-widest text-center">Actions</th>
+                <th className="px-4 py-3 text-[10px] font-black text-white uppercase tracking-widest text-center whitespace-normal">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-blue-50">
@@ -249,8 +249,8 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
                   <td className={`${tdClass} font-bold`}>{action.taskTitle}</td>
                   <td className={tdClass}>{action.category}</td>
                   <td className={tdClass}>{action.assignee}</td>
-                  <td className={tdClass}><span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tighter border border-blue-100 ${getStatusColor(action.status)}`}>{action.status}</span></td>
-                  <td className={`${tdClass} whitespace-nowrap font-bold`}>{formatDate(action.updatedOn)}</td>
+                  <td className={tdClass}><span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tighter border border-blue-100 whitespace-normal break-words ${getStatusColor(action.status)}`}>{action.status}</span></td>
+                  <td className={`${tdClass} font-bold`}>{formatDate(action.updatedOn)}</td>
                   <td className={`${tdClass} italic text-blue-900`}>"{action.remarks}"</td>
                   <td className={`${tdClass} text-center`}>
                     <button onClick={() => onDeleteAction(action.id, action.taskId)} className="p-1.5 text-red-500 hover:bg-red-50 border-2 border-transparent hover:border-red-600 rounded-md transition-all"><Trash2 size={16} /></button>

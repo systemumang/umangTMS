@@ -212,8 +212,8 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
   const getFilterClass = (isActive: boolean) => 
     `w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 transition-colors ${isActive ? 'bg-blue-50 border-blue-500 text-blue-700 font-bold' : 'bg-white border-blue-300 text-black'}`;
 
-  const thClass = "px-6 py-4 text-xs font-bold text-white uppercase tracking-widest border-r border-blue-500 last:border-r-0 cursor-pointer hover:bg-blue-700 transition-colors select-none";
-  const tdClass = "px-6 py-4 text-sm text-gray-900 border-r border-blue-100 last:border-r-0";
+  const thClass = "px-6 py-4 text-xs font-bold text-white uppercase tracking-widest border-r border-blue-500 last:border-r-0 cursor-pointer hover:bg-blue-700 transition-colors select-none whitespace-normal";
+  const tdClass = "px-6 py-4 text-sm text-gray-900 border-r border-blue-100 last:border-r-0 whitespace-normal break-words";
 
   const startEntry = sortedLogs.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
   const endEntry = Math.min(currentPage * itemsPerPage, sortedLogs.length);
@@ -293,13 +293,13 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
             <div key={log.id} className="bg-white border-2 border-blue-200 rounded-xl p-4 shadow-sm space-y-3 relative overflow-hidden">
                 <div className="flex justify-between items-start">
                     <div className="space-y-1 max-w-[70%]">
-                        <h4 className="text-sm font-black text-blue-900 leading-tight">{log.task}</h4>
-                        <div className="flex items-center gap-1.5 text-[10px] text-blue-600 font-bold uppercase">
+                        <h4 className="text-sm font-black text-blue-900 leading-tight whitespace-normal break-words">{log.task}</h4>
+                        <div className="flex items-center gap-1.5 text-[10px] text-blue-600 font-bold uppercase whitespace-normal break-words">
                             <Clock size={12} />
                             {formatToIndianDate(log.updateDate)}
                         </div>
                     </div>
-                    <span className="px-2 py-0.5 bg-blue-600 text-white rounded text-[8px] font-black uppercase tracking-widest shadow-sm">
+                    <span className="px-2 py-0.5 bg-blue-600 text-white rounded text-[8px] font-black uppercase tracking-widest shadow-sm whitespace-normal break-words">
                         {log.status}
                     </span>
                 </div>
@@ -307,34 +307,34 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
                 <div className="grid grid-cols-2 gap-2 py-2 border-y border-blue-50">
                     <div className="space-y-0.5">
                         <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Owner</span>
-                        <div className="flex items-center gap-1 text-[10px] text-blue-900 font-bold">
+                        <div className="flex items-center gap-1 text-[10px] text-blue-900 font-bold whitespace-normal break-words">
                             <User size={10} /> {log.owner}
                         </div>
                     </div>
                     {/* Always show Project and Client Name */}
                     <div className="space-y-0.5">
                         <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Project</span>
-                        <div className="flex items-center gap-1 text-[10px] text-blue-900 font-bold">
+                        <div className="flex items-center gap-1 text-[10px] text-blue-900 font-bold whitespace-normal break-words">
                             <Briefcase size={10} /> {String(log.project || '').split(' (')[0]}
                         </div>
                     </div>
                     <div className="space-y-0.5">
                         <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Client</span>
-                        <div className="flex items-center gap-1 text-[10px] text-blue-900 font-bold">
+                        <div className="flex items-center gap-1 text-[10px] text-blue-900 font-bold whitespace-normal break-words">
                             <Building2 size={10} /> {log.clientName || '-'}
                         </div>
                     </div>
                     {isVendorView ? (
                          <div className="space-y-0.5">
                             <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Vendor</span>
-                            <div className="flex items-center gap-1 text-[10px] text-blue-900 font-bold">
+                            <div className="flex items-center gap-1 text-[10px] text-blue-900 font-bold whitespace-normal break-words">
                                 <Building2 size={10} /> {log.vendor}
                             </div>
                         </div>
                     ) : (
                         <div className="space-y-0.5">
                             <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Assignee</span>
-                            <div className="flex items-center gap-1 text-[10px] text-blue-900 font-bold">
+                            <div className="flex items-center gap-1 text-[10px] text-blue-900 font-bold whitespace-normal break-words">
                                 <User size={10} /> {log.assignees}
                             </div>
                         </div>
@@ -342,7 +342,7 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
                 </div>
 
                 <div className="bg-blue-50/50 p-2 rounded-lg border border-blue-100">
-                    <p className="text-[11px] text-blue-800 italic leading-relaxed">"{log.remarks}"</p>
+                    <p className="text-[11px] text-blue-800 italic leading-relaxed whitespace-normal break-words">"{log.remarks}"</p>
                 </div>
 
                 <button onClick={() => onDeleteLog(log.id, log.taskId)} className="absolute bottom-4 right-4 p-2 text-red-500 hover:bg-red-50 rounded-lg">
@@ -371,20 +371,20 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
                 ) : (
                     <th className={thClass} onClick={() => requestSort('assignees')}><div className="flex items-center">Assignee {getSortIcon('assignees')}</div></th>
                 )}
-                <th className="px-6 py-4 text-xs font-black text-white uppercase tracking-widest text-center">Actions</th>
+                <th className="px-6 py-4 text-xs font-black text-white uppercase tracking-widest text-center whitespace-normal">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-blue-100">
               {paginatedLogs.map((log) => (
                 <tr key={log.id} className="hover:bg-blue-50/50 transition-colors">
-                  <td className={`${tdClass} font-bold max-w-[200px] truncate`} title={log.task}>{log.task}</td>
-                  <td className={`${tdClass} whitespace-nowrap`}>{formatToIndianDate(log.taskDate)}</td>
-                  <td className={`${tdClass} whitespace-nowrap`}>{formatToIndianDate(log.updateDate)}</td>
-                  <td className={tdClass}><span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-[10px] font-black uppercase tracking-tighter whitespace-nowrap border border-blue-200">{log.status}</span></td>
-                  <td className={`${tdClass} max-w-[200px] truncate italic text-blue-800`} title={log.remarks}>{log.remarks}</td>
+                  <td className={`${tdClass} font-bold`} title={log.task}>{log.task}</td>
+                  <td className={`${tdClass}`}>{formatToIndianDate(log.taskDate)}</td>
+                  <td className={`${tdClass}`}>{formatToIndianDate(log.updateDate)}</td>
+                  <td className={tdClass}><span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-[10px] font-black uppercase tracking-tighter whitespace-normal border border-blue-200">{log.status}</span></td>
+                  <td className={`${tdClass} italic text-blue-800`} title={log.remarks}>{log.remarks}</td>
                   <td className={`${tdClass} font-bold text-xs`}>{log.owner}</td>
-                  <td className={`${tdClass} font-bold text-xs max-w-[120px] truncate`}>{String(log.project || '').split(' (')[0]}</td>
-                  <td className={`${tdClass} font-bold text-xs max-w-[120px] truncate`}>{log.clientName || '-'}</td>
+                  <td className={`${tdClass} font-bold text-xs`} title={String(log.project || '').split(' (')[0]}>{String(log.project || '').split(' (')[0]}</td>
+                  <td className={`${tdClass} font-bold text-xs`} title={log.clientName}>{log.clientName || '-'}</td>
                   {isVendorView ? (
                     <td className={`${tdClass} font-bold text-xs`}>{log.vendor}</td>
                   ) : (
