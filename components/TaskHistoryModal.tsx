@@ -43,7 +43,7 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
 
     if (isVendorTask) {
         tableColumn.push("Vendor");
-        tableColumn.push("Minit");
+        tableColumn.push("Minutes");
         tableRows = taskLogs.map(log => [
             formatToIndianDate(log.taskDate),
             formatToIndianDate(log.updateDate),
@@ -57,7 +57,7 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
         ]);
     } else {
         tableColumn.push("Assignees");
-        tableColumn.push("Minit");
+        tableColumn.push("Minutes");
         tableRows = taskLogs.map(log => [
             formatToIndianDate(log.taskDate),
             formatToIndianDate(log.updateDate),
@@ -119,7 +119,7 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
                     <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-blue-500">Update Date</th>
                     <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-blue-500">Status</th>
                     <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-blue-500">Remarks</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-blue-500">Owner(s)</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-blue-50">Owner(s)</th>
                     <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-blue-50">Project</th>
                     <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-blue-50">Client</th>
                     {isVendorTask ? (
@@ -127,7 +127,7 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
                     ) : (
                         <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-blue-50">Assignee(s)</th>
                     )}
-                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest">Minit</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest">Minutes</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-blue-50">

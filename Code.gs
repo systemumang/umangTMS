@@ -348,7 +348,7 @@ function handleUpdateTask(data) {
                       `*Project:* ${escapeMarkdown(project)}\n` +
                       `*Client:* ${escapeMarkdown(client)}\n` +
                       `*Status:* ${data.status}\n` +
-                      `*Minit Logged:* ${newHoursLogged}\n` +
+                      `*Minutes Logged:* ${newHoursLogged}\n` +
                       `*Remarks:* ${escapeMarkdown(data.lastUpdateRemarks || '-')}\n` +
                       `*Updated At:* ${timestamp}`;
         } else {
@@ -359,7 +359,7 @@ function handleUpdateTask(data) {
                       `*Project:* ${escapeMarkdown(project)}\n` +
                       `*Client:* ${escapeMarkdown(client)}\n` +
                       `*Status:* ${data.status}\n` +
-                      `*Minit Logged:* ${newHoursLogged}\n` +
+                      `*Minutes Logged:* ${newHoursLogged}\n` +
                       `*Remarks:* ${escapeMarkdown(data.lastUpdateRemarks || '-')}\n` +
                       `*Updated At:* ${timestamp}`;
         }

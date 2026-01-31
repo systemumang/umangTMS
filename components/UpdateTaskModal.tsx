@@ -145,7 +145,7 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
                     </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-900 block mb-1">Minit Logged</label>
+                  <label className="text-sm font-medium text-gray-900 block mb-1">Minutes Logged</label>
                   <div className="relative">
                     <input 
                       type="number" 

@@ -162,7 +162,7 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
   }, [sortedLogs, currentPage]);
 
   const handleExportExcel = () => {
-    const headers = ['Task', 'Task Date', 'Update Date', 'Status', 'Minit', 'Remarks', 'Owner', 'Project', 'Client'];
+    const headers = ['Task', 'Task Date', 'Update Date', 'Status', 'Minutes', 'Remarks', 'Owner', 'Project', 'Client'];
     if (isVendorView) headers.push('Vendor');
     else headers.push('Assignee');
 
@@ -358,7 +358,7 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
                 <th className={thClass} onClick={() => requestSort('taskDate')}><div className="flex items-center">Task Date {getSortIcon('taskDate')}</div></th>
                 <th className={thClass} onClick={() => requestSort('updateDate')}><div className="flex items-center">Update Date {getSortIcon('updateDate')}</div></th>
                 <th className={thClass} onClick={() => requestSort('status')}><div className="flex items-center">Status {getSortIcon('status')}</div></th>
-                <th className={thClass} onClick={() => requestSort('hours')}><div className="flex items-center">Minit {getSortIcon('hours')}</div></th>
+                <th className={thClass} onClick={() => requestSort('hours')}><div className="flex items-center">Minutes {getSortIcon('hours')}</div></th>
                 <th className={thClass} onClick={() => requestSort('remarks')}><div className="flex items-center">Remarks {getSortIcon('remarks')}</div></th>
                 <th className={thClass} onClick={() => requestSort('owner')}><div className="flex items-center">Owner {getSortIcon('owner')}</div></th>
                 <th className={thClass} onClick={() => requestSort('project')}><div className="flex items-center">Project {getSortIcon('project')}</div></th>

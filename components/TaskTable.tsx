@@ -122,7 +122,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                 <th className={thClass} onClick={() => requestSort('lastUpdateRemarks')}><div className="flex items-center">Remark {getSortIcon('lastUpdateRemarks')}</div></th>
                 <th className={thClass} onClick={() => requestSort('priority')}><div className="flex items-center">Priority {getSortIcon('priority')}</div></th>
                 <th className={thClass} onClick={() => requestSort('dueDate')}><div className="flex items-center">Due Date {getSortIcon('dueDate')}</div></th>
-                <th className={thClass} onClick={() => requestSort('hours')}><div className="flex items-center">Minit {getSortIcon('hours')}</div></th>
+                <th className={thClass} onClick={() => requestSort('hours')}><div className="flex items-center">Minutes {getSortIcon('hours')}</div></th>
                 <th className="px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider border-r border-blue-600 last:border-r-0 text-center">Actions</th>
               </tr>
             </thead>
@@ -239,7 +239,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                         </div>
                     </div>
                     <div className="space-y-1">
-                        <span className="text-[10px] uppercase font-bold text-blue-900/60">Total Minit</span>
+                        <span className="text-[10px] uppercase font-bold text-blue-900/60">Total Minutes</span>
                         <div className="flex items-center gap-1.5 text-xs text-indigo-700 font-black uppercase whitespace-normal break-words"><Clock size={12} /> {task.hours || 0} min</div>
                     </div>
 
