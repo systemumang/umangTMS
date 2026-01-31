@@ -163,6 +163,7 @@ function handleAddTask(data) {
     if (hLower === 'project') return data.project || "";
     if (hLower === 'duedate') return data.dueDate || "";
     if (hLower === 'lastupdateremarks') return data.remarks || "";
+    if (hLower === 'hours') return data.hours || 0;
     if (normalizedData[hLower] !== undefined) return normalizedData[hLower];
     return "";
   });
@@ -253,9 +254,8 @@ function handleUpdateTask(data) {
 
   headers.forEach((h, i) => {
     const hLower = h.toString().trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (hLower === 'id' || hLower === 'date') return;
+    if (hLower === 'id' || hLower === 'date' || hLower === 'hours') return; // Skip hours in initial direct header-match loop
     
-    // Respect skipTimestamp flag to prevent updating LastUpdateDate
     if (hLower === 'lastupdatedate') { 
         if (!normalizedData.skiptimestamp) {
             sheet.getRange(rowIndex, i + 1).setValue(new Date()); 
@@ -263,7 +263,6 @@ function handleUpdateTask(data) {
         return; 
     }
     
-    // Respect skipTimestamp flag for LastUpdateRemarks
     if (hLower === 'lastupdateremarks' && data.lastUpdateRemarks !== undefined) { 
         if (!normalizedData.skiptimestamp) {
             sheet.getRange(rowIndex, i + 1).setValue(data.lastUpdateRemarks); 
@@ -276,25 +275,51 @@ function handleUpdateTask(data) {
     if (normalizedData[hLower] !== undefined) { sheet.getRange(rowIndex, i + 1).setValue(normalizedData[hLower]); }
   });
   
+  // Hours logic
+  let newHoursLogged = Number(data.hours || 0);
+
   if (!data.skipLog) {
     const logSheet = SS.getSheetByName(logSheetName);
     const logHeaders = logSheet.getRange(1, 1, 1, logSheet.getLastColumn()).getValues()[0];
     const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy hh:mm a");
+    
     const logRow = logHeaders.map(h => {
       const hLower = h.toString().trim().toLowerCase().replace(/[^a-z0-9]/g, '');
       if (hLower === 'id') return new Date().getTime();
       if (hLower === 'taskid') return data.id;
       if (hLower === 'updatedate') return timestamp;
       if (hLower === 'remarks') return data.lastUpdateRemarks || data.remarks || "-";
-      
-      // Explicit mapping for columns not directly matched by normalized key
       if (hLower === 'tasktitle') return data.title || data.task || "";
       if (hLower === 'taskdate') return data.date || "";
+      if (hLower === 'hours') return newHoursLogged;
 
       if (normalizedData[hLower] !== undefined) return normalizedData[hLower];
       return "";
     });
     logSheet.appendRow(logRow);
+
+    // Summing hours from log back to MainTasks
+    try {
+        const logData = logSheet.getDataRange().getValues();
+        const logH = logData[0].map(h => h.toString().toLowerCase().replace(/[^a-z0-9]/g, ''));
+        const taskIdCol = logH.indexOf('taskid');
+        const hoursCol = logH.indexOf('hours');
+
+        if (taskIdCol !== -1 && hoursCol !== -1) {
+            let totalSum = 0;
+            for (let r = 1; r < logData.length; r++) {
+                if (logData[r][taskIdCol] == data.id) {
+                    totalSum += Number(logData[r][hoursCol] || 0);
+                }
+            }
+            
+            const mainH = headers.map(h => h.toString().toLowerCase().replace(/[^a-z0-9]/g, ''));
+            const mainHoursColIndex = mainH.indexOf('hours');
+            if (mainHoursColIndex !== -1) {
+                sheet.getRange(rowIndex, mainHoursColIndex + 1).setValue(totalSum);
+            }
+        }
+    } catch (e) { Logger.log("Hours Sum Calculation Error: " + e.message); }
 
     // Update Notification
     try {
@@ -303,7 +328,6 @@ function handleUpdateTask(data) {
       const assignees = (data.assignees || '').toString().trim();
       const vendor = (data.vendor || '').toString().trim();
       
-      // Check for self-assignment + Admin role
       const isSelfAssignment = isVendor 
         ? (vendor === owner.trim())
         : (assignees === owner.trim());
@@ -324,6 +348,7 @@ function handleUpdateTask(data) {
                       `*Project:* ${escapeMarkdown(project)}\n` +
                       `*Client:* ${escapeMarkdown(client)}\n` +
                       `*Status:* ${data.status}\n` +
+                      `*Minit Logged:* ${newHoursLogged}\n` +
                       `*Remarks:* ${escapeMarkdown(data.lastUpdateRemarks || '-')}\n` +
                       `*Updated At:* ${timestamp}`;
         } else {
@@ -334,16 +359,15 @@ function handleUpdateTask(data) {
                       `*Project:* ${escapeMarkdown(project)}\n` +
                       `*Client:* ${escapeMarkdown(client)}\n` +
                       `*Status:* ${data.status}\n` +
+                      `*Minit Logged:* ${newHoursLogged}\n` +
                       `*Remarks:* ${escapeMarkdown(data.lastUpdateRemarks || '-')}\n` +
                       `*Updated At:* ${timestamp}`;
         }
         
-        // Send to Owner
         if (data.owner) {
           const ownerMobile = getUserMobile(data.owner);
           if (ownerMobile) sendpersonalMessage(updateMsg, ownerMobile, config.username, config.password);
         }
-        // Send to Project Groups
         if (data.project) {
           sendToProjectWhatsAppGroup(data.project, updateMsg);
           sendToProjectTelegramGroup(data.project, updateMsg);

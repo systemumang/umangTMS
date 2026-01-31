@@ -313,6 +313,7 @@ export default function App() {
         finalData.category = data.category || '';
         finalData.vendor = data.vendor || '';
         finalData.vendorCategory = data.vendorCategory || '';
+        finalData.hours = Number(data.hours || 0); // Include hours
         
         const projectValue = String(data.project || '');
         const projMatch = projectValue.match(/(.*)\s\((.*)\)/);
@@ -412,6 +413,7 @@ export default function App() {
                 category: item.category ? String(item.category) : '',
                 vendorCategory: item.vendorCategory || item.vendorcategory || '',
                 clientName: rawClient,
+                hours: Number(item.hours || 0), // Normalize hours
                 project: (rawProject && rawClient && !rawProject.includes('(')) 
                     ? `${rawProject} (${rawClient})` 
                     : rawProject || ''
@@ -438,6 +440,7 @@ export default function App() {
                 updateDate: formatToIndianDateTime(l.updateDate || l.UpdateDate || l['update Date'] || l['Update Date'] || ''),
                 clientName: rawClient,
                 assignees: String(l.assignees || l.Assignees || ''),
+                hours: Number(l.hours || 0), // Normalize hours in log
                 project: (rawProject && rawClient && !rawProject.includes('(')) 
                     ? `${rawProject} (${rawClient})` 
                     : rawProject || '',
@@ -519,6 +522,7 @@ export default function App() {
       lastUpdateRemarks: '',
       priority: taskData.priority || 'Medium',
       dueDate: formatToIndianDate(taskData.dueDate),
+      hours: 0,
     };
     setTasks(prev => [tempTask, ...prev]);
     setSyncingIds(prev => new Set(prev).add(tempId));
@@ -539,6 +543,7 @@ export default function App() {
   const handleUpdateTaskOptimistic = async (task: Task) => {
     const now = new Date();
     const timestamp = now.toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', '');
+    // Note: Cumulative hours are calculated by server, UI adds newly logged hours to local optimistic state
     setTasks(prev => prev.map(t => t.id === task.id ? { ...task, lastUpdateDate: timestamp } : t)); 
     setSyncingIds(prev => new Set(prev).add(task.id));
     try {
@@ -656,7 +661,7 @@ export default function App() {
       const filterRow = activeFilters.length > 0 ? `Filters Applied: ${activeFilters.join(' | ')}` : "No Filters Applied";
       const generatedRow = `Generated on: ${new Date().toLocaleString('en-GB')}`;
 
-      const headers = ['Date', 'Task', 'Notes', 'Assignees', 'Owner', 'Project', 'Client Name', 'Vendor', 'Vendor Category', 'Status', 'Last Update Date', 'Last Update Remark', 'Priority', 'Due Date'];
+      const headers = ['Date', 'Task', 'Notes', 'Assignees', 'Owner', 'Project', 'Client Name', 'Vendor', 'Vendor Category', 'Status', 'Last Update Date', 'Last Update Remark', 'Priority', 'Due Date', 'Hours'];
       
       const csvContent = [
         `"${filterRow}"`,
@@ -681,7 +686,8 @@ export default function App() {
             `"${lastDate}"`, 
             `"${lastRemark.replace(/"/g, '""')}"`, 
             `"${task.priority}"`, 
-            `"${task.dueDate}"`
+            `"${task.dueDate}"`,
+            `"${task.hours || 0}"`
           ].join(',');
         })
       ].join('\n');

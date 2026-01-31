@@ -83,7 +83,6 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
   const uniqueOwners = useMemo(() => Array.from(new Set(logs.flatMap(l => String(l.owner || '').split(',').map(s => s.trim()).filter(Boolean)))), [logs]);
   const uniqueAssignees = useMemo(() => Array.from(new Set(logs.flatMap(l => String(l.assignees || '').split(',').map(s => s.trim()).filter(Boolean)))), [logs]);
   
-  // Projects should consider client name in filter options for consistency with tasks
   const uniqueProjects = useMemo(() => Array.from(new Set(logs.map(l => {
     const projName = String(l.project || '').trim();
     const clientName = String(l.clientName || '').trim();
@@ -116,10 +115,8 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
       if (filterStatus !== 'All Status' && log.status !== filterStatus) return false;
       if (filterOwner !== 'All Owners' && !String(log.owner || '').includes(filterOwner)) return false;
       
-      // Project filter is now always available, applies to both
       if (filterProject !== 'All Projects' && log.project !== filterProject) return false;
       
-      // Vendor/Assignee filter remains specific
       if (isVendorView) {
           if (filterVendor !== 'All Vendors' && log.vendor !== filterVendor) return false;
       } else {
@@ -136,7 +133,6 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
         let aValue = a[sortConfig.key] ?? '';
         let bValue = b[sortConfig.key] ?? '';
         
-        // Handle date sorting properly
         if (sortConfig.key === 'updateDate' || sortConfig.key === 'taskDate') {
             const isoA = parseToISO(String(aValue));
             const isoB = parseToISO(String(bValue));
@@ -150,7 +146,6 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
         return 0;
       });
     } else {
-        // Default sort by update date descending
         sortableItems.sort((a, b) => {
             const isoA = parseToISO(a.updateDate);
             const isoB = parseToISO(b.updateDate);
@@ -167,7 +162,7 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
   }, [sortedLogs, currentPage]);
 
   const handleExportExcel = () => {
-    const headers = ['Task', 'Task Date', 'Update Date', 'Status', 'Remarks', 'Owner', 'Project', 'Client'];
+    const headers = ['Task', 'Task Date', 'Update Date', 'Status', 'Minit', 'Remarks', 'Owner', 'Project', 'Client'];
     if (isVendorView) headers.push('Vendor');
     else headers.push('Assignee');
 
@@ -178,10 +173,11 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
                 `"${String(log.task || '').replace(/"/g, '""')}"`, 
                 formatToIndianDate(log.taskDate), 
                 formatToIndianDate(log.updateDate), 
-                log.status, 
+                log.status,
+                log.hours || 0,
                 `"${String(log.remarks || '').replace(/"/g, '""')}"`, 
                 `"${log.owner}"`,
-                `"${String(log.project || '').split(' (')[0]}"`, // Project name without client
+                `"${String(log.project || '').split(' (')[0]}"`, 
                 `"${log.clientName || ''}"`
             ];
             if (isVendorView) row.push(`"${log.vendor || ''}"`);
@@ -228,7 +224,7 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
         <div className="flex gap-3 w-full md:auto items-center">
             <div className="flex bg-blue-50 p-1 rounded-lg md:hidden border border-blue-200">
                 <button onClick={() => setViewMode('card')} className={`p-1.5 rounded-md transition-all ${viewMode === 'card' ? 'bg-white shadow text-blue-600' : 'text-blue-500'}`}><LayoutGrid size={18} /></button>
-                <button onClick={() => setViewMode('table')} className={`p-1.5 rounded-md transition-all ${viewMode === 'table' ? 'bg-white shadow text-blue-600' : 'text-blue-500'}`}><LayoutList size={18} /></button>
+                <button onClick={() => setViewMode('table')} className={`p-1.5 rounded-md transition-all ${viewMode === 'table' ? 'bg-white shadow text-indigo-600' : 'text-blue-500'}`}><LayoutList size={18} /></button>
             </div>
             <button onClick={handleExportExcel} className="flex-1 md:flex-none flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white border-2 border-blue-700 rounded-md hover:bg-blue-700 text-xs font-black uppercase tracking-widest shadow-sm transition-colors">
               <FileText size={16} />
@@ -266,7 +262,6 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
               <div className="space-y-1 text-blue-600 font-bold uppercase tracking-wider">
                 <SearchableSelect label={<span className="text-[10px] font-black uppercase tracking-widest">Owner</span>} options={ownerOptions} value={filterOwner} onChange={setFilterOwner} className="text-sm" />
               </div>
-              {/* Project filter is now always available */}
               <div className="space-y-1 text-blue-600 font-bold uppercase tracking-wider">
                 <SearchableSelect label={<span className="text-[10px] font-black uppercase tracking-widest">Project</span>} options={projectOptions} value={filterProject} onChange={setFilterProject} className="text-sm" />
               </div>
@@ -287,7 +282,6 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
         </div>
       </div>
 
-      {/* Mobile Card View */}
       <div className={`space-y-4 md:hidden ${viewMode === 'card' ? 'block' : 'hidden'}`}>
         {paginatedLogs.map((log) => (
             <div key={log.id} className="bg-white border-2 border-blue-200 rounded-xl p-4 shadow-sm space-y-3 relative overflow-hidden">
@@ -299,9 +293,12 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
                             {formatToIndianDate(log.updateDate)}
                         </div>
                     </div>
-                    <span className="px-2 py-0.5 bg-blue-600 text-white rounded text-[8px] font-black uppercase tracking-widest shadow-sm whitespace-normal break-words">
-                        {log.status}
-                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                        <span className="px-2 py-0.5 bg-blue-600 text-white rounded text-[8px] font-black uppercase tracking-widest shadow-sm whitespace-normal break-words">
+                            {log.status}
+                        </span>
+                        <span className="text-[10px] font-black text-indigo-600">{log.hours || 0} min</span>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 py-2 border-y border-blue-50">
@@ -311,7 +308,6 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
                             <User size={10} /> {log.owner}
                         </div>
                     </div>
-                    {/* Always show Project and Client Name */}
                     <div className="space-y-0.5">
                         <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Project</span>
                         <div className="flex items-center gap-1 text-[10px] text-blue-900 font-bold whitespace-normal break-words">
@@ -362,6 +358,7 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
                 <th className={thClass} onClick={() => requestSort('taskDate')}><div className="flex items-center">Task Date {getSortIcon('taskDate')}</div></th>
                 <th className={thClass} onClick={() => requestSort('updateDate')}><div className="flex items-center">Update Date {getSortIcon('updateDate')}</div></th>
                 <th className={thClass} onClick={() => requestSort('status')}><div className="flex items-center">Status {getSortIcon('status')}</div></th>
+                <th className={thClass} onClick={() => requestSort('hours')}><div className="flex items-center">Minit {getSortIcon('hours')}</div></th>
                 <th className={thClass} onClick={() => requestSort('remarks')}><div className="flex items-center">Remarks {getSortIcon('remarks')}</div></th>
                 <th className={thClass} onClick={() => requestSort('owner')}><div className="flex items-center">Owner {getSortIcon('owner')}</div></th>
                 <th className={thClass} onClick={() => requestSort('project')}><div className="flex items-center">Project {getSortIcon('project')}</div></th>
@@ -381,6 +378,7 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
                   <td className={`${tdClass}`}>{formatToIndianDate(log.taskDate)}</td>
                   <td className={`${tdClass}`}>{formatToIndianDate(log.updateDate)}</td>
                   <td className={tdClass}><span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-[10px] font-black uppercase tracking-tighter whitespace-normal border border-blue-200">{log.status}</span></td>
+                  <td className={`${tdClass} font-bold text-indigo-600`}>{log.hours || 0}</td>
                   <td className={`${tdClass} italic text-blue-800`} title={log.remarks}>{log.remarks}</td>
                   <td className={`${tdClass} font-bold text-xs`}>{log.owner}</td>
                   <td className={`${tdClass} font-bold text-xs`} title={String(log.project || '').split(' (')[0]}>{String(log.project || '').split(' (')[0]}</td>
@@ -395,7 +393,7 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
                   </td>
                 </tr>
               ))}
-              {paginatedLogs.length === 0 && (<tr><td colSpan={10} className="px-6 py-12 text-center text-blue-300 font-black uppercase">No update logs found.</td></tr>)}
+              {paginatedLogs.length === 0 && (<tr><td colSpan={11} className="px-6 py-12 text-center text-blue-300 font-black uppercase">No update logs found.</td></tr>)}
             </tbody>
           </table>
         </div>

@@ -43,6 +43,7 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
 
     if (isVendorTask) {
         tableColumn.push("Vendor");
+        tableColumn.push("Minit");
         tableRows = taskLogs.map(log => [
             formatToIndianDate(log.taskDate),
             formatToIndianDate(log.updateDate),
@@ -51,10 +52,12 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
             log.owner,
             log.project.split(' (')[0],
             log.clientName || '-',
-            log.vendor || '-'
+            log.vendor || '-',
+            log.hours || 0
         ]);
     } else {
         tableColumn.push("Assignees");
+        tableColumn.push("Minit");
         tableRows = taskLogs.map(log => [
             formatToIndianDate(log.taskDate),
             formatToIndianDate(log.updateDate),
@@ -63,14 +66,15 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
             log.owner,
             log.project.split(' (')[0],
             log.clientName || '-',
-            log.assignees
+            log.assignees,
+            log.hours || 0
         ]);
     }
 
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
-      startY: 45, // Adjusted startY to make space for new header info
+      startY: 45, 
       styles: { fontSize: 8, cellPadding: 3 },
       headStyles: { fillColor: [59, 130, 246] },
     });
@@ -93,9 +97,6 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
                       <Download size={16} />
                    </button>
                 </div>
-                {task.category && <span className="flex items-center gap-1 text-[10px] uppercase font-bold text-black bg-blue-50/50 border border-blue-100 px-2 py-0.5 rounded"><Tag size={12} className="text-blue-500"/> {task.category}</span>}
-                <span className="flex items-center gap-1 text-[10px] uppercase font-bold text-black bg-blue-50/50 border border-blue-100 px-2 py-0.5 rounded"><Briefcase size={12} className="text-blue-500"/> {task.project.split(' (')[0]}</span>
-                {task.clientName && <span className="flex items-center gap-1 text-[10px] uppercase font-bold text-black bg-blue-50/50 border border-blue-100 px-2 py-0.5 rounded"><Building2 size={12} className="text-blue-500"/> {task.clientName}</span>}
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-colors">
@@ -105,35 +106,6 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
 
         {/* Content */}
         <div className="overflow-auto p-4 md:p-6 space-y-6">
-          {/* Summary Card Area */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="bg-gray-50/50 border border-blue-100 p-4 rounded-xl space-y-1">
-                 <span className="text-[10px] font-extrabold uppercase text-blue-400">Current Status</span>
-                 <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 bg-blue-600 text-white rounded-full text-xs font-bold uppercase tracking-wider">{task.status}</span>
-                    <span className="text-xs text-black font-bold flex items-center gap-1"><Clock size={12} className="text-blue-500"/> {formatToIndianDate(task.lastUpdateDate || '')}</span>
-                 </div>
-              </div>
-              <div className="bg-gray-50/50 border border-blue-100 p-4 rounded-xl space-y-1">
-                 <span className="text-[10px] font-extrabold uppercase text-blue-400">Owner & Responsible</span>
-                 <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-1.5 text-xs text-black font-bold uppercase"><User size={12} className="text-blue-500"/> {task.owner}</div>
-                    {isVendorTask ? (
-                        <div className="flex items-center gap-1.5 text-xs text-black font-bold uppercase"><Hammer size={12} className="text-orange-500"/> {task.vendor}</div>
-                    ) : (
-                        <div className="flex items-center gap-1.5 text-xs text-black font-bold uppercase"><Users size={12} className="text-blue-500"/> {task.assignees}</div>
-                    )}
-                 </div>
-              </div>
-              <div className="bg-gray-50/50 border border-blue-100 p-4 rounded-xl space-y-1">
-                 <span className="text-[10px] font-extrabold uppercase text-blue-400">Task Dates</span>
-                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-xs text-black font-bold"><Calendar size={12} className="text-blue-500"/> {formatToIndianDate(task.date)}</div>
-                    <div className="flex items-center gap-1.5 text-xs text-black font-bold"><Calendar size={12} className="text-blue-500"/> {formatToIndianDate(task.dueDate)}</div>
-                 </div>
-              </div>
-          </div>
-
           {/* Detailed History Table */}
           <div className="space-y-4">
             <h3 className="text-sm font-extrabold text-black uppercase tracking-widest flex items-center gap-2">
@@ -148,13 +120,14 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
                     <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-blue-500">Status</th>
                     <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-blue-500">Remarks</th>
                     <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-blue-500">Owner(s)</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-blue-500">Project</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-blue-500">Client</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-blue-50">Project</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-blue-50">Client</th>
                     {isVendorTask ? (
-                        <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest">Vendor</th>
+                        <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-blue-50">Vendor</th>
                     ) : (
-                        <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest">Assignee(s)</th>
+                        <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-blue-50">Assignee(s)</th>
                     )}
+                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest">Minit</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-blue-50">
@@ -172,15 +145,16 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
                       <td className="px-6 py-4 text-xs text-black font-bold border-r border-blue-50 max-w-[150px] truncate" title={log.project.split(' (')[0]}>{log.project.split(' (')[0]}</td>
                       <td className="px-6 py-4 text-xs text-black font-bold border-r border-blue-50 max-w-[150px] truncate" title={log.clientName}>{log.clientName || '-'}</td>
                       {isVendorTask ? (
-                          <td className="px-6 py-4 text-xs text-black font-bold uppercase">{log.vendor || '-'}</td>
+                          <td className="px-6 py-4 text-xs text-black font-bold uppercase border-r border-blue-50">{log.vendor || '-'}</td>
                       ) : (
-                          <td className="px-6 py-4 text-xs text-black font-bold">{log.assignees}</td>
+                          <td className="px-6 py-4 text-xs text-black font-bold border-r border-blue-50">{log.assignees}</td>
                       )}
+                      <td className="px-6 py-4 text-xs text-indigo-600 font-bold">{log.hours || 0}</td>
                     </tr>
                   ))}
                   {taskLogs.length === 0 && (
                     <tr>
-                      <td colSpan={isVendorTask ? 8 : 8} className="px-6 py-12 text-center text-black font-bold opacity-40 uppercase tracking-widest text-xs bg-gray-50/20">
+                      <td colSpan={9} className="px-6 py-12 text-center text-black font-bold opacity-40 uppercase tracking-widest text-xs bg-gray-50/20">
                         No update history found for this task.
                       </td>
                     </tr>

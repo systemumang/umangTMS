@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, AlertTriangle } from 'lucide-react';
+import { X, AlertTriangle, Clock } from 'lucide-react';
 import { Task, User, Vendor } from '../types';
 import { SearchableSelect } from './SearchableSelect';
 
@@ -17,6 +17,7 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
   const [formData, setFormData] = useState<Partial<Task>>({});
   const [reassignSelection, setReassignSelection] = useState<string | string[]>([]);
   const [remarksInput, setRemarksInput] = useState<string>('');
+  const [hoursInput, setHoursInput] = useState<string>('0');
   const [error, setError] = useState<string>('');
   const [isConfirming, setIsConfirming] = useState(false);
 
@@ -28,6 +29,7 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
         status: task.status,
       });
       setRemarksInput('');
+      setHoursInput('0');
       setReassignSelection(isVendorTask ? '' : []);
       setError('');
       setIsConfirming(false);
@@ -49,6 +51,10 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
       setRemarksInput(e.target.value);
   }
 
+  const handleHoursChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      setHoursInput(e.target.value);
+  }
+
   const handlePreSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -65,7 +71,8 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
     const updatedTask: Task = { 
         ...task, 
         status: formData.status as any,
-        lastUpdateRemarks: remarksInput, 
+        lastUpdateRemarks: remarksInput,
+        hours: Number(hoursInput || 0), // This will be handled as "New hours logged" by server
     };
     
     const hasReassignment = Array.isArray(reassignSelection) 
@@ -122,24 +129,40 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
                 </div>
               )}
 
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-900 block mb-1">Status <span className="text-red-500">*</span></label>
-                <select 
-                    name="status"
-                    required
-                    value={formData.status}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
-                  >
-                    <option value="Not Yet Started">Not Yet Started</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Completed">Completed</option>
-                  </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-900 block mb-1">Status <span className="text-red-500">*</span></label>
+                  <select 
+                      name="status"
+                      required
+                      value={formData.status}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+                    >
+                      <option value="Not Yet Started">Not Yet Started</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Completed">Completed</option>
+                    </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-900 block mb-1">Minit Logged</label>
+                  <div className="relative">
+                    <input 
+                      type="number" 
+                      step="0.1" 
+                      min="0"
+                      value={hoursInput}
+                      onChange={handleHoursChange}
+                      className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+                    />
+                    <Clock size={16} className="absolute left-3 top-3.5 text-gray-400" />
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-1">
                 <label className="text-sm font-medium text-gray-900 block mb-1">
-                  Update Remark {formData.status === 'In Progress' && <span className="text-red-500">*</span>}
+                  Update Remark <span className="text-red-500">*</span>
                 </label>
                 <textarea 
                   name="remarks"

@@ -48,6 +48,7 @@ export interface Task {
   remarks?: string; 
   lastUpdateDate?: string;
   lastUpdateRemarks?: string;
+  hours?: number;
 }
 
 export interface RecurringTask {
@@ -147,6 +148,7 @@ export interface ActionLogEntry {
     project: string;
     clientName?: string; 
     vendor?: string;
+    hours?: number;
 }
 
 export interface AppSettings {

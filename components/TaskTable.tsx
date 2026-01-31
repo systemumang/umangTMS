@@ -113,10 +113,8 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                 <th className={thClass} onClick={() => requestSort('title')}><div className="flex items-center">Task {getSortIcon('title')}</div></th>
                 <th className={thClass} onClick={() => requestSort('remarks')}><div className="flex items-center">Notes {getSortIcon('remarks')}</div></th>
                 <th className={thClass} onClick={() => requestSort('category')}><div className="flex items-center">Category{getSortIcon('category')}</div></th>
-                {/* Unified Responsible Party Column */}
                 <th className={thClass} onClick={() => requestSort(isVendorView ? 'vendor' : 'assignees')}><div className="flex items-center">{isVendorView ? 'Vendor' : 'Assignees'} {getSortIcon(isVendorView ? 'vendor' : 'assignees')}</div></th>
                 <th className={thClass} onClick={() => requestSort('owner')}><div className="flex items-center">Owner {getSortIcon('owner')}</div></th>
-                {/* Project and Client are now always present */}
                 <th className={thClass} onClick={() => requestSort('project')}><div className="flex items-center">Project {getSortIcon('project')}</div></th>
                 <th className={thClass} onClick={() => requestSort('clientName')}><div className="flex items-center">Client {getSortIcon('clientName')}</div></th>
                 <th className={thClass} onClick={() => requestSort('status')}><div className="flex items-center">Status {getSortIcon('status')}</div></th>
@@ -124,6 +122,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                 <th className={thClass} onClick={() => requestSort('lastUpdateRemarks')}><div className="flex items-center">Remark {getSortIcon('lastUpdateRemarks')}</div></th>
                 <th className={thClass} onClick={() => requestSort('priority')}><div className="flex items-center">Priority {getSortIcon('priority')}</div></th>
                 <th className={thClass} onClick={() => requestSort('dueDate')}><div className="flex items-center">Due Date {getSortIcon('dueDate')}</div></th>
+                <th className={thClass} onClick={() => requestSort('hours')}><div className="flex items-center">Minit {getSortIcon('hours')}</div></th>
                 <th className="px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider border-r border-blue-600 last:border-r-0 text-center">Actions</th>
               </tr>
             </thead>
@@ -151,7 +150,6 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                     <td className={`${tdClass} font-medium min-w-[200px]`}>{task.title || '-'}</td>
                     <td className={`${tdClass} min-w-[150px]`}>{task.remarks || '-'}</td>
                     <td className={tdClass}>{displayCategory}</td>
-                    {/* Display responsible party */}
                     <td className={tdClass}>
                         <div className="flex items-center gap-1">
                             {task.vendor ? <Hammer size={12} className="text-orange-500"/> : <Users size={12} className="text-indigo-700"/>}
@@ -159,7 +157,6 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                         </div>
                     </td>
                     <td className={tdClass}>{task.owner}</td>
-                    {/* Project and Client displayed explicitly */}
                     <td className={`${tdClass} font-bold text-xs`}>{task.project.split(' (')[0]}</td>
                     <td className={`${tdClass} font-bold text-xs`}>{task.clientName || '-'}</td>
                     <td className={tdClass}><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>{task.status}</span></td>
@@ -171,6 +168,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                     </td>
                     <td className={tdClass}>{task.priority}</td>
                     <td className={`${tdClass}`}>{formatDate(task.dueDate)}</td>
+                    <td className={`${tdClass} font-bold text-indigo-600`}>{task.hours || 0}</td>
                     <td className={tdClass}>
                       <div className="flex items-center space-x-2 justify-center">
                         <button onClick={() => onUpdateTask(task)} disabled={isSyncing} className="px-2 py-1 bg-blue-600 rounded text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-30">Update</button>
@@ -222,7 +220,6 @@ export const TaskTable: React.FC<TaskTableProps> = ({
               </div>
 
               <div className="space-y-3 mb-5">
-                {/* Collapsed view always shows Project and Priority */}
                 <div className="grid grid-cols-2 gap-x-3 gap-y-4">
                     <div className="space-y-1">
                         <span className="text-[10px] uppercase font-bold text-blue-900/60">Project</span>
@@ -241,8 +238,11 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                             {task.priority}
                         </div>
                     </div>
+                    <div className="space-y-1">
+                        <span className="text-[10px] uppercase font-bold text-blue-900/60">Total Minit</span>
+                        <div className="flex items-center gap-1.5 text-xs text-indigo-700 font-black uppercase whitespace-normal break-words"><Clock size={12} /> {task.hours || 0} min</div>
+                    </div>
 
-                    {/* Show remaining fields only when expanded */}
                     {isExpanded && (
                       <>
                         <div className="space-y-1">

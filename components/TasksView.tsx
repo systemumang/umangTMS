@@ -279,7 +279,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
     const splitFilters = doc.splitTextToSize(`Active Filters: ${filterSummary}`, 260);
     doc.text(splitFilters, 14, 27);
 
-    const headers = [['S.No', 'Date', 'Task', 'Project', 'Responsible', 'Status', 'Last Update Date', 'Last Update Remark', 'Due Date']];
+    const headers = [['S.No', 'Date', 'Task', 'Notes', 'Project', 'Responsible', 'Status', 'Last Update Date', 'Last Update Remark', 'Due Date']];
     
     const data = finalSortedTasks.map((t, i) => {
       const isNotStarted = t.status === 'Not Yet Started';
@@ -287,6 +287,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
         i + 1,
         formatToIndianDate(t.date),
         t.title,
+        t.remarks || '-',
         t.project.split(' (')[0],
         isVendorView ? (t.vendor || '-') : (t.assignees || '-'),
         t.status,
@@ -304,7 +305,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
       headStyles: { fillColor: [79, 70, 229] },
       columnStyles: {
         2: { cellWidth: 40 }, 
-        7: { cellWidth: 40 }  
+        3: { cellWidth: 40 },
+        8: { cellWidth: 40 }  
       }
     });
 
