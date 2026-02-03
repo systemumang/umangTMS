@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Project, Task } from '../types';
 import { SearchableSelect } from './SearchableSelect';
@@ -9,7 +8,7 @@ interface UpdateRow {
   projectId: string;
   taskId: number | null;
   remarks: string;
-  minutes: number;
+  minutes: number | '';
 }
 
 interface UpdateMultipleViewProps {
@@ -19,9 +18,9 @@ interface UpdateMultipleViewProps {
 }
 
 export const UpdateMultipleView: React.FC<UpdateMultipleViewProps> = ({ projects, tasks, onUpdateTasks }) => {
-  // Requirement: Show only one row when open
+  // Requirement: Show only one row when open, minutes blank initially
   const [rows, setRows] = useState<UpdateRow[]>([
-    { id: Math.random().toString(), projectId: '', taskId: null, remarks: '', minutes: 0 },
+    { id: Math.random().toString(), projectId: '', taskId: null, remarks: '', minutes: '' },
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -35,14 +34,14 @@ export const UpdateMultipleView: React.FC<UpdateMultipleViewProps> = ({ projects
   }, [tasks]);
 
   const addRow = () => {
-    setRows([...rows, { id: Math.random().toString(), projectId: '', taskId: null, remarks: '', minutes: 0 }]);
+    setRows([...rows, { id: Math.random().toString(), projectId: '', taskId: null, remarks: '', minutes: '' }]);
   };
 
   const removeRow = (id: string) => {
     if (rows.length > 1) {
       setRows(rows.filter(r => r.id !== id));
     } else {
-      setRows([{ id: Math.random().toString(), projectId: '', taskId: null, remarks: '', minutes: 0 }]);
+      setRows([{ id: Math.random().toString(), projectId: '', taskId: null, remarks: '', minutes: '' }]);
     }
   };
 
@@ -77,14 +76,14 @@ export const UpdateMultipleView: React.FC<UpdateMultipleViewProps> = ({ projects
           ...originalTask!,
           status: 'In Progress' as const,
           lastUpdateRemarks: r.remarks,
-          hours: r.minutes
+          hours: Number(r.minutes || 0)
         };
       });
       await onUpdateTasks(taskUpdates);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
       setRows([
-        { id: Math.random().toString(), projectId: '', taskId: null, remarks: '', minutes: 0 },
+        { id: Math.random().toString(), projectId: '', taskId: null, remarks: '', minutes: '' },
       ]);
     } catch (err) {
       console.error("Bulk update failed", err);
@@ -151,7 +150,7 @@ export const UpdateMultipleView: React.FC<UpdateMultipleViewProps> = ({ projects
                     <input
                       type="number"
                       value={row.minutes}
-                      onChange={(e) => updateRowField(row.id, 'minutes', parseFloat(e.target.value) || 0)}
+                      onChange={(e) => updateRowField(row.id, 'minutes', e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
                       className="w-full px-2 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none text-sm font-bold text-indigo-700 text-center transition-all"
                       min="0"
                     />

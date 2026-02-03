@@ -16,6 +16,8 @@ interface SearchableSelectProps {
   placeholder?: string;
   required?: boolean;
   className?: string;
+  // Added disabled prop to interface to fix TypeScript error in UpdateMultipleView.tsx
+  disabled?: boolean;
 }
 
 export const SearchableSelect: React.FC<SearchableSelectProps> = ({
@@ -26,7 +28,9 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   multiple = false,
   placeholder = 'Select...',
   required = false,
-  className = ''
+  className = '',
+  // Default disabled to false
+  disabled = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -70,6 +74,8 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   }, [sortedOptions, searchTerm]);
 
   const handleSelect = (optionValue: string) => {
+    // Prevent selection if disabled
+    if (disabled) return;
     if (multiple) {
       const vals = Array.isArray(currentValues) ? currentValues : [];
       const newValue = vals.includes(optionValue)
@@ -84,7 +90,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
 
   const handleSelectAllVisible = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!multiple) return;
+    if (!multiple || disabled) return;
     const visibleValues = filteredOptions.map(o => o.value);
     const existingValues = Array.isArray(currentValues) ? currentValues : [];
     const combined = Array.from(new Set([...existingValues, ...visibleValues]));
@@ -94,7 +100,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
 
   const handleClearAllVisible = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!multiple) return;
+    if (!multiple || disabled) return;
     const visibleValues = filteredOptions.map(o => o.value);
     const existingValues = Array.isArray(currentValues) ? currentValues : [];
     const remaining = existingValues.filter(v => !visibleValues.includes(v));
@@ -104,6 +110,8 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
 
   const removeValue = (e: React.MouseEvent, valToRemove: string) => {
     e.stopPropagation();
+    // Prevent removal if disabled
+    if (disabled) return;
     if (Array.isArray(currentValues)) {
       onChange(currentValues.filter(v => v !== valToRemove));
     } else {
@@ -121,9 +129,9 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
            {vals.map(val => {
              const opt = options.find(o => o.value === val);
              return (
-               <span key={val} className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md text-[11px] font-bold flex items-center border border-indigo-200">
+               <span key={val} className={`bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md text-[11px] font-bold flex items-center border border-indigo-200 ${disabled ? 'opacity-60' : ''}`}>
                  {opt ? opt.label : val}
-                 <X size={12} className="ml-1.5 cursor-pointer hover:text-red-600 transition-colors" onClick={(e) => removeValue(e, val)} />
+                 {!disabled && <X size={12} className="ml-1.5 cursor-pointer hover:text-red-600 transition-colors" onClick={(e) => removeValue(e, val)} />}
                </span>
              );
            })}
@@ -132,7 +140,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
     } else {
       const selectedOption = options.find(o => o.value === currentValues);
       return selectedOption ? (
-        <span className="text-gray-900 font-medium">{selectedOption.label}</span>
+        <span className={`${disabled ? 'text-gray-500' : 'text-gray-900'} font-medium`}>{selectedOption.label}</span>
       ) : (
         <span className="text-gray-400">{placeholder}</span>
       );
@@ -140,15 +148,15 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   };
 
   return (
-    <div className={`space-y-1 relative ${className}`} ref={wrapperRef}>
+    <div className={`space-y-1 relative ${className} ${disabled ? 'opacity-70' : ''}`} ref={wrapperRef}>
       {label && (
-        <label className="text-xs font-bold text-indigo-600 uppercase tracking-wider block mb-1">
+        <label className={`text-xs font-bold ${disabled ? 'text-gray-400' : 'text-indigo-600'} uppercase tracking-wider block mb-1`}>
           {label} {required && <span className="text-red-500">*</span>}
         </label>
       )}
       <div
-        className={`w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-500 cursor-pointer flex justify-between items-center min-h-[44px] transition-all ${isOpen ? 'ring-2 ring-indigo-100 border-indigo-500' : ''}`}
-        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-500 flex justify-between items-center min-h-[44px] transition-all ${isOpen ? 'ring-2 ring-indigo-100 border-indigo-500' : ''} ${disabled ? 'bg-gray-50 cursor-not-allowed' : 'cursor-pointer'}`}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
       >
         <div className="flex-1 overflow-hidden">
           {getDisplayValue()}
@@ -156,7 +164,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
         <ChevronDown size={16} className={`text-indigo-400 flex-shrink-0 ml-2 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </div>
 
-      {isOpen && (
+      {isOpen && !disabled && (
         <div className="absolute z-[100] w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl max-h-80 overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-1 duration-200">
           <div className="p-2 border-b border-gray-100 bg-gray-50 sticky top-0 z-10 space-y-2">
             <div className="relative">

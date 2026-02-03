@@ -13,6 +13,7 @@ import { ProjectsView } from './components/ProjectsView';
 import { ClientsView } from './components/ClientsView';
 import { VendorsView } from './components/VendorsView';
 import { ActionLogView } from './components/ActionLogView';
+import { ActivityDashboardView } from './components/ActivityDashboardView';
 import { RecurringTasksView } from './components/RecurringTasksView';
 import { RecurringTaskActionsView } from './components/RecurringTaskActionsView';
 import { UpdateMultipleView } from './components/UpdateMultipleView';
@@ -56,7 +57,8 @@ import {
   X,
   Hammer,
   Send,
-  ListChecks 
+  ListChecks,
+  BarChart3
 } from 'lucide-react';
 import { NavItem, Task, User, Designation, Category, Project, Client, ActionLogEntry, Vendor, VendorCategory, RecurringTask, RecurringTaskAction, AppSettings } from './types';
 
@@ -69,6 +71,7 @@ const navItems: NavItem[] = [
   { id: 'pending', label: 'Pending Tasks', icon: <Clock size={20} />, section: 'Tasks' },
   { id: 'completed', label: 'Completed Tasks', icon: <CheckCircle size={20} />, section: 'Tasks' },
   { id: 'update-multiple', label: 'Update Multiple', icon: <ListChecks size={20} />, section: 'Tasks' },
+  { id: 'activity-dashboard', label: 'Activity Dashboard', icon: <BarChart3 size={20} />, section: 'Tasks' },
   { id: 'action-log', label: 'Action Log', icon: <History size={20} />, section: 'Tasks' },
   { id: 'due-recurring-tasks', label: 'Due Recurring', icon: <AlertCircle size={20} />, section: 'Recurring Tasks' },
   { id: 'recurring-tasks', label: 'Recurring Rules', icon: <RotateCcw size={20} />, section: 'Recurring Tasks' },
@@ -759,6 +762,7 @@ export default function App() {
       case 'pending': return <TasksView title="Pending Tasks" description="Tasks requiring attention" tasks={visibleTasks.filter(t => !t.vendor || t.vendor === '')} {...commonTaskProps} filterType="pending" />;
       case 'completed': return <TasksView title="Completed Tasks" description="History of finished tasks" tasks={visibleTasks.filter(t => !t.vendor || t.vendor === '')} {...commonTaskProps} filterType="completed" />;
       case 'update-multiple': return <UpdateMultipleView projects={projects} tasks={visibleTasks.filter(t => t.status !== 'Completed')} onUpdateTasks={async (updates) => { for (const u of updates) await handleUpdateTaskOptimistic(u); setActiveTab('pending'); }} />;
+      case 'activity-dashboard': return <ActivityDashboardView logs={visibleActionLogs.filter(l => !l.vendor || l.vendor === '')} users={users} currentUser={currentUser} />;
       case 'action-log': return <ActionLogView logs={visibleActionLogs.filter(l => !l.vendor || l.vendor === '')} projects={projects} onDeleteLog={(logId, taskId) => handleDeleteLog(logId, taskId, false)} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
       case 'vendors': if (!isAdmin) return null; return <VendorsView vendors={vendors} onAddVendor={(v) => { setVendors(p => [...p, { ...v, id: Date.now() } as any]); apiPost('addMaster', v, 'Vendors'); }} onDeleteVendor={(id) => { setVendors(p => p.filter(v => v.id !== id)); apiPost('deleteRecord', { id }, 'Vendors'); }} onEditVendor={(v) => { setVendors(p => p.map(x => x.id === v.id ? v : x)); apiPost('updateMaster', v, 'Vendors'); }} />;
       case 'vendor-categories': if (!isAdmin) return null; return <VendorCategoriesView categories={vendorCategories} onAddCategory={() => setIsVendorCategoryModalOpen(true)} onDeleteCategory={(id) => { setVendorCategories(p => p.filter(c => c.id !== id)); apiPost('deleteRecord', { id }, 'VendorCategories'); }} onEditCategory={(vc) => { setVendorCategories(p => p.map(x => x.id === vc.id ? vc : x)); apiPost('updateMaster', vc, 'VendorCategories'); }} />;
