@@ -33,10 +33,10 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, isAuthenticating,
   };
 
   return (
-    <div className="min-h-screen bg-[#f8faff] flex items-center justify-center p-4 font-inter">
-      <div className="max-w-md w-full">
+    <div className="flex-1 h-full w-full bg-[#f8faff] flex items-center justify-center p-4 font-inter">
+      <div className="max-w-md w-full animate-in fade-in slide-in-from-bottom-8 duration-700">
         {/* Logo and Branding */}
-        <div className="text-center mb-8 animate-in fade-in slide-in-from-top-4 duration-700">
+        <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center p-3 bg-white rounded-2xl shadow-xl shadow-indigo-100 mb-4 border border-indigo-50">
             <img 
               src="https://i.ibb.co/YBSjM7Gg/Chat-GPT-Image-Dec-18-2025-10-23-18-AM.png" 
@@ -49,7 +49,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, isAuthenticating,
         </div>
 
         {/* Login Card */}
-        <div className="bg-white rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-gray-100 overflow-hidden animate-in fade-in zoom-in duration-500">
+        <div className="bg-white rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-gray-100 overflow-hidden">
           <div className="p-10">
             <form onSubmit={handleSubmit} className="space-y-6">
               {showWorkspaceInput ? (
@@ -133,7 +133,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, isAuthenticating,
                     onChange={(e) => setPassword(e.target.value)}
                   />
                   <button 
-                    type="button"
+                    type="button" 
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
                   >
@@ -167,7 +167,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, isAuthenticating,
               </button>
             </form>
           </div>
-          {/* Removed the 'Don't have an account?' section as per user request */}
         </div>
       </div>
     </div>

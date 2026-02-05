@@ -17,6 +17,7 @@ import { ActivityDashboardView } from './components/ActivityDashboardView';
 import { RecurringTasksView } from './components/RecurringTasksView';
 import { RecurringTaskActionsView } from './components/RecurringTaskActionsView';
 import { UpdateMultipleView } from './components/UpdateMultipleView';
+import { AddMultipleTasksView } from './components/AddMultipleTasksView';
 import { SettingsView } from './components/SettingsView';
 import { LoginView } from './components/LoginView';
 import { AddTaskModal } from './components/AddTaskModal';
@@ -58,7 +59,8 @@ import {
   Hammer,
   Send,
   ListChecks,
-  BarChart3
+  BarChart3,
+  ListPlus
 } from 'lucide-react';
 import { NavItem, Task, User, Designation, Category, Project, Client, ActionLogEntry, Vendor, VendorCategory, RecurringTask, RecurringTaskAction, AppSettings } from './types';
 
@@ -68,6 +70,7 @@ const AUTO_SYNC_INTERVAL = 120000;
 const navItems: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
   { id: 'all-tasks', label: 'All Tasks', icon: <CheckSquare size={20} />, section: 'Tasks' },
+  { id: 'add-multiple', label: 'Add Multiple', icon: <ListPlus size={20} />, section: 'Tasks' },
   { id: 'pending', label: 'Pending Tasks', icon: <Clock size={20} />, section: 'Tasks' },
   { id: 'completed', label: 'Completed Tasks', icon: <CheckCircle size={20} />, section: 'Tasks' },
   { id: 'update-multiple', label: 'Update Multiple', icon: <ListChecks size={20} />, section: 'Tasks' },
@@ -759,6 +762,7 @@ export default function App() {
           onOpenAddUser={() => setIsUserModalOpen(true)} onOpenAddProject={() => setIsProjectModalOpen(true)} onOpenAddClient={() => setIsClientModalOpen(true)} onOpenAddVendor={() => setIsVendorModalOpen(true)} 
         />;
       case 'all-tasks': return <TasksView title="All Tasks" description="View and manage all your tasks" tasks={visibleTasks.filter(t => !t.vendor || t.vendor === '')} {...commonTaskProps} filterType="all" />;
+      case 'add-multiple': return <AddMultipleTasksView projects={projects} users={users} categories={categories} currentUser={currentUser} onSaveTasks={async (tasksToSave) => { for (const t of tasksToSave) await handleAddTaskOptimistic(t, false); setActiveTab('all-tasks'); }} />;
       case 'pending': return <TasksView title="Pending Tasks" description="Tasks requiring attention" tasks={visibleTasks.filter(t => !t.vendor || t.vendor === '')} {...commonTaskProps} filterType="pending" />;
       case 'completed': return <TasksView title="Completed Tasks" description="History of finished tasks" tasks={visibleTasks.filter(t => !t.vendor || t.vendor === '')} {...commonTaskProps} filterType="completed" />;
       case 'update-multiple': return <UpdateMultipleView projects={projects} tasks={visibleTasks.filter(t => t.status !== 'Completed')} onUpdateTasks={async (updates) => { for (const u of updates) await handleUpdateTaskOptimistic(u); setActiveTab('pending'); }} />;
@@ -783,51 +787,109 @@ export default function App() {
     }
   };
 
-  const handleLayoutChange = (mode: 'side' | 'top') => { setLayoutMode(mode); localStorage.setItem('taskpro_layout', mode); };
-
-  if (!currentUser) return <LoginView onLogin={handleLogin} isAuthenticating={isLoading} savedWorkspaceId={workspaceId} />;
-
   return (
-    <div className={`flex h-screen bg-gray-50 overflow-hidden flex-col ${layoutMode === 'side' ? 'md:flex-row' : 'md:flex-col'}`}>
-      {layoutMode === 'side' ? (
-        <Sidebar items={filteredNavItems} activeTab={activeTab} onTabChange={setActiveTab} onLayoutChange={handleLayoutChange} layoutMode={layoutMode} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} lastSynced={lastSynced} isSyncing={isSyncing} onSync={fetchData} onLogout={() => { setCurrentUser(null); localStorage.removeItem('taskpro_user'); }} onExitWorkspace={() => { setCurrentUser(null); localStorage.clear(); }} workspaceId={workspaceId} />
+    <div className="flex h-screen bg-gray-50 overflow-hidden font-inter">
+      {!currentUser ? (
+        <LoginView onLogin={handleLogin} isAuthenticating={isLoading} savedWorkspaceId={workspaceId} />
       ) : (
-        <TopBar items={filteredNavItems} activeTab={activeTab} onTabChange={setActiveTab} onLayoutChange={handleLayoutChange} layoutMode={layoutMode} lastSynced={lastSynced} isSyncing={isSyncing} onSync={fetchData} />
-      )}
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-        {layoutMode === 'side' && (
-          <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-blue-200 z-20">
-            <div className="flex items-center space-x-2"><img src="https://i.ibb.co/YBSjM7Gg/Chat-GPT-Image-Dec-18-2025-10-23-18-AM.png" className="h-8 w-8" alt="Logo" /><h1 className="text-lg font-bold text-blue-600">TaskPro</h1></div>
-            <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-blue-600"><Menu size={24} /></button>
-          </header>
-        )}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col w-full">
-          <div className="flex-1">{renderContent()}</div>
-          <Footer />
-        </main>
-      </div>
+        <>
+          {layoutMode === 'side' && (
+            <Sidebar 
+              items={filteredNavItems} 
+              activeTab={activeTab} 
+              onTabChange={setActiveTab} 
+              onLayoutChange={setLayoutMode}
+              layoutMode={layoutMode}
+              isOpen={isSidebarOpen} 
+              onClose={() => setIsSidebarOpen(false)}
+              lastSynced={lastSynced}
+              isSyncing={isSyncing}
+              onSync={fetchData}
+              hasError={!!apiError}
+              onLogout={() => { setCurrentUser(null); localStorage.removeItem('taskpro_user'); }}
+              onExitWorkspace={() => { setCurrentUser(null); setWorkspaceId(''); setApiUrl(''); localStorage.clear(); }}
+              workspaceId={workspaceId}
+            />
+          )}
 
-      <AddTaskModal isOpen={isTaskModalOpen} onClose={() => setIsTaskModalOpen(false)} onSave={(t) => handleAddTaskOptimistic(t, isTaskModalVendorMode)} isVendorView={isTaskModalVendorMode} users={users} categories={categories} projects={projects} vendors={vendors} vendorCategories={vendorCategories} onAddCategory={() => setIsCategoryModalOpen(true)} onAddProject={() => setIsProjectModalOpen(true)} onAddVendorCategory={() => setIsVendorCategoryModalOpen(true)} lastAddedCategory={lastAddedCategory} lastAddedProject={lastAddedProject} lastAddedVendorCategory={lastAddedVendorCategory} onClearLastAdded={() => { setLastAddedCategory(''); setLastAddedProject(''); setLastAddedVendorCategory(''); }} />
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            {layoutMode === 'top' ? (
+              <TopBar 
+                items={filteredNavItems} 
+                activeTab={activeTab} 
+                onTabChange={setActiveTab} 
+                onLayoutChange={setLayoutMode}
+                layoutMode={layoutMode}
+                lastSynced={lastSynced}
+                isSyncing={isSyncing}
+                onSync={fetchData}
+                hasError={!!apiError}
+              />
+            ) : (
+              <header className="md:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between sticky top-0 z-30">
+                <div className="flex items-center space-x-2">
+                   <img src="https://i.ibb.co/YBSjM7Gg/Chat-GPT-Image-Dec-18-2025-10-23-18-AM.png" className="h-8 w-8" alt="Logo" />
+                   <h1 className="text-xl font-bold text-indigo-600">TaskPro</h1>
+                </div>
+                <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-gray-500 hover:bg-gray-100 rounded-md">
+                  <Menu size={24} />
+                </button>
+              </header>
+            )}
+
+            <main className="flex-1 overflow-y-auto p-2 md:p-4 custom-scrollbar relative">
+              {isLoading ? (
+                <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center space-y-4">
+                    <div className="relative w-20 h-20">
+                        <div className="absolute inset-0 border-4 border-indigo-100 rounded-full"></div>
+                        <div className="absolute inset-0 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
+                    </div>
+                    <div className="flex flex-col items-center">
+                        <p className="text-indigo-600 font-black uppercase tracking-widest text-sm animate-pulse">Loading Workspace...</p>
+                        <p className="text-gray-400 text-[10px] mt-1 font-bold uppercase tracking-tighter">Synchronizing with Google Sheets</p>
+                    </div>
+                </div>
+              ) : (
+                <div className="max-w-[98%] mx-auto min-h-full flex flex-col">
+                  <div className="flex-1">
+                    {renderContent()}
+                  </div>
+                  <Footer />
+                </div>
+              )}
+            </main>
+          </div>
+        </>
+      )}
+
+      {/* Modals */}
+      <AddTaskModal 
+        isOpen={isTaskModalOpen} 
+        onClose={() => setIsTaskModalOpen(false)} 
+        onSave={(t) => handleAddTaskOptimistic(t, isTaskModalVendorMode)}
+        onAddCategory={() => setIsCategoryModalOpen(true)}
+        onAddProject={() => setIsProjectModalOpen(true)}
+        onAddVendorCategory={() => setIsVendorCategoryModalOpen(true)}
+        users={users} categories={categories} projects={projects} vendors={vendors}
+        vendorCategories={vendorCategories} isVendorView={isTaskModalVendorMode}
+        lastAddedCategory={lastAddedCategory} lastAddedProject={lastAddedProject} 
+        lastAddedVendorCategory={lastAddedVendorCategory} onClearLastAdded={() => { setLastAddedCategory(''); setLastAddedProject(''); setLastAddedVendorCategory(''); }}
+      />
+      
       <AddCategoryModal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)} onSave={handleInstantAddCategory} categories={categories} />
       <AddVendorCategoryModal isOpen={isVendorCategoryModalOpen} onClose={() => setIsVendorCategoryModalOpen(false)} onSave={handleInstantAddVendorCategory} vendorCategories={vendorCategories} />
       <AddProjectModal isOpen={isProjectModalOpen} onClose={() => setIsProjectModalOpen(false)} onSave={handleInstantAddProject} clients={clients} onAddClient={() => setIsClientModalOpen(true)} />
-      <AddUserModal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} onSave={(u) => apiPost('addMaster', u, 'Users')} designations={designations} onAddDesignation={() => setIsDesignationModalOpen(true)} users={users} />
       <AddClientModal isOpen={isClientModalOpen} onClose={() => setIsClientModalOpen(false)} onSave={handleInstantAddClient} clients={clients} />
-      <AddVendorModal isOpen={isVendorModalOpen} onClose={() => setIsVendorModalOpen(false)} onSave={(v) => apiPost('addMaster', v, 'Vendors')} vendors={vendors} />
-      <AddDesignationModal isOpen={isDesignationModalOpen} onClose={() => setIsDesignationModalOpen(false)} onSave={(d) => apiPost('addMaster', d, 'Designations')} designations={designations} />
-      <AddRecurringTaskModal isOpen={isRecurringTaskModalOpen} onClose={() => setIsRecurringTaskModalOpen(false)} onSave={(t) => { const tempId = -Date.now(); const newTask: RecurringTask = { ...t, id: tempId, status: 'Not Yet Started', lastUpdatedOn: '', lastUpdateRemarks: '' }; setRecurringTasks(p => [newTask, ...p]); apiPost('addMaster', t, 'RecurringTasks'); }} users={users} categories={categories} />
-      <EditRecurringTaskModal isOpen={isEditRecurringTaskModalOpen} onClose={() => setIsEditRecurringTaskModalOpen(false)} task={selectedRecurringTask} onSave={(data) => { setRecurringTasks(p => p.map(t => t.id === data.id ? data : t)); apiPost('updateMaster', data, 'RecurringTasks'); }} users={users} categories={categories} />
-      <UpdateRecurringTaskModal isOpen={isRecurringTaskUpdateModalOpen} onClose={() => setIsRecurringTaskUpdateModalOpen(false)} task={selectedRecurringTask} onSave={async (updatedTask) => { const now = new Date(); const nowStr = now.toLocaleDateString('en-GB'); const timestampStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }); const shouldShiftAnchor = updatedTask.status === 'Complete'; const newAnchorDate = shouldShiftAnchor ? nowStr : (selectedRecurringTask?.lastUpdatedOn || selectedRecurringTask?.startDate || ''); setRecurringTasks(p => p.map(t => t.id === updatedTask.id ? { ...t, ...updatedTask, lastUpdatedOn: newAnchorDate } : t)); const newAction: RecurringTaskAction = { id: -Date.now(), taskId: updatedTask.id, taskTitle: updatedTask.title, category: updatedTask.category, assignee: updatedTask.assignee, status: updatedTask.status, remarks: updatedTask.lastUpdateRemarks || '', updatedOn: nowStr, timestamp: timestampStr }; setRecurringActions(p => [newAction, ...p]); await apiPost('updateMaster', { ...updatedTask, lastUpdatedOn: newAnchorDate }, 'RecurringTasks'); await apiPost('addMaster', { ...newAction, taskId: updatedTask.id }, 'RecurringActions'); }} />
-      <TaskHistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} task={selectedTaskForHistory} logs={actionLogs} />
-      <RecurringTaskHistoryModal isOpen={isRecurringHistoryModalOpen} onClose={() => setIsRecurringHistoryModalOpen(false)} task={selectedRecurringTask} actions={recurringActions} />
+      <AddUserModal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} onSave={(u) => { setUsers(p => [...p, { ...u, id: Date.now(), isActive: true } as any]); apiPost('addMaster', u, 'Users'); }} designations={designations} onAddDesignation={() => setIsDesignationModalOpen(true)} users={users} />
+      <AddDesignationModal isOpen={isDesignationModalOpen} onClose={() => setIsDesignationModalOpen(false)} onSave={(d) => { setDesignations(p => [...p, { ...d, id: Date.now() } as any]); apiPost('addMaster', d, 'Designations'); }} designations={designations} />
+      <AddVendorModal isOpen={isVendorModalOpen} onClose={() => setIsVendorModalOpen(false)} onSave={(v) => { setVendors(p => [...p, { ...v, id: Date.now() } as any]); apiPost('addMaster', v, 'Vendors'); }} vendors={vendors} />
       
-      {apiError && (
-        <div className="fixed bottom-4 right-4 z-50">
-           <div className="bg-red-600 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-4 border-2 border-red-400">
-             <AlertCircle size={24} /><p className="text-xs font-bold uppercase tracking-widest">{apiError}</p><button onClick={() => setApiError(null)}><X size={18} /></button>
-           </div>
-        </div>
-      )}
+      <TaskHistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} task={selectedTaskForHistory} logs={actionLogs} />
+      
+      <AddRecurringTaskModal isOpen={isRecurringTaskModalOpen} onClose={() => setIsRecurringTaskModalOpen(false)} onSave={(t) => { setRecurringTasks(prev => [...prev, { ...t, id: Date.now(), status: 'Not Yet Started' } as any]); apiPost('addMaster', t, 'RecurringTasks'); }} users={users} categories={categories} />
+      <UpdateRecurringTaskModal isOpen={isRecurringTaskUpdateModalOpen} onClose={() => setIsRecurringTaskUpdateModalOpen(false)} task={selectedRecurringTask} onSave={(t) => { setRecurringTasks(prev => prev.map(x => x.id === t.id ? t : x)); apiPost('addMaster', t, 'RecurringActions'); }} />
+      <EditRecurringTaskModal isOpen={isEditRecurringTaskModalOpen} onClose={() => setIsEditRecurringTaskModalOpen(false)} task={selectedRecurringTask} onSave={(t) => { setRecurringTasks(prev => prev.map(x => x.id === t.id ? t : x)); apiPost('updateMaster', t, 'RecurringTasks'); }} users={users} categories={categories} />
+      <RecurringTaskHistoryModal isOpen={isRecurringHistoryModalOpen} onClose={() => setIsRecurringHistoryModalOpen(false)} task={selectedRecurringTask} actions={recurringActions} />
     </div>
   );
 }

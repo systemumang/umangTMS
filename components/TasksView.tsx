@@ -197,7 +197,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
       const taskISO = parseToISO(task.date);
       if (dateFrom && taskISO < dateFrom) return false;
-      if (dateTo && taskISO > dateTo) return false;
+      if (dateTo && taskISO > taskISO) return false;
 
       const updateISO = parseToISO(task.lastUpdateDate || '');
       if (lastUpdateFrom && (!updateISO || updateISO < lastUpdateFrom)) return false;
@@ -380,7 +380,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const endEntry = Math.min(currentPage * itemsPerPage, filteredTasks.length);
 
   return (
-    <div className="space-y-6 pb-10">
+    <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
             <h2 className="text-2xl font-bold text-indigo-600">{title}</h2>
@@ -468,7 +468,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
       <TaskTable tasks={paginatedTasks} onUpdateTask={handleUpdateTaskClick} onEditTask={handleEditTaskClick} onDeleteTask={onDeleteTask} selectedIds={selectedIds} onSelectionChange={setSelectedIds} onViewHistory={onViewHistory} showSelection={isAdmin} isVendorView={isVendorView} viewMode={mobileViewMode} projects={projects} syncingIds={syncingIds} currentUser={currentUser} sortKey={sortKey} sortDir={sortDir} onSort={(key, dir) => { setSortKey(key); setSortDir(dir); }} startIndex={startEntry} />
       
-      <div className="flex justify-between items-center text-xs text-indigo-600 font-bold px-1 uppercase tracking-wider">
+      <div className="flex justify-between items-center text-xs text-indigo-600 font-bold px-1 uppercase tracking-wider pb-6">
           <span>Showing {startEntry} to {endEntry} of {filteredTasks.length} entries</span>
           <div className="flex space-x-2">
               <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} className="px-4 py-1.5 bg-indigo-600 text-white rounded shadow hover:bg-indigo-700 disabled:opacity-50 transition-colors uppercase text-[10px]" disabled={currentPage === 1}>Previous</button>
