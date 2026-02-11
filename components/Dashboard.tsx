@@ -1,6 +1,6 @@
 
 import React, { useMemo } from 'react';
-import { Plus, UserPlus, Folder, CheckSquare, Clock, AlertTriangle, CheckCircle, Users, Building2, Truck, FileText, RotateCcw, LayoutList, History, ShieldAlert, Tags } from 'lucide-react';
+import { Plus, UserPlus, Folder, CheckSquare, Clock, AlertTriangle, CheckCircle, Users, Building2, Truck, FileText, RotateCcw, LayoutList, History, ShieldAlert, Tags, UserCheck, UserCog } from 'lucide-react';
 import { StatCard } from './StatCard';
 import { QuickAction } from './QuickAction';
 import { PendingTable } from './PendingTable';
@@ -46,6 +46,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const totalTasks = regularTasks.length;
     const pendingTasks = regularTasks.filter(t => t.status !== 'Completed').length;
     
+    const pendingClientTasks = regularTasks.filter(t => t.status === 'Pending for Client').length;
+    const pendingOwnerTasks = regularTasks.filter(t => t.status === 'Pending for Owner').length;
+
     const todayISO = new Date().toISOString().split('T')[0];
     const overdueTasks = regularTasks.filter(t => {
       if (t.status === 'Completed' || !t.dueDate) return false;
@@ -55,7 +58,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     const completedTasks = regularTasks.filter(t => t.status === 'Completed').length;
     const totalUsers = users.length;
-    return { totalTasks, pendingTasks, overdueTasks, completedTasks, totalUsers };
+    return { totalTasks, pendingTasks, overdueTasks, completedTasks, totalUsers, pendingClientTasks, pendingOwnerTasks };
   }, [tasks, users]);
 
   const assigneeData = useMemo(() => {
@@ -72,7 +75,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
         if (task.status === 'In Progress' || task.status === 'Started') entry.inProgress += 1;
       });
     });
-    // Requirement 2: Sorted alphabetically
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [tasks]);
 
@@ -108,7 +110,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
       if (task.status === 'Not Yet Started') entry.notStarted += 1;
       if (task.status === 'In Progress' || task.status === 'Started') entry.inProgress += 1;
     });
-    // Requirement 2: Sorted alphabetically
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [tasks, projects]);
 
@@ -124,7 +125,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
       if (task.status === 'Not Yet Started') entry.notStarted += 1;
       if (task.status === 'In Progress' || task.status === 'Started') entry.inProgress += 1;
     });
-    // Requirement 2: Sorted alphabetically
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [tasks]);
 
@@ -140,7 +140,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
       if (task.status === 'Not Yet Started') entry.notStarted += 1;
       if (task.status === 'In Progress' || task.status === 'Started') entry.inProgress += 1;
     });
-    // Requirement 2: Sorted alphabetically
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [tasks]);
 
@@ -211,8 +210,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="space-y-8 pb-10">
-      <div className="flex justify-center md:justify-center lg:justify-center">
-        <h2 className="text-3xl font-black text-blue-700 uppercase tracking-widest border-b-4 border-blue-600 pb-2">Task Dashboard</h2>
+      {/* Centered Dashboard Title as requested */}
+      <div className="flex flex-col items-center justify-center pt-2">
+        <h2 className="text-3xl font-black text-blue-700 uppercase tracking-[0.1em]">Task Dashboard</h2>
+        <div className="w-64 h-1 bg-blue-600 mt-2 rounded-full"></div>
       </div>
 
       {isAdmin && (
@@ -230,9 +231,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       <div className="bg-blue-50/70 p-6 rounded-2xl border-2 border-blue-300 shadow-sm">
         <SectionHeader title="Live Statistics" icon={<Clock size={20}/>} />
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
             <StatCard title="Total Tasks" value={stats.totalTasks} icon={<CheckSquare size={20}/>} iconBgColor="bg-blue-100" iconColor="text-blue-600" onClick={() => onNavigate('all-tasks')} />
             <StatCard title="Pending" value={stats.pendingTasks} icon={<Clock size={20}/>} iconBgColor="bg-amber-100" iconColor="text-amber-600" onClick={() => onNavigate('pending')}/>
+            <StatCard title="For Client" value={stats.pendingClientTasks} icon={<UserCheck size={20}/>} iconBgColor="bg-purple-100" iconColor="text-purple-600" onClick={() => onNavigate('pending-client')}/>
+            <StatCard title="For Owner" value={stats.pendingOwnerTasks} icon={<UserCog size={20}/>} iconBgColor="bg-indigo-100" iconColor="text-indigo-600" onClick={() => onNavigate('pending-owner')}/>
             <StatCard title="Overdue" value={stats.overdueTasks} icon={<AlertTriangle size={20}/>} iconBgColor="bg-red-100" iconColor="text-red-600" onClick={() => onFilterChange('status', 'Overdue')}/>
             <StatCard title="Completed" value={stats.completedTasks} icon={<CheckCircle size={20}/>} iconBgColor="bg-green-100" iconColor="text-green-600" onClick={() => onNavigate('completed')}/>
             <StatCard title="Total Users" value={stats.totalUsers} icon={<Users size={20}/>} iconBgColor="bg-indigo-100" iconColor="text-indigo-600" onClick={isAdmin ? () => onNavigate('users') : undefined}/>

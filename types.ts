@@ -41,7 +41,7 @@ export interface Task {
   category?: string;
   vendor?: string; 
   vendorCategory?: string; 
-  status: 'Completed' | 'Not Yet Started' | 'In Progress' | 'Started';
+  status: 'Completed' | 'Not Yet Started' | 'In Progress' | 'Started' | 'Pending for Client' | 'Pending for Owner';
   priority: 'Medium' | 'High' | 'Low';
   dueDate: string;
   date: string; 
@@ -60,7 +60,7 @@ export interface RecurringTask {
   startDate: string;
   lastUpdatedOn?: string;
   lastUpdateRemarks?: string;
-  status?: 'Not Yet Started' | 'In Progress' | 'Complete';
+  status?: 'Not Yet Started' | 'In Progress' | 'Complete' | 'Pending for Client' | 'Pending for Owner';
   periodicity?: 'Fixed Days' | 'Weekly' | 'Monthly' | 'Yearly';
   recurrenceDay?: number; // 0-6 for Weekly, 1-31 for Monthly/Yearly
   recurrenceMonth?: string; // Month name for Yearly
@@ -72,7 +72,7 @@ export interface RecurringTaskAction {
   taskTitle: string;
   category: string;
   assignee: string;
-  status: 'Not Yet Started' | 'In Progress' | 'Complete';
+  status: 'Not Yet Started' | 'In Progress' | 'Complete' | 'Pending for Client' | 'Pending for Owner';
   updatedOn: string; 
   timestamp: string; 
   remarks: string;

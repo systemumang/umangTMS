@@ -59,8 +59,8 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
     e.preventDefault();
     
     // Validate first
-    if (formData.status === 'In Progress' && (!remarksInput || remarksInput.trim() === '')) {
-      setError('Remarks are required when status is In Progress');
+    if ((formData.status === 'In Progress' || formData.status === 'Pending for Client' || formData.status === 'Pending for Owner') && (!remarksInput || remarksInput.trim() === '')) {
+      setError('Remarks are required for this status change');
       return;
     }
 
@@ -141,6 +141,8 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
                     >
                       <option value="Not Yet Started">Not Yet Started</option>
                       <option value="In Progress">In Progress</option>
+                      <option value="Pending for Client">Pending for Client</option>
+                      <option value="Pending for Owner">Pending for Owner</option>
                       <option value="Completed">Completed</option>
                     </select>
                 </div>
@@ -149,7 +151,7 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
                   <div className="relative">
                     <input 
                       type="number" 
-                      step="0.1" 
+                      step="1" 
                       min="0"
                       value={hoursInput}
                       onChange={handleHoursChange}
@@ -174,7 +176,7 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
                 ></textarea>
               </div>
 
-              {formData.status === 'In Progress' && (
+              {(formData.status === 'In Progress' || formData.status === 'Pending for Client' || formData.status === 'Pending for Owner') && (
                 <div className="space-y-1">
                   <SearchableSelect 
                       label={isVendorTask ? "Reassign Vendor" : "Reassign User"}

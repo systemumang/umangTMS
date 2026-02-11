@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState } from 'react';
 import { Task, Project, User as UserType } from '../types';
 import { Edit2, Info, Calendar, Clock, User, Users, Briefcase, ArrowUpDown, ArrowUp, ArrowDown, Loader2, Trash2, Tag, Layout, Building2, Layers, AlertTriangle, ChevronDown, ChevronUp, Hammer } from 'lucide-react';
@@ -78,6 +79,8 @@ export const TaskTable: React.FC<TaskTableProps> = ({
     switch (status) {
       case 'Completed': return 'bg-green-100 text-green-700';
       case 'In Progress': return 'bg-blue-100 text-blue-700';
+      case 'Pending for Client': return 'bg-purple-100 text-purple-700';
+      case 'Pending for Owner': return 'bg-indigo-100 text-indigo-700';
       case 'Started': return 'bg-blue-50 text-blue-600';
       default: return 'bg-gray-100 text-gray-700';
     }
@@ -285,7 +288,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                <span className={`flex items-center justify-center text-center px-2 py-1.5 rounded-full text-[8px] font-black uppercase whitespace-normal break-words min-w-[90px] ${task.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-blue-800 text-white'}`}>
+                <span className={`flex items-center justify-center text-center px-2 py-1.5 rounded-full text-[8px] font-black uppercase whitespace-normal break-words min-w-[90px] ${getStatusColor(task.status)}`}>
                     {task.status}
                 </span>
                 <div className="flex items-center gap-2">

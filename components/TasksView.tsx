@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Download, FileText, Search, CheckSquare, LayoutGrid, LayoutList, Filter, X, Clock, AlertTriangle, Users, Trash2, AlertCircle, Tags } from 'lucide-react';
 import { TaskTable } from './TaskTable';
@@ -317,6 +318,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const statusOptions = [
     { value: 'Not Yet Started', label: 'Not Yet Started' },
     { value: 'In Progress', label: 'In Progress' },
+    { value: 'Pending for Client', label: 'Pending for Client' },
+    { value: 'Pending for Owner', label: 'Pending for Owner' },
     { value: 'Completed', label: 'Completed' },
     { value: 'Overdue', label: 'Overdue' }
   ];

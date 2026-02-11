@@ -71,8 +71,8 @@ export const BulkUpdateModal: React.FC<BulkUpdateModalProps> = ({
         return;
     }
 
-    if (mode === 'status' && formData.status === 'In Progress' && (!formData.remarks || formData.remarks.trim() === '')) {
-        setError('Update remark is required when status is In Progress.');
+    if (mode === 'status' && (formData.status === 'In Progress' || formData.status === 'Pending for Client' || formData.status === 'Pending for Owner') && (!formData.remarks || formData.remarks.trim() === '')) {
+        setError('Update remark is required for this status change.');
         return;
     }
 
@@ -159,6 +159,8 @@ export const BulkUpdateModal: React.FC<BulkUpdateModalProps> = ({
                           <option value="">Select Status...</option>
                           <option value="Not Yet Started">Not Yet Started</option>
                           <option value="In Progress">In Progress</option>
+                          <option value="Pending for Client">Pending for Client</option>
+                          <option value="Pending for Owner">Pending for Owner</option>
                           <option value="Completed">Completed</option>
                       </select>
                   </div>
@@ -204,7 +206,7 @@ export const BulkUpdateModal: React.FC<BulkUpdateModalProps> = ({
               {mode === 'status' && (
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-gray-900 block mb-1">
-                      Update Remark {formData.status === 'In Progress' && <span className="text-red-500">*</span>}
+                      Update Remark {(formData.status === 'In Progress' || formData.status === 'Pending for Client' || formData.status === 'Pending for Owner') && <span className="text-red-500">*</span>}
                   </label>
                   <textarea name="remarks" rows={3} placeholder="Details of why this bulk update is being performed..." value={formData.remarks} onChange={handleChange} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-gray-900 resize-none focus:ring-2 focus:ring-indigo-100 outline-none"></textarea>
                 </div>

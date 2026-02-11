@@ -60,7 +60,9 @@ import {
   Send,
   ListChecks,
   BarChart3,
-  ListPlus
+  ListPlus,
+  UserCheck,
+  UserCog
 } from 'lucide-react';
 import { NavItem, Task, User, Designation, Category, Project, Client, ActionLogEntry, Vendor, VendorCategory, RecurringTask, RecurringTaskAction, AppSettings } from './types';
 
@@ -69,28 +71,38 @@ const AUTO_SYNC_INTERVAL = 120000;
 
 const navItems: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+  
+  // All other items grouped under Tasks section
   { id: 'all-tasks', label: 'All Tasks', icon: <CheckSquare size={20} />, section: 'Tasks' },
   { id: 'add-multiple', label: 'Add Multiple', icon: <ListPlus size={20} />, section: 'Tasks' },
   { id: 'pending', label: 'Pending Tasks', icon: <Clock size={20} />, section: 'Tasks' },
+  { id: 'pending-client', label: 'Pending for Client', icon: <UserCheck size={20} />, section: 'Tasks' },
+  { id: 'pending-owner', label: 'Pending for Owner', icon: <UserCog size={20} />, section: 'Tasks' },
   { id: 'completed', label: 'Completed Tasks', icon: <CheckCircle size={20} />, section: 'Tasks' },
   { id: 'update-multiple', label: 'Update Multiple', icon: <ListChecks size={20} />, section: 'Tasks' },
   { id: 'activity-dashboard', label: 'Activity Dashboard', icon: <BarChart3 size={20} />, section: 'Tasks' },
   { id: 'action-log', label: 'Action Log', icon: <History size={20} />, section: 'Tasks' },
-  { id: 'due-recurring-tasks', label: 'Due Recurring', icon: <AlertCircle size={20} />, section: 'Recurring Tasks' },
-  { id: 'recurring-tasks', label: 'Recurring Rules', icon: <RotateCcw size={20} />, section: 'Recurring Tasks' },
-  { id: 'recurring-actions', label: 'Recurring Log', icon: <History size={20} />, section: 'Recurring Tasks' },
-  { id: 'pending-vendor-tasks', label: 'Vendor Pending', icon: <Hammer size={20} />, section: 'Vendor' },
-  { id: 'vendor-tasks', label: 'Vendor All', icon: <Layers size={20} />, section: 'Vendor' },
-  { id: 'completed-vendor-tasks', label: 'Vendor History', icon: <CheckCircle size={20} />, section: 'Vendor' },
-  { id: 'vendor-action-log', label: 'Vendor Log', icon: <History size={20} />, section: 'Vendor' },
-  { id: 'users', label: 'Users', icon: <Users size={20} />, section: 'Master' },
-  { id: 'clients', label: 'Clients', icon: <Building2 size={20} />, section: 'Master' },
-  { id: 'projects', label: 'Projects', icon: <Briefcase size={20} />, section: 'Master' },
-  { id: 'categories', label: 'Categories', icon: <Tags size={20} />, section: 'Master' },
-  { id: 'vendor-categories', label: 'Vendor Categories', icon: <Tags size={20} />, section: 'Master' },
-  { id: 'vendors', label: 'Vendors', icon: <Truck size={20} />, section: 'Master' },
-  { id: 'settings', label: 'Settings', icon: <Settings size={20} />, section: 'Master' },
-  { id: 'telegram-setup', label: 'Telegram Setup', icon: <Send size={20} />, section: 'Master' },
+  
+  // Vendor Items merged into Tasks
+  { id: 'pending-vendor-tasks', label: 'Vendor Pending', icon: <Hammer size={20} />, section: 'Tasks' },
+  { id: 'vendor-tasks', label: 'Vendor All', icon: <Layers size={20} />, section: 'Tasks' },
+  { id: 'completed-vendor-tasks', label: 'Vendor History', icon: <CheckCircle size={20} />, section: 'Tasks' },
+  { id: 'vendor-action-log', label: 'Vendor Log', icon: <History size={20} />, section: 'Tasks' },
+  
+  // Recurring Items merged into Tasks
+  { id: 'due-recurring-tasks', label: 'Due Recurring', icon: <AlertCircle size={20} />, section: 'Tasks' },
+  { id: 'recurring-tasks', label: 'Recurring Rules', icon: <RotateCcw size={20} />, section: 'Tasks' },
+  { id: 'recurring-actions', label: 'Recurring Log', icon: <History size={20} />, section: 'Tasks' },
+  
+  // Master Items merged into Tasks (for Admin)
+  { id: 'users', label: 'Users', icon: <Users size={20} />, section: 'Tasks' },
+  { id: 'clients', label: 'Clients', icon: <Building2 size={20} />, section: 'Tasks' },
+  { id: 'projects', label: 'Projects', icon: <Briefcase size={20} />, section: 'Tasks' },
+  { id: 'categories', label: 'Categories', icon: <Tags size={20} />, section: 'Tasks' },
+  { id: 'vendor-categories', label: 'Vendor Categories', icon: <Tags size={20} />, section: 'Tasks' },
+  { id: 'vendors', label: 'Vendors', icon: <Truck size={20} />, section: 'Tasks' },
+  { id: 'settings', label: 'Settings', icon: <Settings size={20} />, section: 'Tasks' },
+  { id: 'telegram-setup', label: 'Telegram Setup', icon: <Send size={20} />, section: 'Tasks' },
 ];
 
 export const formatToIndianDate = (dateInput: any): string => {
@@ -167,11 +179,14 @@ export default function App() {
 
   const isAdmin = currentUser?.role === 'Admin';
 
+  // Master item IDs for filtering
+  const masterIds = ['users', 'clients', 'projects', 'categories', 'vendor-categories', 'vendors', 'settings', 'telegram-setup'];
+
   // Navigation Logic based on Role
   const filteredNavItems = useMemo(() => {
     if (isAdmin) return navItems;
-    // Hide 'Master' section for Employees
-    return navItems.filter(item => item.section !== 'Master');
+    // Hide 'Master' items for Employees
+    return navItems.filter(item => !masterIds.includes(item.id));
   }, [isAdmin]);
 
   const [activeTab, setActiveTab] = useState(() => {
@@ -617,6 +632,8 @@ export default function App() {
     else if (type === 'status') { 
         if (value === 'Overdue') setActiveTab('pending');
         else if (value === 'Completed') setActiveTab('completed');
+        else if (value === 'Pending for Client') setActiveTab('pending-client');
+        else if (value === 'Pending for Owner') setActiveTab('pending-owner');
         else setActiveTab('all-tasks');
         setFilterStatus([value]);
     }
@@ -763,8 +780,10 @@ export default function App() {
         />;
       case 'all-tasks': return <TasksView title="All Tasks" description="View and manage all your tasks" tasks={visibleTasks.filter(t => !t.vendor || t.vendor === '')} {...commonTaskProps} filterType="all" />;
       case 'add-multiple': return <AddMultipleTasksView projects={projects} users={users} categories={categories} currentUser={currentUser} onSaveTasks={async (tasksToSave) => { for (const t of tasksToSave) await handleAddTaskOptimistic(t, false); setActiveTab('all-tasks'); }} />;
-      case 'pending': return <TasksView title="Pending Tasks" description="Tasks requiring attention" tasks={visibleTasks.filter(t => !t.vendor || t.vendor === '')} {...commonTaskProps} filterType="pending" />;
-      case 'completed': return <TasksView title="Completed Tasks" description="History of finished tasks" tasks={visibleTasks.filter(t => !t.vendor || t.vendor === '')} {...commonTaskProps} filterType="completed" />;
+      case 'pending': return <TasksView title="Pending Tasks" description="Tasks requiring attention" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status !== 'Completed')} {...commonTaskProps} filterType="pending" />;
+      case 'pending-client': return <TasksView title="Pending for Client" description="Tasks waiting for client feedback or action" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Pending for Client')} {...commonTaskProps} filterType="all" />;
+      case 'pending-owner': return <TasksView title="Pending for Owner" description="Tasks waiting for owner review or action" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Pending for Owner')} {...commonTaskProps} filterType="all" />;
+      case 'completed': return <TasksView title="Completed Tasks" description="History of finished tasks" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Completed')} {...commonTaskProps} filterType="completed" />;
       case 'update-multiple': return <UpdateMultipleView projects={projects} tasks={visibleTasks.filter(t => t.status !== 'Completed')} onUpdateTasks={async (updates) => { for (const u of updates) await handleUpdateTaskOptimistic(u); setActiveTab('pending'); }} />;
       case 'activity-dashboard': return <ActivityDashboardView logs={visibleActionLogs.filter(l => !l.vendor || l.vendor === '')} users={users} currentUser={currentUser} />;
       case 'action-log': return <ActionLogView logs={visibleActionLogs.filter(l => !l.vendor || l.vendor === '')} projects={projects} onDeleteLog={(logId, taskId) => handleDeleteLog(logId, taskId, false)} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
