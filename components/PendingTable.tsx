@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { LayoutGrid, LayoutList } from 'lucide-react';
+import { TableRow } from '../types';
 
 interface PendingTableProps {
   title: string;
   headerLabel: string;
-  data: { name: string; total: number; notStarted: number; inProgress: number }[];
+  data: TableRow[];
   onRowClick: (name: string) => void;
   className?: string;
 }
@@ -39,10 +40,12 @@ export const PendingTable: React.FC<PendingTableProps> = ({ title, headerLabel, 
         <table className="w-full text-left">
           <thead>
             <tr className="bg-blue-600 text-white">
-              <th className="px-6 py-4 font-bold text-xs uppercase tracking-widest border-r border-blue-700 last:border-r-0">{headerLabel}</th>
-              <th className="px-6 py-4 font-bold text-xs uppercase tracking-widest text-center border-r border-blue-700 last:border-r-0">Total Pending</th>
-              <th className="px-6 py-4 font-bold text-xs uppercase tracking-widest text-center border-r border-blue-700 last:border-r-0">Not Yet Started</th>
-              <th className="px-6 py-4 font-bold text-xs uppercase tracking-widest text-center border-r border-blue-700 last:border-r-0">In Progress</th>
+              <th className="px-6 py-4 font-bold text-[10px] uppercase tracking-widest border-r border-blue-700 last:border-r-0">{headerLabel}</th>
+              <th className="px-6 py-4 font-bold text-[10px] uppercase tracking-widest text-center border-r border-blue-700 last:border-r-0">Total Pending</th>
+              <th className="px-6 py-4 font-bold text-[10px] uppercase tracking-widest text-center border-r border-blue-700 last:border-r-0">Not Started</th>
+              <th className="px-6 py-4 font-bold text-[10px] uppercase tracking-widest text-center border-r border-blue-700 last:border-r-0">In Progress</th>
+              <th className="px-6 py-4 font-bold text-[10px] uppercase tracking-widest text-center border-r border-blue-700 last:border-r-0">Pending Client</th>
+              <th className="px-6 py-4 font-bold text-[10px] uppercase tracking-widest text-center border-r border-blue-700 last:border-r-0">Pending Owner</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-blue-100">
@@ -57,11 +60,13 @@ export const PendingTable: React.FC<PendingTableProps> = ({ title, headerLabel, 
                   <td className="px-6 py-4 text-sm text-black text-center font-bold border-r border-blue-50 last:border-r-0">{row.total}</td>
                   <td className="px-6 py-4 text-sm text-red-600 text-center font-extrabold border-r border-blue-50 last:border-r-0">{row.notStarted}</td>
                   <td className="px-6 py-4 text-sm text-green-600 text-center font-extrabold border-r border-blue-50 last:border-r-0">{row.inProgress}</td>
+                  <td className="px-6 py-4 text-sm text-purple-600 text-center font-extrabold border-r border-blue-50 last:border-r-0">{row.pendingClient}</td>
+                  <td className="px-6 py-4 text-sm text-indigo-600 text-center font-extrabold border-r border-blue-50 last:border-r-0">{row.pendingOwner}</td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={4} className="px-6 py-10 text-center text-blue-900/40 text-sm font-bold uppercase">
+                <td colSpan={6} className="px-6 py-10 text-center text-blue-900/40 text-sm font-bold uppercase">
                   No pending data found.
                 </td>
               </tr>
@@ -96,6 +101,14 @@ export const PendingTable: React.FC<PendingTableProps> = ({ title, headerLabel, 
                         <div className="text-center p-2 bg-green-50 border-2 border-green-900 rounded-lg">
                             <div className="text-[9px] font-bold text-green-900 uppercase tracking-tighter mb-0.5">In Progress</div>
                             <div className="font-black text-green-900">{row.inProgress}</div>
+                        </div>
+                        <div className="text-center p-2 bg-purple-50 border-2 border-purple-300 rounded-lg">
+                            <div className="text-[9px] font-bold text-purple-400 uppercase tracking-tighter mb-0.5">For Client</div>
+                            <div className="font-black text-purple-600">{row.pendingClient}</div>
+                        </div>
+                        <div className="text-center p-2 bg-indigo-50 border-2 border-indigo-300 rounded-lg">
+                            <div className="text-[9px] font-bold text-indigo-400 uppercase tracking-tighter mb-0.5">For Owner</div>
+                            <div className="font-black text-indigo-600">{row.pendingOwner}</div>
                         </div>
                     </div>
                 </div>

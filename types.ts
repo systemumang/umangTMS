@@ -29,6 +29,8 @@ export interface TableRow {
   total: number;
   notStarted: number;
   inProgress: number;
+  pendingClient: number;
+  pendingOwner: number;
 }
 
 export interface Task {

@@ -1,10 +1,9 @@
-
 import React, { useMemo } from 'react';
 import { Plus, UserPlus, Folder, CheckSquare, Clock, AlertTriangle, CheckCircle, Users, Building2, Truck, FileText, RotateCcw, LayoutList, History, ShieldAlert, Tags, UserCheck, UserCog } from 'lucide-react';
 import { StatCard } from './StatCard';
 import { QuickAction } from './QuickAction';
 import { PendingTable } from './PendingTable';
-import { Task, User, Project, ActionLogEntry, RecurringTaskAction, Category } from '../types';
+import { Task, User, Project, ActionLogEntry, RecurringTaskAction, Category, TableRow } from '../types';
 import { parseToISO } from '../App';
 
 interface DashboardProps {
@@ -61,84 +60,76 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return { totalTasks, pendingTasks, overdueTasks, completedTasks, totalUsers, pendingClientTasks, pendingOwnerTasks };
   }, [tasks, users]);
 
+  const updateTableDataMap = (map: Map<string, TableRow>, key: string, status: string) => {
+    if (!map.has(key)) {
+      map.set(key, { name: key, total: 0, notStarted: 0, inProgress: 0, pendingClient: 0, pendingOwner: 0 });
+    }
+    const entry = map.get(key)!;
+    entry.total += 1;
+    if (status === 'Not Yet Started') entry.notStarted += 1;
+    if (status === 'In Progress' || status === 'Started') entry.inProgress += 1;
+    if (status === 'Pending for Client') entry.pendingClient += 1;
+    if (status === 'Pending for Owner') entry.pendingOwner += 1;
+  };
+
   const assigneeData = useMemo(() => {
-    const map = new Map<string, { name: string; total: number; notStarted: number; inProgress: number }>();
+    const map = new Map<string, TableRow>();
     tasks.forEach(task => {
       if (!!(task.vendor && task.vendor.trim() !== '')) return; 
       if (task.status === 'Completed') return;
       const assignees = task.assignees ? task.assignees.split(',').map(s => s.trim()) : ['Unassigned'];
       assignees.forEach(assignee => {
-        if (!map.has(assignee)) map.set(assignee, { name: assignee, total: 0, notStarted: 0, inProgress: 0 });
-        const entry = map.get(assignee)!;
-        entry.total += 1;
-        if (task.status === 'Not Yet Started') entry.notStarted += 1;
-        if (task.status === 'In Progress' || task.status === 'Started') entry.inProgress += 1;
+        updateTableDataMap(map, assignee, task.status);
       });
     });
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [tasks]);
 
   const priorityData = useMemo(() => {
-    const map = new Map<string, { name: string; total: number; notStarted: number; inProgress: number }>();
+    const map = new Map<string, TableRow>();
     const priorities = ['High', 'Medium', 'Low'];
-    priorities.forEach(p => map.set(p, { name: p, total: 0, notStarted: 0, inProgress: 0 }));
+    priorities.forEach(p => map.set(p, { name: p, total: 0, notStarted: 0, inProgress: 0, pendingClient: 0, pendingOwner: 0 }));
 
     tasks.forEach(task => {
       if (!!(task.vendor && task.vendor.trim() !== '')) return;
       if (task.status === 'Completed') return;
       const p = task.priority || 'Medium';
-      if (!map.has(p)) map.set(p, { name: p, total: 0, notStarted: 0, inProgress: 0 });
-      const entry = map.get(p)!;
-      entry.total += 1;
-      if (task.status === 'Not Yet Started') entry.notStarted += 1;
-      if (task.status === 'In Progress' || task.status === 'Started') entry.inProgress += 1;
+      updateTableDataMap(map, p, task.status);
     });
     return Array.from(map.values()).filter(p => p.total > 0);
   }, [tasks]);
 
   const projectData = useMemo(() => {
-    const map = new Map<string, { name: string; total: number; notStarted: number; inProgress: number }>();
+    const map = new Map<string, TableRow>();
     tasks.forEach(task => {
       if (!!(task.vendor && task.vendor.trim() !== '')) return;
       if (task.status === 'Completed') return;
       const projectName = task.project || 'Unknown Project';
       const projectObj = projects.find(p => p.name === projectName);
       const displayName = projectObj ? `${projectName} (${projectObj.client})` : projectName;
-      if (!map.has(displayName)) map.set(displayName, { name: displayName, total: 0, notStarted: 0, inProgress: 0 });
-      const entry = map.get(displayName)!;
-      entry.total += 1;
-      if (task.status === 'Not Yet Started') entry.notStarted += 1;
-      if (task.status === 'In Progress' || task.status === 'Started') entry.inProgress += 1;
+      updateTableDataMap(map, displayName, task.status);
     });
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [tasks, projects]);
 
   const categoryData = useMemo(() => {
-    const map = new Map<string, { name: string; total: number; notStarted: number; inProgress: number }>();
+    const map = new Map<string, TableRow>();
     tasks.forEach(task => {
       if (!!(task.vendor && task.vendor.trim() !== '')) return;
       if (task.status === 'Completed') return;
       const categoryName = task.category || 'Uncategorized';
-      if (!map.has(categoryName)) map.set(categoryName, { name: categoryName, total: 0, notStarted: 0, inProgress: 0 });
-      const entry = map.get(categoryName)!;
-      entry.total += 1;
-      if (task.status === 'Not Yet Started') entry.notStarted += 1;
-      if (task.status === 'In Progress' || task.status === 'Started') entry.inProgress += 1;
+      updateTableDataMap(map, categoryName, task.status);
     });
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [tasks]);
 
   const vendorData = useMemo(() => {
-    const map = new Map<string, { name: string; total: number; notStarted: number; inProgress: number }>();
+    const map = new Map<string, TableRow>();
     tasks.forEach(task => {
       if (!task.vendor || task.vendor.trim() === '') return;
       if (task.status === 'Completed') return;
       const vendor = task.vendor;
-      if (!map.has(vendor)) map.set(vendor, { name: vendor, total: 0, notStarted: 0, inProgress: 0 });
-      const entry = map.get(vendor)!;
-      entry.total += 1;
-      if (task.status === 'Not Yet Started') entry.notStarted += 1;
-      if (task.status === 'In Progress' || task.status === 'Started') entry.inProgress += 1;
+      updateTableDataMap(map, vendor, task.status);
     });
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [tasks]);
