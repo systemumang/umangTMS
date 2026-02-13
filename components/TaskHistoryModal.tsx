@@ -1,6 +1,5 @@
-
-import React from 'react';
-import { X, Download, Calendar, User, Users, Clock, Tag, Briefcase, History, Building2, Hammer } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Download, Calendar, User, Users, Clock, Tag, Briefcase, History, Building2, Hammer, LayoutGrid, LayoutList } from 'lucide-react';
 import { ActionLogEntry, Task } from '../types';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -14,6 +13,8 @@ interface TaskHistoryModalProps {
 }
 
 export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onClose, task, logs }) => {
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+
   if (!isOpen || !task) return null;
 
   const taskLogs = logs.filter(log => {
@@ -108,10 +109,88 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
         <div className="overflow-auto p-4 md:p-6 space-y-6">
           {/* Detailed History Table */}
           <div className="space-y-4">
-            <h3 className="text-sm font-extrabold text-black uppercase tracking-widest flex items-center gap-2">
-               <History className="text-blue-500" size={16} /> UPDATE HISTORY LOG
-            </h3>
-            <div className="border border-blue-200 rounded-xl overflow-x-auto shadow-sm">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-extrabold text-black uppercase tracking-widest flex items-center gap-2">
+                 <History className="text-blue-500" size={16} /> UPDATE HISTORY LOG
+              </h3>
+              <div className="flex bg-blue-50 p-1 rounded-lg border border-blue-200">
+                  <button
+                    onClick={() => setViewMode('card')}
+                    className={`p-1.5 rounded-md transition-all ${viewMode === 'card' ? 'bg-white shadow text-blue-600' : 'text-blue-400 hover:text-blue-500'}`}
+                    title="Card View"
+                  >
+                    <LayoutGrid size={18} />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('table')}
+                    className={`p-1.5 rounded-md transition-all ${viewMode === 'table' ? 'bg-white shadow text-blue-600' : 'text-blue-400 hover:text-blue-500'}`}
+                    title="Table View"
+                  >
+                    <LayoutList size={18} />
+                  </button>
+              </div>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className={`${viewMode === 'card' ? 'grid md:hidden' : 'hidden'} grid-cols-1 gap-4`}>
+              {taskLogs.map((log) => (
+                <div key={log.id} className="bg-white border-2 border-blue-100 rounded-xl p-4 shadow-sm space-y-3">
+                  <div className="flex justify-between items-start border-b border-blue-50 pb-2">
+                    <div className="space-y-0.5">
+                      <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest block">Update Date</span>
+                      <span className="text-xs font-bold text-blue-700 flex items-center gap-1.5">
+                        <Clock size={12} className="text-blue-500" />
+                        {formatToIndianDate(log.updateDate)}
+                      </span>
+                    </div>
+                    <span className="px-2 py-0.5 bg-blue-600 text-white rounded text-[8px] font-black uppercase tracking-widest shadow-sm">
+                      {log.status}
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3 text-[10px]">
+                    <div className="space-y-0.5">
+                      <span className="text-gray-400 font-bold uppercase block">Task Date</span>
+                      <span className="font-bold text-black flex items-center gap-1">
+                        <Calendar size={10} className="text-gray-400" />
+                        {formatToIndianDate(log.taskDate)}
+                      </span>
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="text-gray-400 font-bold uppercase block">Minutes</span>
+                      <span className="font-black text-indigo-600">{log.hours || 0}</span>
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="text-gray-400 font-bold uppercase block">Owner</span>
+                      <span className="font-bold text-black uppercase flex items-center gap-1">
+                        <User size={10} className="text-gray-400" />
+                        {log.owner}
+                      </span>
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="text-gray-400 font-bold uppercase block">{isVendorTask ? 'Vendor' : 'Assignee'}</span>
+                      <span className="font-bold text-black uppercase flex items-center gap-1">
+                        {isVendorTask ? <Hammer size={10} className="text-orange-400" /> : <Users size={10} className="text-gray-400" />}
+                        {isVendorTask ? log.vendor : log.assignees}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50/50 p-2.5 rounded-lg border border-blue-50">
+                    <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest block mb-1">Remarks</span>
+                    <p className="text-[11px] text-blue-800 italic leading-relaxed whitespace-normal break-words">"{log.remarks}"</p>
+                  </div>
+                </div>
+              ))}
+              {taskLogs.length === 0 && (
+                <div className="text-center py-12 text-black font-bold opacity-40 uppercase tracking-widest text-xs bg-gray-50/20 rounded-xl">
+                  No update history found.
+                </div>
+              )}
+            </div>
+
+            {/* Desktop / Manual Table View */}
+            <div className={`${viewMode === 'card' ? 'hidden md:block' : 'block'} border border-blue-200 rounded-xl overflow-x-auto shadow-sm`}>
               <table className="w-full text-left border-collapse min-w-[800px]">
                 <thead className="bg-blue-600">
                   <tr className="border-b border-blue-700">
