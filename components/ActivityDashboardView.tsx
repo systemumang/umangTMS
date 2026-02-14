@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ActionLogEntry, User } from '../types';
 import { parseToISO, formatToIndianDate } from '../App';
-import { X } from 'lucide-react';
+import { X, LayoutGrid, LayoutList, Clock } from 'lucide-react';
 
 interface ActivityDashboardViewProps {
   logs: ActionLogEntry[];
@@ -16,6 +16,7 @@ export const ActivityDashboardView: React.FC<ActivityDashboardViewProps> = ({ lo
   
   const [fromDate, setFromDate] = useState(firstDayOfMonth);
   const [toDate, setToDate] = useState(todayISO);
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
 
   const isAdmin = currentUser?.role === 'Admin';
 
@@ -30,7 +31,6 @@ export const ActivityDashboardView: React.FC<ActivityDashboardViewProps> = ({ lo
     const filteredLogs = logs.filter(log => {
       const logISO = parseToISO(log.updateDate);
       if (fromDate && logISO < fromDate) return false;
-      if (toDate && logISO > todayISO) return false; // Use todayISO for logical cap or just toDate
       if (toDate && logISO > toDate) return false;
       return true;
     });
@@ -71,6 +71,7 @@ export const ActivityDashboardView: React.FC<ActivityDashboardViewProps> = ({ lo
       return parse(a) - parse(b);
     });
 
+    // Fix: Property 'name' does not exist on type 'string'. employeesSet is a Set of strings.
     const sortedEmployees = Array.from(employeesSet).sort((a, b) => a.localeCompare(b));
 
     return {
@@ -98,37 +99,89 @@ export const ActivityDashboardView: React.FC<ActivityDashboardViewProps> = ({ lo
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Date Filters */}
-      <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-row items-center justify-center gap-6 flex-wrap">
-        <div className="flex flex-row items-center">
-          <label className={labelClass}>From Date</label>
-          <input 
-            type="date" 
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-            className="w-[170px] px-4 py-2 border-2 border-l-0 border-gray-200 rounded-r-lg focus:ring-4 focus:ring-blue-50 focus:border-[#4a77d4] outline-none transition-all font-bold text-gray-700 shadow-sm text-center h-[44px]"
-          />
+      {/* Date Filters & Toggle */}
+      <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-6">
+        <div className="flex flex-row items-center justify-center gap-6 flex-wrap">
+          <div className="flex flex-row items-center">
+            <label className={labelClass}>From Date</label>
+            <input 
+              type="date" 
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="w-[170px] px-4 py-2 border-2 border-l-0 border-gray-200 rounded-r-lg focus:ring-4 focus:ring-blue-50 focus:border-[#4a77d4] outline-none transition-all font-bold text-gray-700 shadow-sm text-center h-[44px]"
+            />
+          </div>
+          <div className="flex flex-row items-center">
+            <label className={labelClass}>To Date</label>
+            <input 
+              type="date" 
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="w-[170px] px-4 py-2 border-2 border-l-0 border-gray-200 rounded-r-lg focus:ring-4 focus:ring-blue-50 focus:border-[#4a77d4] outline-none transition-all font-bold text-gray-700 shadow-sm text-center h-[44px]"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => { setFromDate(''); setToDate(''); }}
+              className="px-6 py-2.5 bg-gray-100 text-gray-600 font-black rounded-xl hover:bg-gray-200 transition-all uppercase text-xs border-2 border-gray-200 h-[44px] flex items-center gap-2 shadow-sm active:scale-95"
+            >
+              <X size={14} />
+              Clear
+            </button>
+            <div className="flex bg-blue-50 p-1 rounded-lg md:hidden border border-blue-200">
+                <button
+                  onClick={() => setViewMode('card')}
+                  className={`p-1.5 rounded-md transition-all border ${viewMode === 'card' ? 'bg-white shadow text-blue-600 border-blue-600' : 'text-blue-400 border-transparent'}`}
+                >
+                  <LayoutGrid size={18} />
+                </button>
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`p-1.5 rounded-md transition-all border ${viewMode === 'table' ? 'bg-white shadow text-blue-600 border-blue-600' : 'text-blue-400 border-transparent'}`}
+                >
+                  <LayoutList size={18} />
+                </button>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-row items-center">
-          <label className={labelClass}>To Date</label>
-          <input 
-            type="date" 
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-            className="w-[170px] px-4 py-2 border-2 border-l-0 border-gray-200 rounded-r-lg focus:ring-4 focus:ring-blue-50 focus:border-[#4a77d4] outline-none transition-all font-bold text-gray-700 shadow-sm text-center h-[44px]"
-          />
-        </div>
-        <button 
-          onClick={() => { setFromDate(''); setToDate(''); }}
-          className="px-6 py-2.5 bg-gray-100 text-gray-600 font-black rounded-xl hover:bg-gray-200 transition-all uppercase text-xs border-2 border-gray-200 h-[44px] flex items-center gap-2 shadow-sm active:scale-95"
-        >
-          <X size={14} />
-          Clear
-        </button>
       </div>
 
-      {/* Main Activity Table */}
-      <div className="bg-white p-2 rounded-2xl shadow-lg overflow-hidden border-2 border-blue-100">
+      {/* Mobile Card View */}
+      <div className={`${viewMode === 'card' ? 'grid md:hidden' : 'hidden'} grid-cols-1 gap-4 px-2`}>
+        {[...pivotedData.dates].reverse().map(date => {
+            const dateEntries = pivotedData.employees.map(emp => ({
+                name: emp,
+                value: pivotedData.data.get(date)?.get(emp) || 0
+            })).filter(e => e.value > 0);
+            
+            if (dateEntries.length === 0) return null;
+
+            return (
+                <div key={date} className="bg-white p-4 rounded-xl border-2 border-blue-100 shadow-sm">
+                    <div className="flex justify-between items-center mb-3 border-b border-blue-50 pb-2">
+                        <span className="font-black text-blue-600 uppercase tracking-widest text-xs">{date}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        {dateEntries.map(entry => (
+                            <div key={entry.name} className="bg-blue-50/50 p-2 rounded-lg border border-blue-100">
+                                <span className="text-[9px] font-black text-blue-400 uppercase tracking-tighter block truncate">{entry.name}</span>
+                                <span className="font-black text-indigo-700 text-sm">{formatMinutesToHHMM(entry.value)}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        })}
+        {pivotedData.dates.length === 0 && (
+            <div className="text-center py-24 bg-white rounded-2xl border-2 border-blue-100 flex flex-col items-center justify-center opacity-40">
+              <Clock size={48} className="text-blue-300 mb-2" />
+              <p className="font-black uppercase tracking-widest text-xs">No activity found</p>
+            </div>
+        )}
+      </div>
+
+      {/* Main Activity Table (Desktop or Mobile Toggle) */}
+      <div className={`${viewMode === 'card' ? 'hidden md:block' : 'block'} bg-white p-2 rounded-2xl shadow-lg overflow-hidden border-2 border-blue-100`}>
         <div className="overflow-x-auto rounded-xl">
           <table className="w-full border-collapse border border-black table-fixed min-w-max">
             <thead>
