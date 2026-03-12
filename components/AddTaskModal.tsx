@@ -1,0 +1,374 @@
+
+import React, { useState, useEffect } from 'react';
+import { X, Plus } from 'lucide-react';
+import { Task, User, Category, Project, Vendor, VendorCategory } from '../types';
+import { SearchableSelect } from './SearchableSelect';
+
+interface AddTaskModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (task: Omit<Task, 'id' | 'status' | 'date'>) => void;
+  onAddCategory: () => void;
+  onAddProject: () => void;
+  onAddVendorCategory?: () => void;
+  users: User[];
+  categories: Category[];
+  projects: Project[];
+  vendors: Vendor[];
+  vendorCategories?: VendorCategory[];
+  isVendorView?: boolean;
+  lastAddedCategory?: string;
+  lastAddedProject?: string;
+  lastAddedVendorCategory?: string;
+  onClearLastAdded?: () => void;
+}
+
+export const AddTaskModal: React.FC<AddTaskModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onSave, 
+  onAddCategory, 
+  onAddProject,
+  onAddVendorCategory,
+  users, 
+  categories, 
+  projects = [],
+  vendors,
+  vendorCategories = [],
+  isVendorView = false,
+  lastAddedCategory = '',
+  lastAddedProject = '',
+  lastAddedVendorCategory = '',
+  onClearLastAdded
+}) => {
+  const [formData, setFormData] = useState<{
+    title: string;
+    assignees: string[]; 
+    category: string;
+    dueDate: string;
+    priority: string;
+    owner: string; 
+    project: string; // Combined 'Project Name (Client Name)'
+    vendor: string;
+    vendorCategory: string[]; 
+    notes: string;
+  }>({
+    title: '',
+    assignees: [],
+    category: '',
+    dueDate: '',
+    priority: 'Medium',
+    owner: 'PANKAJ KUMAR JAIN',
+    project: '',
+    vendor: '',
+    vendorCategory: [],
+    notes: ''
+  });
+
+  useEffect(() => {
+    if (isOpen) {
+        if (lastAddedCategory) {
+            setFormData(prev => ({ ...prev, category: lastAddedCategory }));
+            onClearLastAdded?.();
+        }
+        if (lastAddedProject) {
+            setFormData(prev => ({ ...prev, project: lastAddedProject }));
+            onClearLastAdded?.();
+        }
+        if (lastAddedVendorCategory) {
+            setFormData(prev => {
+                const current = Array.isArray(prev.vendorCategory) ? prev.vendorCategory : [];
+                return { ...prev, vendorCategory: [...current, lastAddedVendorCategory] };
+            });
+            onClearLastAdded?.();
+        }
+        // Ensure that if it's a vendor view, assignees are cleared
+        if (isVendorView) {
+            setFormData(prev => ({ ...prev, assignees: [] }));
+        } else {
+            // For non-vendor view, clear vendor fields
+            setFormData(prev => ({ ...prev, vendor: '', vendorCategory: [] }));
+        }
+    }
+  }, [categories, projects, vendorCategories, isOpen, lastAddedCategory, lastAddedProject, lastAddedVendorCategory, isVendorView]);
+
+  if (!isOpen) return null;
+
+  const activeUsers = users.filter(u => u.isActive);
+  const userOptions = activeUsers.map(u => ({ value: u.name, label: u.name }));
+  const categoryOptions = categories.map(c => ({ value: c.name, label: c.name }));
+  
+  // Robust project option generation
+  const projectOptions = (projects || []).map(p => {
+      const projName = String(p.name || '').trim();
+      const clientName = String(p.client || '').trim();
+      const uniqueValue = clientName ? `${projName} (${clientName})` : projName;
+      return { value: uniqueValue, label: uniqueValue };
+  });
+
+  const vendorOptions = vendors.map(v => ({ value: v.name, label: v.name }));
+  const vendorCategoryOptions = (vendorCategories || []).map(c => ({ value: c.name, label: c.name }));
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const isFormValid = () => {
+    const basicValid = formData.title.trim() !== '' &&
+        formData.priority !== '' &&
+        formData.owner !== '' &&
+        formData.dueDate !== '' &&
+        formData.project !== ''; // Project is now required for all tasks
+    
+    if (isVendorView) {
+        return basicValid && formData.vendor !== '' && formData.vendorCategory.length > 0;
+    }
+
+    return basicValid &&
+        formData.assignees.length > 0 &&
+        formData.category !== '';
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isFormValid()) return;
+    
+    const taskPayload: any = {
+      title: formData.title,
+      priority: formData.priority as any,
+      dueDate: formData.dueDate,
+      remarks: formData.notes,
+      owner: formData.owner,
+      project: formData.project, // Project is always included now
+    };
+
+    if (isVendorView) {
+        taskPayload.vendor = formData.vendor;
+        taskPayload.vendorCategory = Array.isArray(formData.vendorCategory) ? formData.vendorCategory.join(', ') : formData.vendorCategory;
+        // For vendor tasks, assignees and category should be empty
+        taskPayload.assignees = '';
+        taskPayload.category = ''; 
+    } else {
+        taskPayload.assignees = formData.assignees.join(', ');
+        taskPayload.category = formData.category;
+        // For non-vendor tasks, vendor fields should be empty
+        taskPayload.vendor = '';
+        taskPayload.vendorCategory = '';
+    }
+
+    onSave(taskPayload);
+    
+    setFormData({
+      title: '',
+      assignees: [],
+      category: '',
+      dueDate: '',
+      priority: 'Medium',
+      owner: 'PANKAJ KUMAR JAIN',
+      project: '',
+      vendor: '',
+      vendorCategory: [],
+      notes: ''
+    });
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-opacity">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-200">
+        
+        <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-100">
+          <h2 className="text-xl font-bold text-indigo-600">{isVendorView ? 'Add Vendor Task' : 'Add Task'}</h2>
+          <button 
+            type="button"
+            onClick={onClose}
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="p-4 md:p-6 space-y-5">
+            
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <label className="text-sm font-medium text-black block mb-1">Task <span className="text-red-500">*</span></label>
+                <input 
+                  name="title"
+                  type="text"
+                  required
+                  placeholder="Enter task title"
+                  value={formData.title}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none text-black placeholder-gray-500"
+                />
+              </div>
+              <div className="w-full md:w-40">
+                <label className="text-sm font-medium text-black block mb-1">Priority <span className="text-red-500">*</span></label>
+                <div className="relative">
+                  <select 
+                    name="priority"
+                    value={formData.priority}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none appearance-none text-black"
+                  >
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                  </select>
+                  <div className="absolute right-3 top-3 pointer-events-none">
+                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Project Selector - always visible now */}
+            <div className="space-y-1">
+                <label className="text-sm font-medium text-black block mb-1">Project <span className="text-red-500">*</span></label>
+                <div className="flex gap-2">
+                    <div className="flex-1">
+                        <SearchableSelect
+                            options={projectOptions}
+                            value={formData.project}
+                            onChange={(val) => setFormData(prev => ({ ...prev, project: val }))}
+                            placeholder="Select Project..."
+                            required
+                        />
+                    </div>
+                    <button type="button" onClick={onAddProject} className="px-3 py-2 text-gray-500 hover:text-indigo-600 border border-gray-200 hover:bg-indigo-50 rounded-lg h-[42px]"><Plus size={18} /></button>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {isVendorView ? (
+                    <>
+                        <div className="space-y-1">
+                            <SearchableSelect
+                                label="Task Owner"
+                                options={userOptions}
+                                value={formData.owner}
+                                onChange={(val) => setFormData(prev => ({ ...prev, owner: val }))}
+                                multiple={false}
+                                placeholder="Select Owner..."
+                                required
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <SearchableSelect
+                                label="Vendor"
+                                options={vendorOptions}
+                                value={formData.vendor}
+                                onChange={(val) => setFormData(prev => ({ ...prev, vendor: val }))}
+                                placeholder="Select Vendor..."
+                                required
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium text-black block mb-1">Vendor Category <span className="text-red-500">*</span></label>
+                            <div className="flex gap-2">
+                                <div className="flex-1">
+                                    <SearchableSelect
+                                        options={vendorCategoryOptions}
+                                        value={formData.vendorCategory}
+                                        onChange={(val) => setFormData(prev => ({ ...prev, vendorCategory: val }))}
+                                        multiple={true}
+                                        placeholder="Select Categories..."
+                                        required
+                                    />
+                                </div>
+                                <button type="button" onClick={onAddVendorCategory} className="px-3 py-2 text-gray-500 hover:text-indigo-600 border border-gray-200 hover:bg-indigo-50 rounded-lg h-[42px]"><Plus size={18} /></button>
+                            </div>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium text-black block mb-1">Due Date <span className="text-red-500">*</span></label>
+                            <input 
+                                name="dueDate"
+                                type="date" 
+                                required
+                                value={formData.dueDate}
+                                onChange={handleChange}
+                                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none text-black"
+                            />
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div className="space-y-1">
+                            <SearchableSelect
+                                label="Assignees"
+                                options={userOptions}
+                                value={formData.assignees}
+                                onChange={(val) => setFormData(prev => ({ ...prev, assignees: val }))}
+                                multiple={true}
+                                placeholder="Select Assignees..."
+                                required
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <SearchableSelect
+                                label="Task Owner"
+                                options={userOptions}
+                                value={formData.owner}
+                                onChange={(val) => setFormData(prev => ({ ...prev, owner: val }))}
+                                multiple={false}
+                                placeholder="Select Owner..."
+                                required
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium text-black block mb-1">Category <span className="text-red-500">*</span></label>
+                            <div className="flex gap-2">
+                                <div className="flex-1">
+                                    <SearchableSelect
+                                        options={categoryOptions}
+                                        value={formData.category}
+                                        onChange={(val) => setFormData(prev => ({ ...prev, category: val }))}
+                                        placeholder="Select Category..."
+                                        required
+                                    />
+                                </div>
+                                <button type="button" onClick={onAddCategory} className="px-3 py-2 text-gray-500 hover:text-indigo-600 border border-gray-200 hover:bg-indigo-50 rounded-lg h-[42px]"><Plus size={18} /></button>
+                            </div>
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium text-black block mb-1">Due Date <span className="text-red-500">*</span></label>
+                            <input 
+                                name="dueDate"
+                                type="date" 
+                                required
+                                value={formData.dueDate}
+                                onChange={handleChange}
+                                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none text-black"
+                            />
+                        </div>
+                    </>
+                )}
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-black block mb-1">Notes</label>
+              <textarea 
+                name="notes"
+                rows={4}
+                value={formData.notes}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none text-black resize-none"
+              ></textarea>
+            </div>
+          </div>
+
+          <div className="p-4 md:p-6 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end space-x-3">
+            <button type="button" onClick={onClose} className="px-6 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">Cancel</button>
+            {isFormValid() && (
+                <button type="submit" className="px-6 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm focus:ring-2 focus:ring-indigo-500 transition-all">Save Task</button>
+            )}
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};

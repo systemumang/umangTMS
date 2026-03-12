@@ -1,0 +1,511 @@
+
+import React, { useState, useMemo, useEffect } from 'react';
+import { Plus, Download, FileText, Search, CheckSquare, LayoutGrid, LayoutList, Filter, X, Clock, AlertTriangle, Users, Trash2, AlertCircle, Tags } from 'lucide-react';
+import { TaskTable } from './TaskTable';
+import { UpdateTaskModal } from './UpdateTaskModal';
+import { EditTaskModal } from './EditTaskModal';
+import { BulkUpdateModal } from './BulkUpdateModal';
+import { Task, User, Project, Category, Vendor, VendorCategory } from '../types';
+import { SearchableSelect } from './SearchableSelect';
+import { parseToISO, formatToIndianDate } from '../App';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
+interface TasksViewProps {
+  title: string;
+  description: string;
+  onAddTask: (isVendor?: boolean) => void;
+  tasks: Task[];
+  users: User[];
+  projects: Project[];
+  categories: Category[];
+  vendors: Vendor[];
+  onUpdateTask: (task: Task) => void;
+  onEditTask: (task: Task) => void;
+  onBulkUpdateTask: (ids: number[], updates: Partial<Task>) => void;
+  onDeleteTask: (id: number, isVendor: boolean) => void;
+  onExportExcel: (tasks: Task[]) => void;
+  onViewHistory: (task: Task) => void;
+  filterType?: 'all' | 'pending' | 'completed';
+  onAddCategory: () => void;
+  onAddProject: () => void;
+  onAddVendorCategory?: () => void;
+  isVendorView?: boolean;
+  syncingIds?: Set<number>;
+  currentUser?: User | null;
+  vendorCategories: VendorCategory[];
+  lastAddedCategory?: string;
+  lastAddedProject?: string;
+  lastAddedVendorCategory?: string;
+  onClearLastAdded?: () => void;
+  filterStatus: string[];
+  setFilterStatus: (val: string[]) => void;
+  filterPriority: string[];
+  setFilterPriority: (val: string[]) => void;
+  filterProject: string[];
+  setFilterProject: (val: string[]) => void;
+  filterClient: string[];
+  setFilterClient: (val: string[]) => void;
+  filterOwner: string[];
+  setFilterOwner: (val: string[]) => void;
+  filterAssignee: string[];
+  setFilterAssignee: (val: string[]) => void;
+  filterCategory: string[];
+  setFilterCategory: (val: string[]) => void;
+  filterVendor?: string[];
+  setFilterVendor?: (val: string[]) => void;
+  dateFrom: string;
+  setDateFrom: (val: string) => void;
+  dateTo: string;
+  setDateTo: (val: string) => void;
+  lastUpdateFrom: string;
+  setLastUpdateFrom: (val: string) => void;
+  lastUpdateTo: string;
+  setLastUpdateTo: (val: string) => void;
+  searchTerm: string;
+  setSearchTerm: (val: string) => void;
+}
+
+export const TasksView: React.FC<TasksViewProps> = ({ 
+  title, 
+  description, 
+  onAddTask, 
+  tasks, 
+  users,
+  projects,
+  categories,
+  vendors,
+  onUpdateTask,
+  onEditTask,
+  onBulkUpdateTask,
+  onDeleteTask,
+  onExportExcel,
+  onViewHistory,
+  filterType = 'all',
+  onAddCategory,
+  onAddProject,
+  onAddVendorCategory,
+  isVendorView = false,
+  syncingIds = new Set(),
+  currentUser,
+  vendorCategories = [],
+  lastAddedCategory = '',
+  lastAddedProject = '',
+  lastAddedVendorCategory = '',
+  onClearLastAdded,
+  filterStatus, setFilterStatus,
+  filterPriority, setFilterPriority,
+  filterProject, setFilterProject,
+  filterClient, setFilterClient,
+  filterOwner, setFilterOwner,
+  filterAssignee, setFilterAssignee,
+  filterCategory, setFilterCategory,
+  filterVendor = [], setFilterVendor,
+  dateFrom, setDateFrom,
+  dateTo, setDateTo,
+  lastUpdateFrom, setLastUpdateFrom,
+  lastUpdateTo, setLastUpdateTo,
+  searchTerm, setSearchTerm
+}) => {
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isBulkUpdateModalOpen, setIsBulkUpdateModalOpen] = useState(false);
+  const [bulkMode, setBulkMode] = useState<'status' | 'priority' | 'assignee' | 'category'>('status');
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [mobileViewMode, setMobileViewMode] = useState<'card' | 'table'>('card');
+  const [showFilters, setShowFilters] = useState(false);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [sortKey, setSortKey] = useState<keyof Task>('date');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  
+  const isAdmin = currentUser?.role === 'Admin';
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
+  useEffect(() => {
+    setSelectedIds([]);
+    setCurrentPage(1);
+  }, [filterType, filterStatus, filterPriority, filterProject, filterClient, filterOwner, filterAssignee, filterCategory, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, searchTerm]);
+
+  // Helper for generating filter summary string for reports
+  const getFilterSummary = () => {
+    const active: string[] = [];
+    if (filterStatus.length > 0) active.push(`Status: ${filterStatus.join(', ')}`);
+    if (filterPriority.length > 0) active.push(`Priority: ${filterPriority.join(', ')}`);
+    if (filterProject.length > 0) active.push(`Projects: ${filterProject.length} items`);
+    if (filterClient.length > 0) active.push(`Clients: ${filterClient.length} items`);
+    if (filterCategory.length > 0) active.push(`Category: ${filterCategory.join(', ')}`);
+    if (filterAssignee.length > 0) active.push(`Assignee: ${filterAssignee.join(', ')}`);
+    if (isVendorView && filterVendor.length > 0) active.push(`Vendor: ${filterVendor.join(', ')}`);
+    if (dateFrom || dateTo) active.push(`Date: ${dateFrom || 'start'} to ${dateTo || 'end'}`);
+    if (searchTerm) active.push(`Search: "${searchTerm}"`);
+    return active.length > 0 ? active.join(' | ') : 'None';
+  };
+
+  const matchesFilter = (task: Task, filterKey: string, values: string[]) => {
+    if (!values || values.length === 0) return true;
+    switch(filterKey) {
+        case 'status': 
+          if (values.includes('Overdue')) {
+              if (values.length === 1) {
+                  if (task.status === 'Completed' || !task.dueDate) return false;
+                  const dueISO = parseToISO(task.dueDate);
+                  const todayISO = new Date().toISOString().split('T')[0];
+                  return dueISO && dueISO < todayISO;
+              }
+              const isOverdue = task.status !== 'Completed' && task.dueDate && parseToISO(task.dueDate) < new Date().toISOString().split('T')[0];
+              return values.includes(task.status) || isOverdue;
+          }
+          return values.includes(task.status);
+        case 'priority': return values.includes(task.priority);
+        case 'project': return values.includes(task.project);
+        case 'category': return values.includes(task.category || '');
+        case 'client': return values.includes(task.clientName || '');
+        case 'owner': return values.some(v => String(task.owner || '').includes(v));
+        case 'assignee': return values.some(v => String(task.assignees || '').includes(v));
+        case 'vendor': return values.includes(task.vendor || '');
+        default: return true;
+    }
+  };
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      if (filterType === 'pending') {
+          const project = projects.find(p => p.name === task.project || `${p.name} (${p.client})` === task.project);
+          if (project && project.status === 'Inactive') return false;
+          if (task.status === 'Completed' && filterStatus.length === 0) return false;
+      }
+      if (filterType === 'completed' && task.status !== 'Completed') return false;
+
+      if (searchTerm) {
+        const lowerTerm = searchTerm.toLowerCase();
+        const matchesSearch = Object.values(task).some(val => 
+          String(val || '').toLowerCase().includes(lowerTerm)
+        );
+        if (!matchesSearch) return false;
+      }
+
+      if (!matchesFilter(task, 'status', filterStatus)) return false;
+      if (!matchesFilter(task, 'priority', filterPriority)) return false;
+      if (!matchesFilter(task, 'project', filterProject)) return false;
+      if (!matchesFilter(task, 'category', filterCategory)) return false;
+      if (!matchesFilter(task, 'client', filterClient)) return false;
+      if (!matchesFilter(task, 'owner', filterOwner)) return false;
+      if (!matchesFilter(task, 'assignee', filterAssignee)) return false;
+      if (isVendorView && filterVendor && !matchesFilter(task, 'vendor', filterVendor)) return false;
+
+      const taskISO = parseToISO(task.date);
+      if (dateFrom && taskISO < dateFrom) return false;
+      if (dateTo && taskISO > taskISO) return false;
+
+      const updateISO = parseToISO(task.lastUpdateDate || '');
+      if (lastUpdateFrom && (!updateISO || updateISO < lastUpdateFrom)) return false;
+      if (lastUpdateTo && (!updateISO || updateISO > lastUpdateTo)) return false;
+
+      return true;
+    });
+  }, [tasks, projects, filterType, searchTerm, filterStatus, filterPriority, filterProject, filterCategory, filterClient, filterOwner, filterAssignee, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, isVendorView]);
+
+  const finalSortedTasks = useMemo(() => {
+    return [...filteredTasks].sort((a, b) => {
+        const aVal = a[sortKey] || '';
+        const bVal = b[sortKey] || '';
+        if (aVal < bVal) return sortDir === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortDir === 'asc' ? 1 : -1;
+        return 0;
+    });
+  }, [filteredTasks, sortKey, sortDir]);
+
+  const paginatedTasks = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return finalSortedTasks.slice(startIndex, startIndex + itemsPerPage);
+  }, [finalSortedTasks, currentPage]);
+
+  const handleExportExcelLocal = () => {
+    const filterText = `Applied Filters: ${getFilterSummary()}`;
+    const generatedOn = `Generated on: ${new Date().toLocaleString('en-GB')}`;
+
+    const headers = ['Date', 'Task', 'Notes', 'Category', 'Responsible', 'Owner', 'Project', 'Client', 'Status', 'Last Update Date', 'Last Update Remark', 'Priority', 'Due Date'];
+    
+    const csvRows = [
+        `"${filterText}"`,
+        `"${generatedOn}"`,
+        headers.join(','),
+        ...finalSortedTasks.map(t => {
+            const isNotStarted = t.status === 'Not Yet Started';
+            const lastDate = isNotStarted ? '' : (t.lastUpdateDate || '');
+            const lastRemark = isNotStarted ? '' : (t.lastUpdateRemarks || '');
+            const resp = isVendorView ? (t.vendor || '-') : (t.assignees || '-');
+
+            return [
+                `"${t.date}"`,
+                `"${(t.title || '').replace(/"/g, '""')}"`,
+                `"${(t.remarks || '').replace(/"/g, '""')}"`,
+                `"${t.category || '-'}"`,
+                `"${resp}"`,
+                `"${t.owner}"`,
+                `"${t.project.split(' (')[0]}"`,
+                `"${t.clientName || ''}"`,
+                `"${t.status}"`,
+                `"${lastDate}"`,
+                `"${lastRemark.replace(/"/g, '""')}"`,
+                `"${t.priority}"`,
+                `"${t.dueDate}"`
+            ].join(',');
+        })
+    ].join('\n');
+
+    const blob = new Blob([csvRows], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.click();
+  };
+
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF('l', 'mm', 'a4');
+    doc.setFontSize(18);
+    doc.setTextColor(79, 70, 229); 
+    doc.text(`${title} Report`, 14, 15);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(50, 50, 50);
+    doc.text(`Generated on: ${new Date().toLocaleString('en-GB')}`, 14, 21);
+    
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    const filterSummary = getFilterSummary();
+    const splitFilters = doc.splitTextToSize(`Active Filters: ${filterSummary}`, 260);
+    doc.text(splitFilters, 14, 27);
+
+    const headers = [['S.No', 'Date', 'Task', 'Notes', 'Project', 'Client', 'Responsible', 'Status', 'Last Update Date', 'Last Update Remark', 'Due Date']];
+    
+    const data = finalSortedTasks.map((t, i) => {
+      const isNotStarted = t.status === 'Not Yet Started';
+      return [
+        i + 1,
+        formatToIndianDate(t.date),
+        t.title,
+        t.remarks || '-',
+        t.project.split(' (')[0],
+        t.clientName || '-',
+        isVendorView ? (t.vendor || '-') : (t.assignees || '-'),
+        t.status,
+        isNotStarted ? '' : formatToIndianDate(t.lastUpdateDate || ''),
+        isNotStarted ? '' : (t.lastUpdateRemarks || ''),
+        formatToIndianDate(t.dueDate)
+      ];
+    });
+
+    autoTable(doc, {
+      head: headers,
+      body: data,
+      startY: 32 + (splitFilters.length * 4),
+      styles: { fontSize: 7, cellPadding: 2, overflow: 'linebreak' },
+      headStyles: { fillColor: [79, 70, 229] },
+      columnStyles: {
+        2: { cellWidth: 35 }, 
+        3: { cellWidth: 35 },
+        5: { cellWidth: 25 },
+        9: { cellWidth: 35 }  
+      }
+    });
+
+    doc.save(`${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  const statusOptions = [
+    { value: 'Not Yet Started', label: 'Not Yet Started' },
+    { value: 'In Progress', label: 'In Progress' },
+    { value: 'Pending for Client', label: 'Pending for Client' },
+    { value: 'Pending for Owner', label: 'Pending for Owner' },
+    { value: 'Pending for Training', label: 'Pending for Training' },
+    { value: 'Pending for Billing', label: 'Pending for Billing' },
+    { value: 'Pending for Payment', label: 'Pending for Payment' },
+    { value: 'Completed', label: 'Completed' },
+    { value: 'Overdue', label: 'Overdue' }
+  ];
+  const priorityOptions = [
+    { value: 'High', label: 'High' },
+    { value: 'Medium', label: 'Medium' },
+    { value: 'Low', label: 'Low' }
+  ];
+  const categoryOptions = useMemo(() => categories.map(c => ({ value: c.name, label: c.name })), [categories]);
+  const projectOptions = useMemo(() => projects.map(p => {
+      const val = `${p.name.trim()} (${p.client.trim()})`;
+      return { value: val, label: val };
+  }), [projects]);
+  const clientOptions = useMemo(() => {
+      const unique = Array.from(new Set(projects.map(p => p.client.trim()))).filter(Boolean);
+      return (unique as string[]).map(c => ({ value: c, label: c }));
+  }, [projects]);
+  const ownerOptions = useMemo(() => users.filter(u => u.isActive).map(u => ({ value: u.name, label: u.name })), [users]);
+  const assigneeOptions = useMemo(() => users.filter(u => u.isActive).map(u => ({ value: u.name, label: u.name })), [users]);
+  const vendorOptions = useMemo(() => vendors.map(v => ({ value: v.name, label: v.name })), [vendors]);
+
+  const totalPages = Math.ceil(filteredTasks.length / itemsPerPage);
+  const handleUpdateTaskClick = (task: Task) => { setSelectedTask(task); setIsUpdateModalOpen(true); };
+  const handleEditTaskClick = (task: Task) => { setSelectedTask(task); setIsEditModalOpen(true); };
+  const openBulkUpdate = (mode: 'status' | 'priority' | 'assignee' | 'category') => { setBulkMode(mode); setIsBulkUpdateModalOpen(true); };
+  const handleBulkUpdate = (updates: Partial<Task>) => { onBulkUpdateTask(selectedIds, updates); setSelectedIds([]); };
+  const confirmBulkDelete = () => { selectedIds.forEach(id => onDeleteTask(id, isVendorView)); setSelectedIds([]); setShowBulkDeleteConfirm(false); };
+
+  const handleClearFiltersLocal = () => {
+    setFilterStatus([]);
+    setFilterPriority([]);
+    setFilterProject([]);
+    setFilterCategory([]);
+    setFilterClient([]);
+    setFilterOwner([]);
+    setFilterAssignee([]);
+    if (setFilterVendor) setFilterVendor([]);
+    setDateFrom('');
+    setDateTo('');
+    setLastUpdateFrom('');
+    setLastUpdateTo('');
+    setSearchTerm('');
+  };
+
+  const activeFilterBadges = useMemo(() => {
+      const badges: { label: string; clear: () => void }[] = [];
+      if (filterStatus.length > 0) badges.push({ label: `Status: ${filterStatus.join(', ')}`, clear: () => setFilterStatus([]) });
+      if (filterPriority.length > 0) badges.push({ label: `Priority: ${filterPriority.join(', ')}`, clear: () => setFilterPriority([]) });
+      if (filterCategory.length > 0) badges.push({ label: `Category: ${filterCategory.join(', ')}`, clear: () => setFilterCategory([]) });
+      if (filterProject.length > 0) badges.push({ label: `Project: ${filterProject.length} selected`, clear: () => setFilterProject([]) });
+      if (filterClient.length > 0) badges.push({ label: `Client: ${filterClient.length} selected`, clear: () => setFilterClient([]) });
+      if (filterOwner.length > 0) badges.push({ label: `Owner: ${filterOwner.join(', ')}`, clear: () => setFilterOwner([]) });
+      if (filterAssignee.length > 0) badges.push({ label: `Assignee: ${filterAssignee.join(', ')}`, clear: () => setFilterAssignee([]) });
+      if (isVendorView && filterVendor.length > 0) badges.push({ label: `Vendor: ${filterVendor.join(', ')}`, clear: () => setFilterVendor?.([]) });
+      return badges;
+  }, [filterStatus, filterPriority, filterCategory, filterProject, filterClient, filterOwner, filterAssignee, filterVendor, isVendorView]);
+
+  const getFilterClass = (isActive: boolean) => 
+    `w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-colors ${isActive ? 'bg-indigo-50 border-indigo-500 text-indigo-700 font-medium' : 'bg-white border-indigo-300 text-black'}`;
+
+  const startEntry = filteredTasks.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
+  const endEntry = Math.min(currentPage * itemsPerPage, filteredTasks.length);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h2 className="text-2xl font-bold text-indigo-600">{title}</h2>
+            <p className="text-sm text-black mt-1">{description}</p>
+        </div>
+
+        <div className="flex flex-wrap gap-2 items-center">
+          {selectedIds.length > 0 && isAdmin ? (
+            <div className="flex flex-wrap gap-2 animate-in fade-in zoom-in duration-200">
+                <button onClick={() => openBulkUpdate('status')} className="flex items-center space-x-1 px-4 py-2 bg-indigo-50 text-indigo-700 border-2 border-indigo-200 rounded-md hover:bg-indigo-100 text-sm font-bold shadow-sm transition-colors uppercase tracking-wider">
+                    <Clock size={16} /><span>Status ({selectedIds.length})</span>
+                </button>
+                <button onClick={() => openBulkUpdate('priority')} className="flex items-center space-x-1 px-4 py-2 bg-indigo-50 text-indigo-700 border-2 border-indigo-200 rounded-md hover:bg-indigo-100 text-sm font-bold shadow-sm transition-colors uppercase tracking-wider">
+                    <AlertTriangle size={16} /><span>Priority</span>
+                </button>
+                <button onClick={() => openBulkUpdate('category')} className="flex items-center space-x-1 px-4 py-2 bg-indigo-50 text-indigo-700 border-2 border-indigo-200 rounded-md hover:bg-indigo-100 text-sm font-bold shadow-sm transition-colors uppercase tracking-wider">
+                    <Tags size={16} /><span>Category</span>
+                </button>
+                <button onClick={() => openBulkUpdate('assignee')} className="flex items-center space-x-1 px-4 py-2 bg-indigo-50 text-indigo-700 border-2 border-indigo-200 rounded-md hover:bg-indigo-100 text-sm font-bold shadow-sm transition-colors uppercase tracking-wider">
+                    <Users size={16} /><span>Assignee</span>
+                </button>
+                <button onClick={() => setShowBulkDeleteConfirm(true)} className="flex items-center space-x-1 px-4 py-2 bg-red-600 text-white border-2 border-red-700 rounded-md hover:bg-red-700 text-sm font-bold shadow-sm transition-colors uppercase tracking-wider">
+                  <Trash2 size={16} /><span>Bulk Delete</span>
+                </button>
+            </div>
+          ) : (
+            <button onClick={() => onAddTask(isVendorView)} className="flex items-center space-x-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium shadow-sm transition-colors"><Plus size={16} /><span>Add Task</span></button>
+          )}
+          <button onClick={handleExportExcelLocal} className="flex items-center space-x-1 px-3 py-2 bg-white border border-indigo-600 text-indigo-600 rounded-md hover:bg-indigo-50 text-sm font-medium shadow-sm transition-colors"><FileText size={16} className="text-green-600" /><span>Excel</span></button>
+          <button onClick={handleDownloadPDF} className="flex items-center space-x-1 px-3 py-2 bg-white border border-indigo-600 text-indigo-600 rounded-md hover:bg-indigo-50 text-sm font-medium shadow-sm transition-colors"><Download size={16} className="text-red-500" /><span>PDF</span></button>
+          <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center space-x-1 px-3 py-2 border rounded-md text-sm font-medium shadow-sm transition-all duration-200 ${showFilters ? 'bg-indigo-600 border-indigo-700 text-white ring-2 ring-indigo-200' : 'bg-indigo-50 border-indigo-300 text-indigo-600 hover:bg-indigo-100'}`} title="Toggle Filters"><Filter size={16} /></button>
+          
+          <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200 shadow-sm">
+              <button onClick={() => setMobileViewMode('card')} className={`p-1.5 rounded-md transition-all ${mobileViewMode === 'card' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-indigo-400'}`} title="Card View"><LayoutGrid size={18} /></button>
+              <button onClick={() => setMobileViewMode('table')} className={`p-1.5 rounded-md transition-all ${mobileViewMode === 'table' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`} title="Table View"><LayoutList size={18} /></button>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-indigo-200 space-y-4">
+        {activeFilterBadges.length > 0 && (
+            <div className="flex flex-wrap gap-2 pb-2">
+                {activeFilterBadges.map((badge, idx) => (
+                    <span key={idx} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 text-red-600 text-xs font-bold border border-indigo-200">
+                        {badge.label}
+                        <button onClick={badge.clear} className="p-0.5 hover:bg-indigo-200 rounded-full transition-colors"><X size={10} className="text-red-600" /></button>
+                    </span>
+                ))}
+            </div>
+        )}
+
+        <div className="relative">
+          <Search className="absolute left-3 top-2.5 text-indigo-600" size={18} />
+          <input 
+            type="text" 
+            placeholder="Search all columns (Task, Project, Assignee, Status, etc)..." 
+            className={`w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-100 text-sm transition-colors ${searchTerm ? 'bg-indigo-50 border-indigo-500 text-indigo-700 font-medium' : 'border-indigo-300 text-indigo-700'}`} 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        
+        <div className={`${showFilters ? 'grid' : 'hidden'} grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end`}>
+             <SearchableSelect label="Status" options={statusOptions} value={filterStatus} onChange={setFilterStatus} multiple={true} placeholder="All Statuses" className="text-sm"/>
+             <SearchableSelect label="Priority" options={priorityOptions} value={filterPriority} onChange={setFilterPriority} multiple={true} placeholder="All Priorities" className="text-sm"/>
+             <SearchableSelect label="Category" options={categoryOptions} value={filterCategory} onChange={setFilterCategory} multiple={true} placeholder="All Categories" className="text-sm"/>
+             {!isVendorView && <SearchableSelect label="Project" options={projectOptions} value={filterProject} onChange={setFilterProject} multiple={true} placeholder="All Projects" className="text-sm"/>}
+             {!isVendorView && <SearchableSelect label="Client" options={clientOptions} value={filterClient} onChange={setFilterClient} multiple={true} placeholder="All Clients" className="text-sm"/>}
+             <SearchableSelect label="Owner" options={ownerOptions} value={filterOwner} onChange={setFilterOwner} multiple={true} placeholder="All Owners" className="text-sm"/>
+             {!isVendorView && <SearchableSelect label="Assignee" options={assigneeOptions} value={filterAssignee} onChange={setFilterAssignee} multiple={true} placeholder="All Assignees" className="text-sm"/>}
+             {isVendorView && setFilterVendor && <SearchableSelect label="Vendor" options={vendorOptions} value={filterVendor} onChange={setFilterVendor} multiple={true} placeholder="All Vendors" className="text-sm"/>}
+            <div className="col-span-1 relative">
+                 <label className="text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1 block">Created From</label>
+                 <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className={getFilterClass(dateFrom !== '')}/>
+            </div>
+            <div className="col-span-1 relative">
+                <label className="text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1 block">Created To</label>
+                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className={getFilterClass(dateTo !== '')}/>
+            </div>
+            <div className="col-span-1">
+                <button onClick={handleClearFiltersLocal} className="w-full px-3 py-2 bg-red-600 text-white border border-red-700 rounded-md hover:bg-red-700 text-sm font-medium transition-colors h-[38px] flex items-center justify-center" title="Clear Filters">Clear Filters</button>
+            </div>
+        </div>
+      </div>
+
+      <TaskTable tasks={paginatedTasks} onUpdateTask={handleUpdateTaskClick} onEditTask={handleEditTaskClick} onDeleteTask={onDeleteTask} selectedIds={selectedIds} onSelectionChange={setSelectedIds} onViewHistory={onViewHistory} showSelection={isAdmin} isVendorView={isVendorView} viewMode={mobileViewMode} projects={projects} syncingIds={syncingIds} currentUser={currentUser} sortKey={sortKey} sortDir={sortDir} onSort={(key, dir) => { setSortKey(key); setSortDir(dir); }} startIndex={startEntry} />
+      
+      <div className="flex justify-between items-center text-xs text-indigo-600 font-bold px-1 uppercase tracking-wider pb-6">
+          <span>Showing {startEntry} to {endEntry} of {filteredTasks.length} entries</span>
+          <div className="flex space-x-2">
+              <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} className="px-4 py-1.5 bg-indigo-600 text-white rounded shadow hover:bg-indigo-700 disabled:opacity-50 transition-colors uppercase text-[10px]" disabled={currentPage === 1}>Previous</button>
+              <button onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} className="px-4 py-1.5 bg-indigo-600 text-white rounded shadow hover:bg-indigo-700 disabled:opacity-50 transition-colors uppercase text-[10px]" disabled={currentPage === totalPages || totalPages === 0}>Next</button>
+          </div>
+      </div>
+
+      <UpdateTaskModal isOpen={isUpdateModalOpen} onClose={() => setIsUpdateModalOpen(false)} task={selectedTask} onUpdate={onUpdateTask} users={users} vendors={vendors}/>
+      <EditTaskModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} task={selectedTask} onSave={onEditTask} onAddCategory={onAddCategory} onAddProject={onAddProject} onAddVendorCategory={onAddVendorCategory!} users={users} categories={categories} projects={projects} vendors={vendors} vendorCategories={vendorCategories} isVendorView={isVendorView} lastAddedCategory={lastAddedCategory} lastAddedProject={lastAddedProject} lastAddedVendorCategory={lastAddedVendorCategory} onClearLastAdded={onClearLastAdded} />
+      <BulkUpdateModal isOpen={isBulkUpdateModalOpen} onClose={() => setIsBulkUpdateModalOpen(false)} count={selectedIds.length} onUpdate={handleBulkUpdate} users={users} vendors={vendors} categories={categories} isVendorView={isVendorView} mode={bulkMode} />
+
+      {showBulkDeleteConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200">
+              <div className="p-6 text-center space-y-4">
+                 <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center text-red-600">
+                    <AlertCircle size={32} />
+                 </div>
+                 <div>
+                    <h3 className="text-xl font-bold text-gray-900 uppercase">Confirm Bulk Delete</h3>
+                    <p className="text-sm text-gray-500 mt-2">Are you sure you want to delete <strong>{selectedIds.length}</strong> selected tasks? <br/>This action cannot be undone.</p>
+                 </div>
+                 <div className="flex gap-3 pt-2">
+                    <button onClick={() => setShowBulkDeleteConfirm(false)} className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors uppercase text-sm">Cancel</button>
+                    <button onClick={confirmBulkDelete} className="flex-1 py-3 px-4 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-200 uppercase text-sm">Delete All</button>
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
+    </div>
+  );
+};
