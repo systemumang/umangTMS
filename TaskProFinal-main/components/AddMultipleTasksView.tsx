@@ -42,14 +42,14 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
   const [success, setSuccess] = useState(false);
   const [activeRowId, setActiveRowId] = useState<string | null>(null);
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
-    task: 250,
-    priority: 110,
-    project: 180,
-    assignee: 200,
-    owner: 160,
-    category: 160,
-    dueDate: 140,
-    notes: 160
+    task: 180,
+    priority: 90,
+    project: 140,
+    assignee: 160,
+    owner: 140,
+    category: 130,
+    dueDate: 120,
+    notes: 130
   });
 
   const resizingColumn = useRef<string | null>(null);
@@ -152,7 +152,7 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
   };
 
   const thClass = "px-4 py-3 text-xs font-black text-white uppercase tracking-widest border-r border-black last:border-r-0 text-left bg-blue-600 sticky top-0 z-20 relative";
-  const tdClass = "px-2 py-3 border-r border-black last:border-r-0 align-top relative";
+  const tdClass = "px-2 py-3 border-r border-b border-black last:border-r-0 align-top relative";
 
   const ResizeHandle = ({ col }: { col: string }) => (
     <div 
@@ -166,8 +166,8 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
       <div className="bg-white rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] border border-blue-100 flex flex-col min-h-[400px] overflow-visible">
         <div className="hidden md:block">
           {/* Scrollable Container - Tight against content to keep scrollbar just below last row */}
-          <div className="overflow-x-auto custom-scrollbar border-b border-black">
-            <table className="w-full border-separate border-spacing-0 table-fixed min-w-max overflow-visible">
+          <div className="overflow-visible border-b border-black">
+            <table className="w-full border-separate border-spacing-0 table-fixed overflow-visible">
               <thead className="bg-blue-600 sticky top-0 z-20">
                 <tr>
                   <th className={thClass} style={{ width: columnWidths.task }}>TASK <ResizeHandle col="task" /></th>
@@ -189,7 +189,7 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-black overflow-visible">
+              <tbody className="overflow-visible">
                 {rows.map((row) => (
                   <tr
                     key={row.id}
@@ -202,14 +202,14 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
                         value={row.title}
                         onChange={(e) => updateField(row.id, 'title', e.target.value)}
                         placeholder="Task title..."
-                        className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 outline-none text-xs font-medium"
+                        className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 outline-none text-xs font-medium text-black placeholder-black"
                       />
                     </td>
                     <td className={tdClass}>
                       <select
                         value={row.priority}
                         onChange={(e) => updateField(row.id, 'priority', e.target.value)}
-                        className="w-full px-1 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 outline-none text-[10px] font-bold"
+                        className="w-full px-1 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 outline-none text-[10px] font-bold text-black"
                       >
                         <option value="High">High</option>
                         <option value="Medium">Medium</option>
@@ -270,7 +270,7 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
                         type="date"
                         value={row.dueDate}
                         onChange={(e) => updateField(row.id, 'dueDate', e.target.value)}
-                        className="w-full px-1 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 outline-none text-[10px] text-center font-bold"
+                        className="w-full px-1 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 outline-none text-[10px] text-center font-bold text-black"
                       />
                     </td>
                     <td className={tdClass}>
@@ -279,13 +279,13 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
                         onChange={(e) => updateField(row.id, 'notes', e.target.value)}
                         rows={1}
                         placeholder="Notes..."
-                        className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 outline-none text-xs resize-none"
+                        className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 outline-none text-xs resize-none text-black placeholder-black"
                       />
                     </td>
-                    <td className="px-2 py-3 text-center w-[80px]">
+                    <td className="px-2 py-3 text-center w-[80px] border-b border-black">
                       <button
                         onClick={() => removeRow(row.id)}
-                        className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                        className="p-1.5 text-white bg-red-500 hover:bg-red-600 rounded-full transition-all"
                         title="Remove row"
                       >
                         <Trash2 size={16} />
@@ -306,7 +306,7 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
                 <button
                   onClick={() => removeRow(row.id)}
                   disabled={rows.length === 1}
-                  className={`p-1.5 rounded-full transition-all ${rows.length === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-red-500 hover:bg-red-50'}`}
+                  className={`p-1.5 rounded-full transition-all ${rows.length === 1 ? 'text-white bg-red-300 cursor-not-allowed' : 'text-white bg-red-500 hover:bg-red-600'}`}
                   title="Remove row"
                 >
                   <Trash2 size={16} />
@@ -321,7 +321,7 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
                     value={row.title}
                     onChange={(e) => updateField(row.id, 'title', e.target.value)}
                     placeholder="Task title..."
-                    className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 outline-none text-sm"
+                    className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 outline-none text-sm text-black placeholder-black"
                   />
                 </div>
 
@@ -331,7 +331,7 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
                     <select
                       value={row.priority}
                       onChange={(e) => updateField(row.id, 'priority', e.target.value)}
-                      className="w-full px-2 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 outline-none text-xs font-bold"
+                      className="w-full px-2 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 outline-none text-xs font-bold text-black"
                     >
                       <option value="High">High</option>
                       <option value="Medium">Medium</option>
@@ -344,7 +344,7 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
                       type="date"
                       value={row.dueDate}
                       onChange={(e) => updateField(row.id, 'dueDate', e.target.value)}
-                      className="w-full px-2 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 outline-none text-xs font-bold"
+                      className="w-full px-2 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 outline-none text-xs font-bold text-black"
                     />
                   </div>
                 </div>
@@ -393,7 +393,7 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
                     onChange={(e) => updateField(row.id, 'notes', e.target.value)}
                     rows={2}
                     placeholder="Notes..."
-                    className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 outline-none text-sm resize-none"
+                    className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 outline-none text-sm resize-none text-black placeholder-black"
                   />
                 </div>
               </div>
@@ -409,7 +409,6 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
           </button>
         </div>
 
-        {/* Submit button block - Outside the scrolling div so scrollbar is above it */}
         <div className="p-4 sm:p-6 md:p-8 bg-white flex flex-col items-center gap-4 md:gap-6 mt-auto">
           <button 
             onClick={handleSubmit}
@@ -417,10 +416,10 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
             className={`
               relative w-full md:w-auto flex items-center justify-center gap-4 px-6 md:px-32 py-4 md:py-5 rounded-2xl font-black text-sm md:text-xl uppercase tracking-[0.15em] md:tracking-[0.2em] transition-all shadow-xl
               ${isSubmitting 
-                ? 'bg-blue-400 text-white cursor-wait' 
-                : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.98] shadow-blue-200'
+                ? 'bg-black text-white cursor-wait' 
+                : 'bg-black text-white hover:bg-black/90 active:scale-[0.98] shadow-black/20'
               }
-              ${!rows.some(isRowComplete) ? 'opacity-50 grayscale cursor-not-allowed shadow-none' : ''}
+              ${!rows.some(isRowComplete) ? 'opacity-60 cursor-not-allowed shadow-none' : ''}
             `}
           >
             {isSubmitting ? (
@@ -435,12 +434,6 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
             <p className="text-green-600 font-black text-sm animate-bounce tracking-widest uppercase">
               Tasks added successfully!
             </p>
-          )}
-          
-          {!rows.some(isRowComplete) && !isSubmitting && (
-              <p className="text-amber-600 text-[10px] font-black uppercase tracking-widest opacity-60">
-                  * All fields except notes are required to submit
-              </p>
           )}
         </div>
       </div>

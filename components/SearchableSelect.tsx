@@ -1,6 +1,5 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import { ChevronDown, X, Check, Square, CheckSquare, ListChecks, Eraser, Plus } from 'lucide-react';
 
 interface Option {
@@ -21,6 +20,7 @@ interface SearchableSelectProps {
   allowCreate?: boolean;
   onCreateOption?: (value: string) => void | boolean;
   createLabel?: (value: string) => string;
+  compact?: boolean;
 }
 
 export const SearchableSelect: React.FC<SearchableSelectProps> = ({
@@ -35,39 +35,14 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   disabled = false,
   allowCreate = false,
   onCreateOption,
-  createLabel
+  createLabel,
+  compact = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
-
-  // Update position when open or when window/scroll changes
-  const updatePosition = () => {
-    if (isOpen && wrapperRef.current) {
-      const rect = wrapperRef.current.getBoundingClientRect();
-      setCoords({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
-        width: rect.width
-      });
-    }
-  };
-
-  useEffect(() => {
-    if (isOpen) {
-      updatePosition();
-      // Listen to capture-phase scrolls to catch them on any container
-      window.addEventListener('scroll', updatePosition, true);
-      window.addEventListener('resize', updatePosition);
-    }
-    return () => {
-      window.removeEventListener('scroll', updatePosition, true);
-      window.removeEventListener('resize', updatePosition);
-    };
-  }, [isOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -168,7 +143,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   const getDisplayValue = () => {
     if (multiple) {
        const vals = Array.isArray(currentValues) ? currentValues : [];
-       if (vals.length === 0) return <span className="text-gray-400">{placeholder}</span>;
+	       if (vals.length === 0) return <span className="text-black">{placeholder}</span>;
        
        return (
          <div className="flex flex-wrap gap-1.5 py-0.5">
@@ -186,9 +161,9 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
     } else {
       const selectedOption = options.find(o => o.value === currentValues);
       return selectedOption ? (
-        <span className={`${disabled ? 'text-gray-500' : 'text-gray-900'} font-medium`}>{selectedOption.label}</span>
+        <span className="text-black font-medium">{selectedOption.label}</span>
       ) : (
-        <span className="text-gray-400">{placeholder}</span>
+        <span className="text-black">{placeholder}</span>
       );
     }
   };
@@ -196,21 +171,14 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   const dropdownContent = (
     <div 
       ref={dropdownRef}
-      style={{
-        position: 'absolute',
-        top: coords.top,
-        left: coords.left,
-        width: coords.width,
-        zIndex: 9999
-      }}
-      className="mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl max-h-80 overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-1 duration-200"
+      className="absolute top-full left-0 mt-1 w-full z-[120] bg-white border border-gray-200 rounded-xl shadow-2xl max-h-80 overflow-hidden flex flex-col animate-in fade-in duration-200"
     >
       <div className="p-2 border-b border-gray-100 bg-gray-50 sticky top-0 z-10 space-y-2">
         <div className="relative">
           <input
             ref={inputRef}
             type="text"
-            className="w-full pl-3 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 font-medium"
+            className="w-full pl-3 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 font-medium text-black placeholder-black"
             placeholder="Search..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -251,7 +219,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
             return (
               <div
                 key={option.value}
-                className={`px-4 py-3 text-sm cursor-pointer flex items-center gap-3 transition-colors border-b border-gray-50 last:border-0 ${isSelected ? 'bg-indigo-50/50 text-indigo-700' : 'text-gray-700 hover:bg-gray-50'}`}
+                className={`px-4 py-3 text-sm cursor-pointer flex items-center gap-3 transition-colors border-b border-gray-50 last:border-0 ${isSelected ? 'bg-indigo-50/50 text-indigo-700' : 'text-black hover:bg-gray-50'}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleSelect(option.value);
@@ -273,7 +241,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
             );
           })
         ) : (
-          <div className="px-4 py-8 text-sm text-gray-400 text-center font-bold uppercase tracking-widest">
+          <div className="px-4 py-8 text-sm text-black text-center font-bold uppercase tracking-widest">
             No matching results
           </div>
         )}
@@ -302,12 +270,12 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   return (
     <div className={`space-y-1 relative ${className} ${disabled ? 'opacity-70' : ''}`} ref={wrapperRef}>
       {label && (
-        <label className={`text-xs font-bold ${disabled ? 'text-gray-400' : 'text-indigo-600'} uppercase tracking-wider block mb-1`}>
+        <label className="text-xs font-bold text-black uppercase tracking-wider block mb-1">
           {label} {required && <span className="text-red-500">*</span>}
         </label>
       )}
       <div
-        className={`w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-500 flex justify-between items-center min-h-[44px] transition-all ${isOpen ? 'ring-2 ring-indigo-100 border-indigo-500' : ''} ${disabled ? 'bg-gray-50 cursor-not-allowed' : 'cursor-pointer'}`}
+        className={`w-full ${compact ? 'px-3 py-1.5 min-h-[36px]' : 'px-4 py-2.5 min-h-[44px]'} bg-white border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-500 flex justify-between items-center transition-all ${isOpen ? 'ring-2 ring-indigo-100 border-indigo-500' : ''} ${disabled ? 'bg-white cursor-not-allowed' : 'cursor-pointer'}`}
         onClick={() => !disabled && setIsOpen(!isOpen)}
       >
         <div className="flex-1 overflow-hidden">
@@ -316,7 +284,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
         <ChevronDown size={16} className={`text-indigo-400 flex-shrink-0 ml-2 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </div>
 
-      {isOpen && !disabled && createPortal(dropdownContent, document.body)}
+      {isOpen && !disabled && dropdownContent}
     </div>
   );
 };

@@ -206,6 +206,7 @@ export default function App() {
   const [layoutMode, setLayoutMode] = useState<'side' | 'top'>(() => (localStorage.getItem('taskpro_layout') as any) || 'side');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [syncingIds, setSyncingIds] = useState<Set<number>>(new Set());
+  const uniqueIdCounterRef = useRef(0);
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -592,7 +593,8 @@ export default function App() {
   };
 
   const handleAddTaskOptimistic = async (taskData: any, isVendor: boolean) => {
-    const tempId = -Date.now(); 
+    const uniqueId = Date.now() * 1000 + (uniqueIdCounterRef.current++ % 1000);
+    const tempId = -uniqueId;
     const now = new Date();
     const shortDate = now.toLocaleDateString('en-GB');
     const tempTask: Task = {
@@ -610,7 +612,7 @@ export default function App() {
     setSyncingIds(prev => new Set(prev).add(tempId));
     try {
       const targetSheet = isVendor ? 'VendorTasks' : 'MainTasks';
-      await apiPost('addTask', taskData, targetSheet);
+      await apiPost('addTask', { ...taskData, id: uniqueId }, targetSheet);
     } catch (err) {
       setTasks(prev => prev.filter(t => t.id !== tempId));
     } finally {
