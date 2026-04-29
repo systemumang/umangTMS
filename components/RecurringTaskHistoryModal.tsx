@@ -35,6 +35,22 @@ export const RecurringTaskHistoryModal: React.FC<RecurringTaskHistoryModalProps>
     }
   };
 
+  const formatTime = (timeStr: string) => {
+    if (!timeStr) return '-';
+    const s = String(timeStr).trim();
+    const direct = s.match(/^(\d{1,2}):(\d{2})/);
+    if (direct) return `${direct[1].padStart(2, '0')}:${direct[2]}`;
+    const dateMatch = s.match(/\b(\d{1,2}):(\d{2})(?::\d{2})?\b/);
+    if (dateMatch) return `${dateMatch[1].padStart(2, '0')}:${dateMatch[2]}`;
+    try {
+      const d = new Date(s);
+      if (!isNaN(d.getTime())) {
+        return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      }
+    } catch {}
+    return s;
+  };
+
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(18);
@@ -47,7 +63,7 @@ export const RecurringTaskHistoryModal: React.FC<RecurringTaskHistoryModalProps>
     const tableColumn = ["Date", "Time", "Status", "Remarks"];
     const tableRows = taskActions.map(a => [
       formatDate(a.updatedOn),
-      a.timestamp,
+      formatTime(a.timestamp),
       a.status,
       a.remarks
     ]);
@@ -104,7 +120,7 @@ export const RecurringTaskHistoryModal: React.FC<RecurringTaskHistoryModalProps>
                 {taskActions.map((action) => (
                   <tr key={action.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 text-sm text-black font-medium">{formatDate(action.updatedOn)}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500 italic">{action.timestamp}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500 italic">{formatTime(action.timestamp)}</td>
                     <td className="px-6 py-4 text-sm">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${getStatusColor(action.status)}`}>
                         {action.status}
@@ -132,7 +148,7 @@ export const RecurringTaskHistoryModal: React.FC<RecurringTaskHistoryModalProps>
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${getStatusColor(action.status)}`}>{action.status}</span>
                       <div className="text-right">
                          <div className="text-[10px] text-gray-500 font-bold flex items-center gap-1 justify-end"><Calendar size={12} />{formatDate(action.updatedOn)}</div>
-                         <div className="text-[9px] text-gray-400 font-medium mt-0.5 italic">{action.timestamp}</div>
+                         <div className="text-[9px] text-gray-400 font-medium mt-0.5 italic">{formatTime(action.timestamp)}</div>
                       </div>
                    </div>
                    <div className="bg-indigo-50/50 border border-indigo-100 p-2 rounded">

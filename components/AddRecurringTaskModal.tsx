@@ -12,25 +12,27 @@ interface AddRecurringTaskModalProps {
 }
 
 export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ isOpen, onClose, onSave, users, categories }) => {
-  const [formData, setFormData] = useState<{
-    title: string;
-    category: string;
-    assignee: string;
-    frequencyDays: number | '';
-    startDate: string;
-    periodicity: 'Fixed Days' | 'Weekly' | 'Monthly' | 'Yearly';
-    recurrenceDay: number;
-    recurrenceMonth: string;
-  }>({
-    title: '',
-    category: '',
-    assignee: '',
-    frequencyDays: '',
-    startDate: new Date().toISOString().split('T')[0],
-    periodicity: 'Fixed Days',
-    recurrenceDay: 1,
-    recurrenceMonth: 'January'
-  });
+	  const [formData, setFormData] = useState<{
+	    title: string;
+	    category: string;
+	    assignee: string;
+	    frequencyDays: number | '';
+	    startDate: string;
+	    time: string;
+	    periodicity: 'Fixed Days' | 'Weekly' | 'Monthly' | 'Yearly';
+	    recurrenceDay: number;
+	    recurrenceMonth: string;
+	  }>({
+	    title: '',
+	    category: '',
+	    assignee: '',
+	    frequencyDays: '',
+	    startDate: new Date().toISOString().split('T')[0],
+	    time: '',
+	    periodicity: 'Fixed Days',
+	    recurrenceDay: 1,
+	    recurrenceMonth: 'January'
+	  });
 
   if (!isOpen) return null;
 
@@ -48,16 +50,17 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
     }
 
     // Prepare task data based on periodicity
-    const taskData: any = {
-      title: formData.title,
-      category: formData.category,
-      assignee: formData.assignee,
-      startDate: formData.startDate,
-      periodicity: formData.periodicity,
-      recurrenceDay: formData.recurrenceDay,
-      // Only include frequencyDays for Fixed Days periodicity
-      frequencyDays: formData.periodicity === 'Fixed Days' ? Number(formData.frequencyDays) : 0
-    };
+	    const taskData: any = {
+	      title: formData.title,
+	      category: formData.category,
+	      assignee: formData.assignee,
+	      startDate: formData.startDate,
+	      time: formData.time,
+	      periodicity: formData.periodicity,
+	      recurrenceDay: formData.recurrenceDay,
+	      // Only include frequencyDays for Fixed Days periodicity
+	      frequencyDays: formData.periodicity === 'Fixed Days' ? Number(formData.frequencyDays) : 0
+	    };
 
     // Only include recurrenceMonth for Yearly periodicity
     if (formData.periodicity === 'Yearly') {
@@ -67,24 +70,25 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
     onSave(taskData);
 
     // Reset form
-    setFormData({
-      title: '',
-      category: '',
-      assignee: '',
-      frequencyDays: '',
-      startDate: new Date().toISOString().split('T')[0],
-      periodicity: 'Fixed Days',
-      recurrenceDay: 1,
-      recurrenceMonth: 'January'
-    });
-    onClose();
-  };
+	    setFormData({
+	      title: '',
+	      category: '',
+	      assignee: '',
+	      frequencyDays: '',
+	      startDate: new Date().toISOString().split('T')[0],
+	      time: '',
+	      periodicity: 'Fixed Days',
+	      recurrenceDay: 1,
+	      recurrenceMonth: 'January'
+	    });
+	    onClose();
+	  };
 
-  const isFormValid = () => {
-    // Basic required fields validation
-    if (!formData.title.trim() || !formData.category || !formData.assignee || !formData.startDate) {
-      return false;
-    }
+	  const isFormValid = () => {
+	    // Basic required fields validation
+	    if (!formData.title.trim() || !formData.category || !formData.assignee || !formData.startDate || !formData.time) {
+	      return false;
+	    }
     
     // Periodicity-specific validation
     switch (formData.periodicity) {
@@ -165,35 +169,50 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-black">Periodicity</label>
-              <select 
-                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
-                value={formData.periodicity}
-                onChange={(e) => handlePeriodicityChange(e.target.value)}
-              >
-                <option value="Fixed Days">Fixed Interval (Days)</option>
-                <option value="Weekly">Weekly</option>
-                <option value="Monthly">Monthly</option>
-                <option value="Yearly">Yearly</option>
-              </select>
-            </div>
-
-            {formData.periodicity === 'Fixed Days' && (
+            {formData.periodicity === 'Fixed Days' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-black">Periodicity</label>
+                  <select 
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+                    value={formData.periodicity}
+                    onChange={(e) => handlePeriodicityChange(e.target.value)}
+                  >
+                    <option value="Fixed Days">Fixed Interval (Days)</option>
+                    <option value="Weekly">Weekly</option>
+                    <option value="Monthly">Monthly</option>
+                    <option value="Yearly">Yearly</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-black">Frequency (Days) *</label>
+                  <input 
+                    type="number"
+                    required
+                    min="1"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+                    value={formData.frequencyDays}
+                    onChange={(e) => setFormData(p => ({ 
+                      ...p, 
+                      frequencyDays: e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1)
+                    }))}
+                    placeholder="Enter number of days"
+                  />
+                </div>
+              </div>
+            ) : (
               <div className="space-y-1">
-                <label className="text-sm font-medium text-black">Frequency (Days) *</label>
-                <input 
-                  type="number"
-                  required
-                  min="1"
+                <label className="text-sm font-medium text-black">Periodicity</label>
+                <select 
                   className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
-                  value={formData.frequencyDays}
-                  onChange={(e) => setFormData(p => ({ 
-                    ...p, 
-                    frequencyDays: e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1)
-                  }))}
-                  placeholder="Enter number of days"
-                />
+                  value={formData.periodicity}
+                  onChange={(e) => handlePeriodicityChange(e.target.value)}
+                >
+                  <option value="Fixed Days">Fixed Interval (Days)</option>
+                  <option value="Weekly">Weekly</option>
+                  <option value="Monthly">Monthly</option>
+                  <option value="Yearly">Yearly</option>
+                </select>
               </div>
             )}
 
@@ -274,21 +293,34 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
               </div>
             )}
 
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-black">Start Date *</label>
-              <input 
-                type="date"
-                required
-                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
-                value={formData.startDate}
-                onChange={(e) => setFormData(p => ({ ...p, startDate: e.target.value }))}
-              />
-            </div>
-          </div>
-          <div className="p-6 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end space-x-3">
-            <button 
-              type="button" 
-              onClick={onClose} 
+	            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+	              <div className="space-y-1">
+	                <label className="text-sm font-medium text-black">Start Date *</label>
+	                <input 
+	                  type="date"
+	                  required
+	                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+	                  value={formData.startDate}
+	                  onChange={(e) => setFormData(p => ({ ...p, startDate: e.target.value }))}
+	                />
+	              </div>
+
+	              <div className="space-y-1">
+	                <label className="text-sm font-medium text-black">Time *</label>
+	                <input
+	                  type="time"
+	                  required
+	                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+	                  value={formData.time}
+	                  onChange={(e) => setFormData(p => ({ ...p, time: e.target.value }))}
+	                />
+	              </div>
+	            </div>
+	          </div>
+	          <div className="p-6 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end space-x-3">
+	            <button 
+	              type="button" 
+	              onClick={onClose} 
               className="px-6 py-2.5 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
             >
               Cancel

@@ -149,6 +149,28 @@ export const formatToIndianDateTime = (dateInput: any): string => {
   } catch { return s; }
 };
 
+export const formatToHHMM = (timeInput: any): string => {
+  if (!timeInput) return '';
+  const raw = String(timeInput).trim();
+  if (!raw) return '';
+
+  const hhmmMatch = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (hhmmMatch) {
+    const hh = Math.min(23, Math.max(0, Number(hhmmMatch[1])));
+    const mm = Math.min(59, Math.max(0, Number(hhmmMatch[2])));
+    return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+  }
+
+  try {
+    const parsed = new Date(timeInput);
+    if (!isNaN(parsed.getTime())) {
+      return `${String(parsed.getHours()).padStart(2, '0')}:${String(parsed.getMinutes()).padStart(2, '0')}`;
+    }
+  } catch {}
+
+  return raw;
+};
+
 export const parseToISO = (str: string) => {
     if (!str) return '';
     const trimmed = str.trim();
@@ -519,6 +541,7 @@ export default function App() {
             id: Number(t.id),
             frequencyDays: Number(t.frequencyDays || 30),
             startDate: formatToIndianDate(t.startDate || ''),
+            time: formatToHHMM(t.time || t.Time || ''),
             lastUpdatedOn: formatToIndianDate(t.lastUpdatedOn || ''),
             status: String(t.status || 'Not Yet Started') as any
         })));
@@ -1002,20 +1025,38 @@ export default function App() {
       
       <TaskHistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} task={selectedTaskForHistory} logs={actionLogs} />
       
-      <AddRecurringTaskModal isOpen={isRecurringTaskModalOpen} onClose={() => setIsRecurringTaskModalOpen(false)} onSave={(t) => { setRecurringTasks(prev => [...prev, { ...t, id: Date.now(), status: 'Not Yet Started' } as any]); apiPost('addMaster', t, 'RecurringTasks'); }} users={users} categories={categories} />
+      <AddRecurringTaskModal
+        isOpen={isRecurringTaskModalOpen}
+        onClose={() => setIsRecurringTaskModalOpen(false)}
+        onSave={async (t) => {
+          const createResult = await apiPost('addMaster', t, 'RecurringTasks');
+          const createdId = Number(createResult?.data?.id || Date.now());
+          setRecurringTasks(prev => [...prev, { ...t, id: createdId, status: 'Not Yet Started' } as any]);
+        }}
+        users={users}
+        categories={categories}
+      />
       <UpdateRecurringTaskModal
         isOpen={isRecurringTaskUpdateModalOpen}
         onClose={() => setIsRecurringTaskUpdateModalOpen(false)}
         task={selectedRecurringTask}
         onSave={(t) => {
-          setRecurringTasks(prev => prev.map(x => x.id === t.id ? t : x));
-
           const now = new Date();
-          const timestamp = now.toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', '');
           const updatedOn = now.toLocaleDateString('en-GB');
+          const timestamp = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+          const updatedTask = { ...t, lastUpdatedOn: updatedOn, lastUpdateRemarks: t.lastUpdateRemarks };
+
+          setRecurringTasks(prev => prev.map(x => x.id === t.id ? updatedTask : x));
+
+          apiPost('updateMaster', {
+            ...updatedTask,
+            id: t.id,
+            status: t.status,
+            lastUpdatedOn: updatedOn,
+            lastUpdateRemarks: t.lastUpdateRemarks || ''
+          }, 'RecurringTasks');
 
           apiPost('addMaster', {
-            id: Date.now(),
             taskId: t.id,
             taskTitle: t.title,
             category: t.category,

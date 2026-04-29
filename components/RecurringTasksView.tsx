@@ -345,13 +345,14 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                 <th className={thClass} onClick={() => requestSort('title')}><div className="flex items-center">Task {getSortIcon('title')}</div></th>
                 <th className={thClass} onClick={() => requestSort('category')}><div className="flex items-center">Category {getSortIcon('category')}</div></th>
                 <th className={thClass} onClick={() => requestSort('assignee')}><div className="flex items-center">Assignee {getSortIcon('assignee')}</div></th>
-                <th className={thClass} onClick={() => requestSort('status')}><div className="flex items-center">Status {getSortIcon('status')}</div></th>
-                <th className={thClass} onClick={() => requestSort('frequencyDays')}><div className="flex items-center">Rule {getSortIcon('frequencyDays')}</div></th>
-                <th className={thClass} onClick={() => requestSort('lastUpdatedOn')}><div className="flex items-center">Activity {getSortIcon('lastUpdatedOn')}</div></th>
-                <th className={thClass} onClick={() => requestSort('remarks')}><div className="flex items-center">Remarks {getSortIcon('remarks')}</div></th>
-                <th className={thClass} onClick={() => requestSort('nextDue')}><div className="flex items-center">Next Due {getSortIcon('nextDue')}</div></th>
-                <th className="px-4 py-3 text-[10px] font-bold text-white uppercase tracking-wider text-center whitespace-normal">Actions</th>
-              </tr>
+	                <th className={thClass} onClick={() => requestSort('status')}><div className="flex items-center">Status {getSortIcon('status')}</div></th>
+	                <th className={thClass} onClick={() => requestSort('frequencyDays')}><div className="flex items-center">Rule {getSortIcon('frequencyDays')}</div></th>
+	                <th className={thClass} onClick={() => requestSort('time')}><div className="flex items-center">Time {getSortIcon('time')}</div></th>
+	                <th className={thClass} onClick={() => requestSort('lastUpdatedOn')}><div className="flex items-center">Activity {getSortIcon('lastUpdatedOn')}</div></th>
+	                <th className={thClass} onClick={() => requestSort('remarks')}><div className="flex items-center">Remarks {getSortIcon('remarks')}</div></th>
+	                <th className={thClass} onClick={() => requestSort('nextDue')}><div className="flex items-center">Next Due {getSortIcon('nextDue')}</div></th>
+	                <th className="px-4 py-3 text-[10px] font-bold text-white uppercase tracking-wider text-center whitespace-normal">Actions</th>
+	              </tr>
             </thead>
             <tbody className="divide-y divide-black">
               {paginatedTasks.map((task, idx) => {
@@ -385,17 +386,18 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                             {effectiveStatus}
                         </span>
                     </td>
-                    <td className={`${tdClass}`}>
-                      <div className="flex items-center gap-1">
-                        <Calendar size={12} className="text-indigo-400" />
-                        <span className="font-medium">{getFrequencyText(task)}</span>
-                      </div>
-                    </td>
-                    <td className={tdClass}>{task.lastUpdatedOn || '-'}</td>
-                    <td className={`${tdClass}`}>{task.lastUpdateRemarks || '-'}</td>
-                    <td className={`${tdClass} font-bold ${isOverdue ? 'text-red-600 animate-pulse' : 'text-indigo-600'}`}>
-                        {nextDueStr}
-                    </td>
+	                    <td className={`${tdClass}`}>
+	                      <div className="flex items-center gap-1">
+	                        <Calendar size={12} className="text-indigo-400" />
+	                        <span className="font-medium">{getFrequencyText(task)}</span>
+	                      </div>
+	                    </td>
+	                    <td className={tdClass}>{task.time || '-'}</td>
+	                    <td className={tdClass}>{task.lastUpdatedOn || '-'}</td>
+	                    <td className={`${tdClass}`}>{task.lastUpdateRemarks || '-'}</td>
+	                    <td className={`${tdClass} font-bold ${isOverdue ? 'text-red-600 animate-pulse' : 'text-indigo-600'}`}>
+	                        {nextDueStr}
+	                    </td>
                     <td className={tdClass}>
                       <div className="flex items-center gap-1 justify-center" onDoubleClick={(e) => e.stopPropagation()}>
                         <button onClick={() => onUpdate(task)} className="px-2 py-1 bg-indigo-600 text-white rounded text-[10px] font-bold hover:bg-indigo-700">Update</button>
@@ -407,11 +409,11 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                   </tr>
                 );
               })}
-              {paginatedTasks.length === 0 && (<tr><td colSpan={isAdmin ? 11 : 10} className="px-6 py-10 text-center text-gray-500">No recurring tasks found.</td></tr>)}
-            </tbody>
-          </table>
-        </div>
-      </div>
+	              {paginatedTasks.length === 0 && (<tr><td colSpan={isAdmin ? 12 : 11} className="px-6 py-10 text-center text-gray-500">No recurring tasks found.</td></tr>)}
+	            </tbody>
+	          </table>
+	        </div>
+	      </div>
 
       <div className={`space-y-4 md:hidden ${viewMode === 'card' ? 'block' : 'hidden'}`}>
         {paginatedTasks.map((task, idx) => {
@@ -444,15 +446,16 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                     </div>
                     <h3 className="font-bold text-gray-900 leading-tight mt-2 whitespace-normal break-words">{task.title}</h3>
                     </div>
-                    <div className="grid grid-cols-2 gap-y-2 text-xs text-gray-600 mb-4 bg-gray-50 p-2 rounded">
-                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Category</span><span className="whitespace-normal break-words">{task.category}</span></div>
-                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Assignee</span><span className="whitespace-normal break-words">{task.assignee}</span></div>
-                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Rule</span><span className="whitespace-normal break-words">{getFrequencyText(task)}</span></div>
-                    <div>
-                        <span className="text-indigo-500 font-bold uppercase text-[9px] block">Next Due</span>
-                        <span className={`font-bold ${isOverdue ? 'text-red-600' : 'text-indigo-600'} whitespace-normal break-words`}>{nextDueStr}</span>
-                    </div>
-                    </div>
+	                    <div className="grid grid-cols-2 gap-y-2 text-xs text-gray-600 mb-4 bg-gray-50 p-2 rounded">
+	                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Category</span><span className="whitespace-normal break-words">{task.category}</span></div>
+	                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Assignee</span><span className="whitespace-normal break-words">{task.assignee}</span></div>
+	                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Rule</span><span className="whitespace-normal break-words">{getFrequencyText(task)}</span></div>
+	                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Time</span><span className="whitespace-normal break-words">{task.time || '-'}</span></div>
+	                    <div>
+	                        <span className="text-indigo-500 font-bold uppercase text-[9px] block">Next Due</span>
+	                        <span className={`font-bold ${isOverdue ? 'text-red-600' : 'text-indigo-600'} whitespace-normal break-words`}>{nextDueStr}</span>
+	                    </div>
+	                    </div>
                     <div className="flex gap-2 pt-3 border-t border-gray-100 flex-wrap">
                         <button onClick={() => onUpdate(task)} className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm whitespace-normal break-words"><RotateCcw size={14} />Update</button>
                         <div className="flex gap-1 w-full sm:w-auto justify-end" onDoubleClick={(e) => e.stopPropagation()}>

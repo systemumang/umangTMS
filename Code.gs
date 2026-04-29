@@ -527,16 +527,19 @@ function handleRecurringTaskNotification(data, isNew) {
     
     // Construct Rule Detail based on periodicity
     let ruleDetail = `*Periodicity:* ${data.periodicity || 'Fixed Days'}`;
-    if (data.periodicity === 'Weekly') {
-      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      ruleDetail += `\n*Day of Week:* ${days[data.recurrenceDay] || data.recurrenceDay}`;
-    } else if (data.periodicity === 'Monthly') {
-      ruleDetail += `\n*Day of Month:* ${data.recurrenceDay}`;
-    } else if (data.periodicity === 'Yearly') {
-      ruleDetail += `\n*Month:* ${data.recurrenceMonth}\n*Day:* ${data.recurrenceDay}`;
-    } else { // 'Fixed Days' or Default
-      ruleDetail += `\n*Frequency:* Every ${data.frequencyDays || 30} days`;
-    }
+	    if (data.periodicity === 'Weekly') {
+	      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+	      ruleDetail += `\n*Day of Week:* ${days[data.recurrenceDay] || data.recurrenceDay}`;
+	    } else if (data.periodicity === 'Monthly') {
+	      ruleDetail += `\n*Day of Month:* ${data.recurrenceDay}`;
+	    } else if (data.periodicity === 'Yearly') {
+	      ruleDetail += `\n*Month:* ${data.recurrenceMonth}\n*Day:* ${data.recurrenceDay}`;
+	    } else { // 'Fixed Days' or Default
+	      ruleDetail += `\n*Frequency:* Every ${data.frequencyDays || 30} days`;
+	    }
+	    if (data.time) {
+	      ruleDetail += `\n*Time:* ${data.time}`;
+	    }
 
     let msg;
     if (isNew) {
