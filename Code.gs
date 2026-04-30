@@ -41,9 +41,10 @@ function sheetToJSON(sheetName) {
   return data.map(row => {
     const obj = {};
     headers.forEach((h, i) => {
+      const header = String(h || '').trim();
       let val = row[i];
       if (val instanceof Date) {
-        const headerKey = String(h || '').trim().toLowerCase();
+        const headerKey = header.toLowerCase();
         // Google Sheets "time" cells come as Date objects with base date 30-12-1899.
         // Format those as HH:mm instead of a date.
         if (headerKey === 'time' || headerKey === 'timestamp') {
@@ -52,7 +53,9 @@ function sheetToJSON(sheetName) {
           val = Utilities.formatDate(val, Session.getScriptTimeZone(), "dd-MM-yyyy");
         }
       }
-      let key = (h === 'ID' || h === 'id') ? 'id' : h.charAt(0).toLowerCase() + h.slice(1);
+      if (!header) return;
+      const headerLower = header.toLowerCase();
+      let key = (headerLower === 'id') ? 'id' : header.charAt(0).toLowerCase() + header.slice(1);
       obj[key] = val;
     });
     return obj;
@@ -419,7 +422,9 @@ function handleUpdateMaster(target, data) {
   }
   if (rowIndex === -1) throw new Error("Record ID not found");
   headers.forEach((h, i) => {
-    let key = h.charAt(0).toLowerCase() + h.slice(1);
+    const header = String(h || '').trim();
+    if (!header) return;
+    let key = header.charAt(0).toLowerCase() + header.slice(1);
     if (data[key] !== undefined) { sheet.getRange(rowIndex, i + 1).setValue(data[key]); }
   });
   return true;
