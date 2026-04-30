@@ -158,14 +158,30 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
     return dbStatus;
   };
 
-  const getFrequencyText = (task: RecurringTask) => {
-    switch(task.periodicity) {
-      case 'Weekly': return `Weekly (Day ${task.recurrenceDay})`;
-      case 'Monthly': return `Monthly on ${task.recurrenceDay}th`;
-      case 'Yearly': return `${task.recurrenceMonth} ${task.recurrenceDay}th`;
-      default: return `${task.frequencyDays}d`;
-    }
-  };
+	  const getFrequencyText = (task: RecurringTask) => {
+	    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+	    const weeklyDay =
+	      typeof task.recurrenceDay === 'number' && task.recurrenceDay >= 0 && task.recurrenceDay <= 6
+	        ? dayNames[task.recurrenceDay]
+	        : null;
+	    const monthlyDay =
+	      typeof task.recurrenceDay === 'number' && task.recurrenceDay >= 1 && task.recurrenceDay <= 31
+	        ? task.recurrenceDay
+	        : null;
+
+	    switch(task.periodicity) {
+	      case 'Weekly': return weeklyDay ? `Weekly (${weeklyDay})` : 'Weekly';
+	      case 'Monthly': return monthlyDay ? `Monthly on ${monthlyDay}` : 'Monthly';
+	      case 'Yearly': {
+	        const month = task.recurrenceMonth ? String(task.recurrenceMonth) : '';
+	        if (month && monthlyDay) return `${month} ${monthlyDay}`;
+	        if (month) return `Yearly (${month})`;
+	        if (monthlyDay) return `Yearly (${monthlyDay})`;
+	        return 'Yearly';
+	      }
+	      default: return `${task.frequencyDays}d`;
+	    }
+	  };
 
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {

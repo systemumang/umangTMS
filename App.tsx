@@ -564,18 +564,18 @@ export default function App() {
 	            lastUpdatedOn: formatToIndianDate(t.lastUpdatedOn || ''),
 	            status: String(t.status || 'Not Yet Started') as any
 	        })));
-        setRecurringActions((data.recurringActions || []).map((a: any) => ({
-          ...a,
-          id: Number(a.id || 0),
-          taskId: Number(a.taskId || a.taskID || a.taskid || 0),
-          taskTitle: String(a.taskTitle || a.task || a.title || a.TaskTitle || a['Task Title'] || ''),
-          category: String(a.category || a.Category || ''),
-          assignee: String(a.assignee || a.Assignee || ''),
-          status: String(a.status || a.Status || 'Not Yet Started') as any,
-          remarks: String(a.remarks || a.Remarks || a.remark || ''),
-          timestamp: String(a.timestamp || a.Timestamp || ''),
-          updatedOn: formatToIndianDate(a.updatedOn || a.UpdatedOn || a['updated On'] || '')
-        })));
+	        setRecurringActions((data.recurringActions || []).map((a: any) => ({
+	          ...a,
+	          id: Number(a.id || 0),
+	          taskId: Number(a.taskId || a.taskID || a.taskid || 0),
+	          taskTitle: String(a.taskTitle || a.task || a.title || a.TaskTitle || a['Task Title'] || ''),
+	          category: String(a.category || a.Category || ''),
+	          assignee: String(a.assignee || a.Assignee || ''),
+	          status: String(a.status || a.Status || 'Not Yet Started') as any,
+	          remarks: String(a.remarks || a.Remarks || a.remark || ''),
+	          timestamp: formatToHHMM(getCaseInsensitive(a, 'timestamp') || ''),
+	          updatedOn: formatToIndianDate(getCaseInsensitive(a, 'updatedOn') || '')
+	        })));
         if (data.settings) setSettings(data.settings);
         setLastSynced(new Date());
       }
@@ -1055,38 +1055,39 @@ export default function App() {
         users={users}
         categories={categories}
       />
-      <UpdateRecurringTaskModal
-        isOpen={isRecurringTaskUpdateModalOpen}
-        onClose={() => setIsRecurringTaskUpdateModalOpen(false)}
-        task={selectedRecurringTask}
-        onSave={(t) => {
-          const now = new Date();
-          const updatedOn = now.toLocaleDateString('en-GB');
-          const timestamp = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-          const updatedTask = { ...t, lastUpdatedOn: updatedOn, lastUpdateRemarks: t.lastUpdateRemarks };
+	      <UpdateRecurringTaskModal
+	        isOpen={isRecurringTaskUpdateModalOpen}
+	        onClose={() => setIsRecurringTaskUpdateModalOpen(false)}
+	        task={selectedRecurringTask}
+	        onSave={(t) => {
+	          const now = new Date();
+	          const updatedOn = now.toLocaleDateString('en-GB');
+	          const timestamp = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+	          const updatedTask = { ...t, lastUpdatedOn: updatedOn, lastUpdateRemarks: t.lastUpdateRemarks };
 
-          setRecurringTasks(prev => prev.map(x => x.id === t.id ? updatedTask : x));
+	          setRecurringTasks(prev => prev.map(x => x.id === t.id ? updatedTask : x));
 
-          apiPost('updateMaster', {
-            ...updatedTask,
-            id: t.id,
-            status: t.status,
-            lastUpdatedOn: updatedOn,
-            lastUpdateRemarks: t.lastUpdateRemarks || ''
-          }, 'RecurringTasks');
+	          // Only patch fields that are actually updated here so we don't accidentally wipe columns
+	          // (e.g., keep StartDate in the backend sheet unchanged).
+	          apiPost('updateMaster', {
+	            id: t.id,
+	            status: t.status,
+	            lastUpdatedOn: updatedOn,
+	            lastUpdateRemarks: t.lastUpdateRemarks || ''
+	          }, 'RecurringTasks');
 
-          apiPost('addMaster', {
-            taskId: t.id,
-            taskTitle: t.title,
-            category: t.category,
-            assignee: t.assignee,
-            status: t.status,
-            updatedOn,
-            timestamp,
-            remarks: t.lastUpdateRemarks
-          }, 'RecurringActions');
-        }}
-      />
+	          apiPost('addMaster', {
+	            taskId: t.id,
+	            taskTitle: t.title,
+	            category: t.category,
+	            assignee: t.assignee,
+	            status: t.status,
+	            updatedOn,
+	            timestamp,
+	            remarks: t.lastUpdateRemarks
+	          }, 'RecurringActions');
+	        }}
+	      />
       <EditRecurringTaskModal isOpen={isEditRecurringTaskModalOpen} onClose={() => setIsEditRecurringTaskModalOpen(false)} task={selectedRecurringTask} onSave={(t) => { setRecurringTasks(prev => prev.map(x => x.id === t.id ? t : x)); apiPost('updateMaster', t, 'RecurringTasks'); }} users={users} categories={categories} />
       <RecurringTaskHistoryModal isOpen={isRecurringHistoryModalOpen} onClose={() => setIsRecurringHistoryModalOpen(false)} task={selectedRecurringTask} actions={recurringActions} />
     </div>

@@ -37,6 +37,29 @@ function sheetToJSON(sheetName) {
   const data = sheet.getDataRange().getValues();
   if (data.length < 2) return [];
   
+  const toKey = (header) => {
+    const raw = String(header || '').trim();
+    if (!raw) return '';
+    const parts = raw.split(/[^A-Za-z0-9]+/).filter(Boolean);
+    if (parts.length === 0) return '';
+
+    // Single token headers (common case in this sheet)
+    if (parts.length === 1) {
+      const token = parts[0];
+      const lower = token.toLowerCase();
+      if (lower === 'id') return 'id';
+      // If it's ALL CAPS (e.g., TIME), normalize fully to lowercase
+      if (token.toUpperCase() === token) return lower;
+      // Otherwise preserve existing casing but ensure camelCase start
+      return token.charAt(0).toLowerCase() + token.slice(1);
+    }
+
+    // Multi-token headers: make camelCase (e.g., "Last Updated On" -> "lastUpdatedOn")
+    const first = parts[0].toLowerCase();
+    const rest = parts.slice(1).map(w => w ? (w.charAt(0).toUpperCase() + w.slice(1)) : '').join('');
+    return first + rest;
+  };
+
   const headers = data.shift();
   return data.map(row => {
     const obj = {};
@@ -44,7 +67,7 @@ function sheetToJSON(sheetName) {
       const header = String(h || '').trim();
       let val = row[i];
       if (val instanceof Date) {
-        const headerKey = header.toLowerCase();
+        const headerKey = toKey(header);
         // Google Sheets "time" cells come as Date objects with base date 30-12-1899.
         // Format those as HH:mm instead of a date.
         if (headerKey === 'time' || headerKey === 'timestamp') {
@@ -54,9 +77,8 @@ function sheetToJSON(sheetName) {
         }
       }
       if (!header) return;
-      const headerLower = header.toLowerCase();
-      // Normalize keys so headers like "TIME" don't become "tIME"
-      let key = (headerLower === 'id') ? 'id' : headerLower;
+      const key = toKey(header);
+      if (!key) return;
       obj[key] = val;
     });
     return obj;
@@ -425,7 +447,21 @@ function handleUpdateMaster(target, data) {
   headers.forEach((h, i) => {
     const header = String(h || '').trim();
     if (!header) return;
-    let key = header.charAt(0).toLowerCase() + header.slice(1);
+    // Use the same key normalization as sheetToJSON so updates match fetch keys.
+    const parts = header.split(/[^A-Za-z0-9]+/).filter(Boolean);
+    if (parts.length === 0) return;
+    let key;
+    if (parts.length === 1) {
+      const token = parts[0];
+      const lower = token.toLowerCase();
+      if (lower === 'id') key = 'id';
+      else if (token.toUpperCase() === token) key = lower;
+      else key = token.charAt(0).toLowerCase() + token.slice(1);
+    } else {
+      const first = parts[0].toLowerCase();
+      const rest = parts.slice(1).map(w => w ? (w.charAt(0).toUpperCase() + w.slice(1)) : '').join('');
+      key = first + rest;
+    }
     if (data[key] !== undefined) { sheet.getRange(rowIndex, i + 1).setValue(data[key]); }
   });
   return true;
