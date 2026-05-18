@@ -34,9 +34,5 @@ jobs:
           port: ${{ secrets.FTP_PORT }}
           protocol: ftp
           local-dir: ./dist/
-<<<<<<< HEAD
-          server-dir: ./public_html/
-=======
           server-dir: ./
->>>>>>> e4a5af9 (fix hostinger deploy config)
           dangerous-clean-slate: true
