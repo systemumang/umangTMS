@@ -68,7 +68,6 @@ import {
 } from 'lucide-react';
 import { NavItem, Task, User, Designation, Category, Project, Client, ActionLogEntry, Vendor, VendorCategory, RecurringTask, RecurringTaskAction, AppSettings } from './types';
 
-const MASTER_REGISTRY_URL = "https://script.google.com/macros/s/AKfycbwMVcMdqWGSyqJGLQH9ld724K_kov5J35riarbzEiMAlnDTToig0CMv3chc-amHOa1F/exec";
 const AUTO_SYNC_INTERVAL = 120000;
 
 const navItems: NavItem[] = [
@@ -595,28 +594,28 @@ export default function App() {
     }
   }, [fetchData, apiUrl, currentUser]);
 
-  const handleLogin = async (id: string, email: string, pass: string) => {
+  const handleLogin = async (email: string, pass: string) => {
     setIsLoading(true);
     try {
-      const fetchWithRetry = async (url: string) => {
-          const finalUrl = `${url}${url.includes('?') ? '&' : '?'}_cb=${Date.now()}`;
-          const response = await fetch(finalUrl, { mode: 'cors' });
-          return await safeJsonParse(response, 'Login');
-      };
-      let regUrl = `${MASTER_REGISTRY_URL}?workspaceId=${id.toLowerCase()}`;
-      let regData = await fetchWithRetry(regUrl);
-      let targetUrl = regData.url || regData.BackendURL;
-      if (!targetUrl) return { success: false, error: `Workspace ID not found.` };
-      const authData = await fetchWithRetry(`${targetUrl}${targetUrl.includes('?') ? '&' : '?'}action=init`);
-      const user = authData.data?.users?.find((u: any) => u.email.toLowerCase() === email.toLowerCase() && u.password === pass);
-      if (!user) return { success: false, error: "Incorrect Email or Password." };
+      const response = await fetch('/api/login.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pass })
+      });
+      const authData = await safeJsonParse(response, 'Login');
+      if (!response.ok || !authData?.success || !authData?.user) {
+        return { success: false, error: authData?.error || "Incorrect Email or Password." };
+      }
+      const user = authData.user;
       const normalizedUser = { ...user, id: Number(user.id), isActive: true };
       setCurrentUser(normalizedUser);
-      setWorkspaceId(id);
-      setApiUrl(targetUrl);
+      setWorkspaceId('');
+      if (authData.apiUrl) {
+        setApiUrl(String(authData.apiUrl));
+        localStorage.setItem('taskpro_api_url', String(authData.apiUrl));
+      }
       localStorage.setItem('taskpro_user', JSON.stringify(normalizedUser));
-      localStorage.setItem('taskpro_workspace_id', id);
-      localStorage.setItem('taskpro_api_url', targetUrl);
+      localStorage.removeItem('taskpro_workspace_id');
       setActiveTab('dashboard');
       return { success: true };
     } catch (err) { return { success: false, error: "Connection Error." }; }
@@ -923,7 +922,7 @@ export default function App() {
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden font-inter">
       {!currentUser ? (
-        <LoginView onLogin={handleLogin} isAuthenticating={isLoading} savedWorkspaceId={workspaceId} />
+        <LoginView onLogin={handleLogin} isAuthenticating={isLoading} />
       ) : (
         <>
           {layoutMode === 'side' && (

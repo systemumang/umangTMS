@@ -1,0 +1,176 @@
+-- TaskPro full schema for Hostinger MySQL
+-- Import this file in phpMyAdmin for DB: u299994438_tmsumang
+
+SET NAMES utf8mb4;
+SET time_zone = '+00:00';
+
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  email VARCHAR(190) NOT NULL UNIQUE,
+  mobile VARCHAR(30) DEFAULT '',
+  role VARCHAR(50) NOT NULL DEFAULT 'Employee',
+  designation VARCHAR(120) DEFAULT '',
+  password VARCHAR(255) NOT NULL,
+  isActive TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS designations (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL UNIQUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS categories (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(190) NOT NULL,
+  type VARCHAR(120) DEFAULT '',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_category_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS vendor_categories (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(190) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_vendor_category_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS clients (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(190) NOT NULL,
+  email VARCHAR(190) DEFAULT '',
+  mobile VARCHAR(30) DEFAULT '',
+  address TEXT,
+  gstNumber VARCHAR(60) DEFAULT '',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS vendors (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(190) NOT NULL,
+  email VARCHAR(190) DEFAULT '',
+  mobile VARCHAR(30) DEFAULT '',
+  address TEXT,
+  gstNumber VARCHAR(60) DEFAULT '',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS projects (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(190) NOT NULL,
+  client VARCHAR(190) DEFAULT '',
+  projectType VARCHAR(120) DEFAULT '',
+  status VARCHAR(60) DEFAULT 'Active',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_project_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS main_tasks (
+  id BIGINT PRIMARY KEY,
+  date VARCHAR(20) DEFAULT '',
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  project VARCHAR(190) DEFAULT '',
+  category VARCHAR(190) DEFAULT '',
+  owner VARCHAR(190) DEFAULT '',
+  assignees TEXT,
+  client VARCHAR(190) DEFAULT '',
+  priority VARCHAR(50) DEFAULT 'Medium',
+  status VARCHAR(80) DEFAULT 'Not Yet Started',
+  dueDate VARCHAR(20) DEFAULT '',
+  lastUpdateDate VARCHAR(20) DEFAULT '',
+  lastUpdateRemarks TEXT,
+  hours DECIMAL(10,2) DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS vendor_tasks (
+  id BIGINT PRIMARY KEY,
+  date VARCHAR(20) DEFAULT '',
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  project VARCHAR(190) DEFAULT '',
+  category VARCHAR(190) DEFAULT '',
+  owner VARCHAR(190) DEFAULT '',
+  assignees TEXT,
+  vendor VARCHAR(190) DEFAULT '',
+  vendorCategory VARCHAR(190) DEFAULT '',
+  priority VARCHAR(50) DEFAULT 'Medium',
+  status VARCHAR(80) DEFAULT 'Not Yet Started',
+  dueDate VARCHAR(20) DEFAULT '',
+  lastUpdateDate VARCHAR(20) DEFAULT '',
+  lastUpdateRemarks TEXT,
+  hours DECIMAL(10,2) DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS action_logs (
+  id BIGINT PRIMARY KEY,
+  taskId BIGINT NOT NULL,
+  taskTitle VARCHAR(255) DEFAULT '',
+  project VARCHAR(190) DEFAULT '',
+  category VARCHAR(190) DEFAULT '',
+  owner VARCHAR(190) DEFAULT '',
+  assignees TEXT,
+  vendor VARCHAR(190) DEFAULT '',
+  status VARCHAR(80) DEFAULT '',
+  remarks TEXT,
+  updatedOn VARCHAR(20) DEFAULT '',
+  timestamp VARCHAR(30) DEFAULT '',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_action_logs_task (taskId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS recurring_tasks (
+  id BIGINT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  category VARCHAR(190) DEFAULT '',
+  assignee VARCHAR(190) DEFAULT '',
+  frequencyType VARCHAR(50) DEFAULT 'Monthly',
+  frequencyDays INT DEFAULT 30,
+  startDate VARCHAR(20) DEFAULT '',
+  time VARCHAR(10) DEFAULT '',
+  status VARCHAR(80) DEFAULT 'Not Yet Started',
+  lastUpdatedOn VARCHAR(20) DEFAULT '',
+  lastUpdateRemarks TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS recurring_actions (
+  id BIGINT PRIMARY KEY,
+  taskId BIGINT NOT NULL,
+  taskTitle VARCHAR(255) DEFAULT '',
+  category VARCHAR(190) DEFAULT '',
+  assignee VARCHAR(190) DEFAULT '',
+  status VARCHAR(80) DEFAULT '',
+  remarks TEXT,
+  updatedOn VARCHAR(20) DEFAULT '',
+  timestamp VARCHAR(30) DEFAULT '',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_recurring_actions_task (taskId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS app_settings (
+  id INT PRIMARY KEY DEFAULT 1,
+  officeTokenId VARCHAR(255) DEFAULT '',
+  officeTelegramGroupId VARCHAR(255) DEFAULT '',
+  whatsappGroupId VARCHAR(255) DEFAULT '',
+  masId VARCHAR(255) DEFAULT '',
+  masPassword VARCHAR(255) DEFAULT '',
+  metaAccessToken TEXT,
+  metaPhoneNumberId VARCHAR(255) DEFAULT '',
+  metaWabaId VARCHAR(255) DEFAULT '',
+  metaVerifyToken VARCHAR(255) DEFAULT '',
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO app_settings (id)
+VALUES (1)
+ON DUPLICATE KEY UPDATE id = 1;
+
+INSERT INTO users (name, email, role, password, isActive)
+VALUES ('Admin', 'bizskill17@gmail.com', 'Admin', '!Office1@', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name), role = VALUES(role), isActive = VALUES(isActive);
+
