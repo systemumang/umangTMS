@@ -130,6 +130,10 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                 <th className={thClass} style={{ width: '100px' }} onClick={() => requestSort('priority')}><div className="flex items-center">Priority {getSortIcon('priority')}</div></th>
                 <th className={thClass} style={{ width: '120px' }} onClick={() => requestSort('dueDate')}><div className="flex items-center">Due Date {getSortIcon('dueDate')}</div></th>
                 <th className={thClass} style={{ width: '100px' }} onClick={() => requestSort('hours')}><div className="flex items-center">Minutes {getSortIcon('hours')}</div></th>
+                <th className={thClass} style={{ width: '100px' }} onClick={() => requestSort('time')}><div className="flex items-center">Time {getSortIcon('time')}</div></th>
+                <th className={thClass} style={{ width: '120px' }}><div className="flex items-center">Photo</div></th>
+                <th className={thClass} style={{ width: '120px' }}><div className="flex items-center">PDF</div></th>
+                <th className={thClass} style={{ width: '180px' }} onClick={() => requestSort('goal')}><div className="flex items-center">Goal {getSortIcon('goal')}</div></th>
                 <th className={thClass} style={{ width: '180px' }} onClick={() => requestSort('owner')}><div className="flex items-center">Owner {getSortIcon('owner')}</div></th>
                 <th className={thClass} style={{ width: '180px' }} onClick={() => requestSort(isVendorView ? 'vendor' : 'assignees')}><div className="flex items-center">{isVendorView ? 'Vendor' : 'Assignees'} {getSortIcon(isVendorView ? 'vendor' : 'assignees')}</div></th>
                 <th className={thClass} style={{ width: '150px' }} onClick={() => requestSort('category')}><div className="flex items-center">Category{getSortIcon('category')}</div></th>
@@ -176,8 +180,23 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                     </td>
                     <td className={tdClass}>{task.priority}</td>
                     <td className={`${tdClass}`}>{formatDate(task.dueDate)}</td>
-                    <td className={`${tdClass} font-bold text-indigo-600 text-center`}>{task.hours || 0}</td>
-                    <td className={`${tdClass} font-bold text-xs uppercase`}>{task.owner}</td>
+	                    <td className={`${tdClass} font-bold text-indigo-600 text-center`}>{task.hours || 0}</td>
+                      <td className={tdClass}>{task.time || '-'}</td>
+                      <td className={tdClass}>
+                        {task.photos ? (() => {
+                          try {
+                            const arr = JSON.parse(task.photos || '[]');
+                            return `${Array.isArray(arr) ? arr.length : 0} photo(s)`;
+                          } catch {
+                            return '-';
+                          }
+                        })() : '-'}
+                      </td>
+                      <td className={tdClass}>
+                        {task.pdf ? <a href={task.pdf} target="_blank" rel="noreferrer" className="text-indigo-600 underline">Open PDF</a> : '-'}
+                      </td>
+                      <td className={tdClass}>{task.goal || '-'}</td>
+	                    <td className={`${tdClass} font-bold text-xs uppercase`}>{task.owner}</td>
                     <td className={tdClass}>
                         <div className="flex items-center gap-1 font-bold text-xs uppercase">
                             {task.vendor ? <Hammer size={12} className="text-orange-500 shrink-0"/> : <Users size={12} className="text-indigo-700 shrink-0"/>}

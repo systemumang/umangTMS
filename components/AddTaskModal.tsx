@@ -52,6 +52,10 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
     vendor: string;
     vendorCategory: string[]; 
     notes: string;
+    time: string;
+    goal: string;
+    photos: string[];
+    pdf: string;
   }>({
     title: '',
     assignees: [],
@@ -62,8 +66,20 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
     project: '',
     vendor: '',
     vendorCategory: [],
-    notes: ''
+    notes: '',
+    time: '',
+    goal: '',
+    photos: [],
+    pdf: ''
   });
+
+  const readFileAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
 
   useEffect(() => {
     if (isOpen) {
@@ -130,7 +146,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
         formData.category !== '';
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFormValid()) return;
     
@@ -141,6 +157,10 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
       remarks: formData.notes,
       owner: formData.owner,
       project: formData.project, // Project is always included now
+      time: formData.time,
+      goal: formData.goal,
+      photos: JSON.stringify(formData.photos || []),
+      pdf: formData.pdf || '',
     };
 
     if (isVendorView) {
@@ -169,7 +189,11 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
       project: '',
       vendor: '',
       vendorCategory: [],
-      notes: ''
+      notes: '',
+      time: '',
+      goal: '',
+      photos: [],
+      pdf: ''
     });
     onClose();
   };
@@ -358,6 +382,67 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
                 onChange={handleChange}
                 className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none text-black resize-none"
               ></textarea>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-black block mb-1">Time</label>
+                <input
+                  name="time"
+                  type="time"
+                  value={formData.time}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none text-black"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-black block mb-1">Goal</label>
+                <input
+                  name="goal"
+                  type="text"
+                  value={formData.goal}
+                  onChange={handleChange}
+                  placeholder="Enter goal"
+                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none text-black"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-black block mb-1">Photo (Up to 5)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={async (e) => {
+                    const files = Array.from(e.target.files || []);
+                    if (files.length > 5) {
+                      alert('Please upload maximum 5 photos.');
+                      return;
+                    }
+                    const photoData = await Promise.all(files.map(readFileAsDataUrl));
+                    setFormData(prev => ({ ...prev, photos: photoData }));
+                  }}
+                  className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm"
+                />
+                <p className="text-xs text-gray-500">{formData.photos.length} photo(s) selected</p>
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-black block mb-1">PDF</label>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const pdfData = await readFileAsDataUrl(file);
+                    setFormData(prev => ({ ...prev, pdf: pdfData }));
+                  }}
+                  className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm"
+                />
+                <p className="text-xs text-gray-500">{formData.pdf ? 'PDF selected' : 'No PDF selected'}</p>
+              </div>
             </div>
           </div>
 

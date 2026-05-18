@@ -145,6 +145,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $lastUpdateDate = (string)($data['lastUpdateDate'] ?? $data['last Update'] ?? '');
         $lastUpdateRemarks = (string)($data['remark'] ?? $data['lastUpdateRemarks'] ?? '');
         $hours = (float)($data['hours'] ?? 0);
+        $time = (string)($data['time'] ?? '');
+        $goal = (string)($data['goal'] ?? '');
+        $photos = (string)($data['photos'] ?? '');
+        $pdf = (string)($data['pdf'] ?? '');
         $vendor = (string)($data['vendor'] ?? '');
         $vendorCategory = (string)($data['vendorCategory'] ?? '');
 
@@ -153,13 +157,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($table === 'main_tasks') {
-            $stmt = $conn->prepare("INSERT INTO main_tasks (id, date, title, description, project, category, owner, assignees, client, priority, status, dueDate, lastUpdateDate, lastUpdateRemarks, hours) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $conn->prepare("INSERT INTO main_tasks (id, date, title, description, project, category, owner, assignees, client, priority, status, dueDate, lastUpdateDate, lastUpdateRemarks, hours, time, goal, photos, pdf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare main task insert.'], 500);
-            $stmt->bind_param('isssssssssssssd', $id, $date, $title, $description, $project, $category, $owner, $assignees, $client, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours);
+            $stmt->bind_param('issssssssssssssdssss', $id, $date, $title, $description, $project, $category, $owner, $assignees, $client, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf);
         } else {
-            $stmt = $conn->prepare("INSERT INTO vendor_tasks (id, date, title, description, project, category, owner, assignees, vendor, vendorCategory, priority, status, dueDate, lastUpdateDate, lastUpdateRemarks, hours) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $conn->prepare("INSERT INTO vendor_tasks (id, date, title, description, project, category, owner, assignees, vendor, vendorCategory, priority, status, dueDate, lastUpdateDate, lastUpdateRemarks, hours, time, goal, photos, pdf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare vendor task insert.'], 500);
-            $stmt->bind_param('issssssssssssssd', $id, $date, $title, $description, $project, $category, $owner, $assignees, $vendor, $vendorCategory, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours);
+            $stmt->bind_param('issssssssssssssssdssss', $id, $date, $title, $description, $project, $category, $owner, $assignees, $vendor, $vendorCategory, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf);
         }
 
         $ok = $stmt->execute();
@@ -314,18 +318,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $lastUpdateDate = (string)($data['lastUpdateDate'] ?? $data['last Update'] ?? '');
         $lastUpdateRemarks = (string)($data['remark'] ?? $data['lastUpdateRemarks'] ?? '');
         $hours = (float)($data['hours'] ?? 0);
+        $time = (string)($data['time'] ?? '');
+        $goal = (string)($data['goal'] ?? '');
+        $photos = (string)($data['photos'] ?? '');
+        $pdf = (string)($data['pdf'] ?? '');
         $client = (string)($data['clientName'] ?? $data['client'] ?? '');
         $vendor = (string)($data['vendor'] ?? '');
         $vendorCategory = (string)($data['vendorCategory'] ?? '');
 
         if ($table === 'main_tasks') {
-            $stmt = $conn->prepare("UPDATE main_tasks SET title=?, description=?, project=?, category=?, owner=?, assignees=?, client=?, priority=?, status=?, dueDate=?, lastUpdateDate=?, lastUpdateRemarks=?, hours=? WHERE id=?");
+            $stmt = $conn->prepare("UPDATE main_tasks SET title=?, description=?, project=?, category=?, owner=?, assignees=?, client=?, priority=?, status=?, dueDate=?, lastUpdateDate=?, lastUpdateRemarks=?, hours=?, time=?, goal=?, photos=?, pdf=? WHERE id=?");
             if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare main task update.'], 500);
-            $stmt->bind_param('ssssssssssssdi', $title, $description, $project, $category, $owner, $assignees, $client, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $id);
+            $stmt->bind_param('ssssssssssssdssssi', $title, $description, $project, $category, $owner, $assignees, $client, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf, $id);
         } else {
-            $stmt = $conn->prepare("UPDATE vendor_tasks SET title=?, description=?, project=?, category=?, owner=?, assignees=?, vendor=?, vendorCategory=?, priority=?, status=?, dueDate=?, lastUpdateDate=?, lastUpdateRemarks=?, hours=? WHERE id=?");
+            $stmt = $conn->prepare("UPDATE vendor_tasks SET title=?, description=?, project=?, category=?, owner=?, assignees=?, vendor=?, vendorCategory=?, priority=?, status=?, dueDate=?, lastUpdateDate=?, lastUpdateRemarks=?, hours=?, time=?, goal=?, photos=?, pdf=? WHERE id=?");
             if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare vendor task update.'], 500);
-            $stmt->bind_param('sssssssssssssdi', $title, $description, $project, $category, $owner, $assignees, $vendor, $vendorCategory, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $id);
+            $stmt->bind_param('sssssssssssssdssssi', $title, $description, $project, $category, $owner, $assignees, $vendor, $vendorCategory, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf, $id);
         }
 
         $ok = $stmt->execute();

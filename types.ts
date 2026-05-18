@@ -54,6 +54,10 @@ export interface Task {
   lastUpdateDate?: string;
   lastUpdateRemarks?: string;
   hours?: number;
+  time?: string;
+  goal?: string;
+  photos?: string; // JSON stringified array of data URLs
+  pdf?: string; // data URL
 }
 
 export interface RecurringTask {

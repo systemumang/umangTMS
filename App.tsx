@@ -441,6 +441,10 @@ export default function App() {
         
         finalData.taskDate = data.date || shortDate;
         finalData['date'] = data.date || shortDate;
+        finalData.time = data.time || '';
+        finalData.goal = data.goal || '';
+        finalData.photos = data.photos || '';
+        finalData.pdf = data.pdf || '';
     }
 
     if (action === 'addMaster' || action === 'updateMaster') {
@@ -520,6 +524,10 @@ export default function App() {
                 vendorCategory: item.vendorCategory || item.vendorcategory || '',
                 clientName: rawClient,
                 hours: Number(item.hours || 0), // Normalize hours
+                time: String(item.time || ''),
+                goal: String(item.goal || ''),
+                photos: String(item.photos || ''),
+                pdf: String(item.pdf || ''),
                 project: (rawProject && rawClient && !rawProject.includes('(')) 
                     ? `${rawProject} (${rawClient})` 
                     : rawProject || ''

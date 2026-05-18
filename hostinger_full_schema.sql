@@ -83,6 +83,10 @@ CREATE TABLE IF NOT EXISTS main_tasks (
   lastUpdateDate VARCHAR(20) DEFAULT '',
   lastUpdateRemarks TEXT,
   hours DECIMAL(10,2) DEFAULT 0,
+  time VARCHAR(10) DEFAULT '',
+  goal VARCHAR(255) DEFAULT '',
+  photos MEDIUMTEXT,
+  pdf MEDIUMTEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -103,6 +107,10 @@ CREATE TABLE IF NOT EXISTS vendor_tasks (
   lastUpdateDate VARCHAR(20) DEFAULT '',
   lastUpdateRemarks TEXT,
   hours DECIMAL(10,2) DEFAULT 0,
+  time VARCHAR(10) DEFAULT '',
+  goal VARCHAR(255) DEFAULT '',
+  photos MEDIUMTEXT,
+  pdf MEDIUMTEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -173,4 +181,3 @@ ON DUPLICATE KEY UPDATE id = 1;
 INSERT INTO users (name, email, role, password, isActive)
 VALUES ('Admin', 'bizskill17@gmail.com', 'Admin', '!Office1@', 1)
 ON DUPLICATE KEY UPDATE name = VALUES(name), role = VALUES(role), isActive = VALUES(isActive);
-
