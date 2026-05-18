@@ -87,7 +87,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'vendors' => 'vendors',
         'categories' => 'categories',
         'vendorcategories' => 'vendor_categories',
-        'designations' => 'designations'
+        'designations' => 'designations',
+        'maintasks' => 'main_tasks',
+        'vendortasks' => 'vendor_tasks'
     ];
     $table = $targetTableMap[$target] ?? '';
 
@@ -125,6 +127,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         sendJson(['success' => true, 'data' => ['id' => $insertId]]);
+    }
+
+    if ($action === 'addTask' && in_array($table, ['main_tasks', 'vendor_tasks'], true)) {
+        $id = (int)($data['id'] ?? 0);
+        $date = (string)($data['date'] ?? '');
+        $title = trim((string)($data['title'] ?? $data['task'] ?? ''));
+        $description = (string)($data['notes'] ?? $data['description'] ?? '');
+        $project = (string)($data['project'] ?? '');
+        $category = (string)($data['category'] ?? '');
+        $owner = (string)($data['owner'] ?? '');
+        $assignees = (string)($data['assignees'] ?? '');
+        $client = (string)($data['clientName'] ?? $data['client'] ?? '');
+        $priority = (string)($data['priority'] ?? 'Medium');
+        $status = (string)($data['status'] ?? 'Not Yet Started');
+        $dueDate = (string)($data['due Date'] ?? $data['dueDate'] ?? '');
+        $lastUpdateDate = (string)($data['lastUpdateDate'] ?? $data['last Update'] ?? '');
+        $lastUpdateRemarks = (string)($data['remark'] ?? $data['lastUpdateRemarks'] ?? '');
+        $hours = (float)($data['hours'] ?? 0);
+        $vendor = (string)($data['vendor'] ?? '');
+        $vendorCategory = (string)($data['vendorCategory'] ?? '');
+
+        if ($id <= 0 || $title === '') {
+            sendJson(['success' => false, 'error' => 'Task id and title are required.'], 400);
+        }
+
+        if ($table === 'main_tasks') {
+            $stmt = $conn->prepare("INSERT INTO main_tasks (id, date, title, description, project, category, owner, assignees, client, priority, status, dueDate, lastUpdateDate, lastUpdateRemarks, hours) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare main task insert.'], 500);
+            $stmt->bind_param('isssssssssssssd', $id, $date, $title, $description, $project, $category, $owner, $assignees, $client, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours);
+        } else {
+            $stmt = $conn->prepare("INSERT INTO vendor_tasks (id, date, title, description, project, category, owner, assignees, vendor, vendorCategory, priority, status, dueDate, lastUpdateDate, lastUpdateRemarks, hours) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare vendor task insert.'], 500);
+            $stmt->bind_param('issssssssssssssd', $id, $date, $title, $description, $project, $category, $owner, $assignees, $vendor, $vendorCategory, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours);
+        }
+
+        $ok = $stmt->execute();
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to add task.'], 400);
+        sendJson(['success' => true, 'data' => ['id' => $id]]);
     }
 
     if ($action === 'addMaster' && $table === 'clients') {
@@ -257,6 +298,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         sendJson(['success' => true]);
     }
 
+    if ($action === 'updateTask' && in_array($table, ['main_tasks', 'vendor_tasks'], true)) {
+        $id = (int)($data['id'] ?? 0);
+        if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid task id.'], 400);
+
+        $title = trim((string)($data['title'] ?? $data['task'] ?? ''));
+        $description = (string)($data['notes'] ?? $data['description'] ?? '');
+        $project = (string)($data['project'] ?? '');
+        $category = (string)($data['category'] ?? '');
+        $owner = (string)($data['owner'] ?? '');
+        $assignees = (string)($data['assignees'] ?? '');
+        $priority = (string)($data['priority'] ?? 'Medium');
+        $status = (string)($data['status'] ?? 'Not Yet Started');
+        $dueDate = (string)($data['due Date'] ?? $data['dueDate'] ?? '');
+        $lastUpdateDate = (string)($data['lastUpdateDate'] ?? $data['last Update'] ?? '');
+        $lastUpdateRemarks = (string)($data['remark'] ?? $data['lastUpdateRemarks'] ?? '');
+        $hours = (float)($data['hours'] ?? 0);
+        $client = (string)($data['clientName'] ?? $data['client'] ?? '');
+        $vendor = (string)($data['vendor'] ?? '');
+        $vendorCategory = (string)($data['vendorCategory'] ?? '');
+
+        if ($table === 'main_tasks') {
+            $stmt = $conn->prepare("UPDATE main_tasks SET title=?, description=?, project=?, category=?, owner=?, assignees=?, client=?, priority=?, status=?, dueDate=?, lastUpdateDate=?, lastUpdateRemarks=?, hours=? WHERE id=?");
+            if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare main task update.'], 500);
+            $stmt->bind_param('ssssssssssssdi', $title, $description, $project, $category, $owner, $assignees, $client, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $id);
+        } else {
+            $stmt = $conn->prepare("UPDATE vendor_tasks SET title=?, description=?, project=?, category=?, owner=?, assignees=?, vendor=?, vendorCategory=?, priority=?, status=?, dueDate=?, lastUpdateDate=?, lastUpdateRemarks=?, hours=? WHERE id=?");
+            if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare vendor task update.'], 500);
+            $stmt->bind_param('sssssssssssssdi', $title, $description, $project, $category, $owner, $assignees, $vendor, $vendorCategory, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $id);
+        }
+
+        $ok = $stmt->execute();
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to update task.'], 400);
+        sendJson(['success' => true]);
+    }
+
     if ($action === 'updateMaster' && $table === 'clients') {
         $id = (int)($data['id'] ?? 0);
         if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid client id.'], 400);
@@ -360,6 +437,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$ok) {
             sendJson(['success' => false, 'error' => 'Failed to delete user.'], 400);
         }
+        sendJson(['success' => true]);
+    }
+
+    if ($action === 'deleteRecord' && in_array($table, ['main_tasks', 'vendor_tasks'], true)) {
+        $id = (int)($data['id'] ?? 0);
+        if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid task id.'], 400);
+        $stmt = $conn->prepare("DELETE FROM `{$table}` WHERE id=?");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare task delete.'], 500);
+        $stmt->bind_param('i', $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to delete task.'], 400);
         sendJson(['success' => true]);
     }
 
