@@ -81,7 +81,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Map frontend target labels to SQL table names.
     $targetTableMap = [
-        'users' => 'users'
+        'users' => 'users',
+        'clients' => 'clients',
+        'projects' => 'projects',
+        'vendors' => 'vendors',
+        'categories' => 'categories',
+        'vendorcategories' => 'vendor_categories',
+        'designations' => 'designations'
     ];
     $table = $targetTableMap[$target] ?? '';
 
@@ -118,6 +124,99 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             sendJson(['success' => false, 'error' => 'Failed to insert user. Email may already exist.'], 400);
         }
 
+        sendJson(['success' => true, 'data' => ['id' => $insertId]]);
+    }
+
+    if ($action === 'addMaster' && $table === 'clients') {
+        $name = trim((string)($data['name'] ?? ''));
+        $email = trim((string)($data['email'] ?? ''));
+        $mobile = trim((string)($data['mobile'] ?? ''));
+        $address = trim((string)($data['address'] ?? ''));
+        $gstNumber = trim((string)($data['gSTNumber'] ?? $data['gstNumber'] ?? ''));
+        if ($name === '') sendJson(['success' => false, 'error' => 'Client name is required.'], 400);
+
+        $stmt = $conn->prepare("INSERT INTO clients (name, email, mobile, address, gstNumber) VALUES (?, ?, ?, ?, ?)");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare client insert.'], 500);
+        $stmt->bind_param('sssss', $name, $email, $mobile, $address, $gstNumber);
+        $ok = $stmt->execute();
+        $insertId = (int)$stmt->insert_id;
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to add client.'], 400);
+        sendJson(['success' => true, 'data' => ['id' => $insertId]]);
+    }
+
+    if ($action === 'addMaster' && $table === 'vendors') {
+        $name = trim((string)($data['name'] ?? ''));
+        $email = trim((string)($data['email'] ?? ''));
+        $mobile = trim((string)($data['mobile'] ?? ''));
+        $address = trim((string)($data['address'] ?? ''));
+        $gstNumber = trim((string)($data['gSTNumber'] ?? $data['gstNumber'] ?? ''));
+        if ($name === '') sendJson(['success' => false, 'error' => 'Vendor name is required.'], 400);
+
+        $stmt = $conn->prepare("INSERT INTO vendors (name, email, mobile, address, gstNumber) VALUES (?, ?, ?, ?, ?)");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare vendor insert.'], 500);
+        $stmt->bind_param('sssss', $name, $email, $mobile, $address, $gstNumber);
+        $ok = $stmt->execute();
+        $insertId = (int)$stmt->insert_id;
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to add vendor.'], 400);
+        sendJson(['success' => true, 'data' => ['id' => $insertId]]);
+    }
+
+    if ($action === 'addMaster' && $table === 'projects') {
+        $name = trim((string)($data['name'] ?? ''));
+        $client = trim((string)($data['client'] ?? ''));
+        $projectType = trim((string)($data['projectType'] ?? ''));
+        $status = trim((string)($data['status'] ?? 'Active'));
+        if ($name === '') sendJson(['success' => false, 'error' => 'Project name is required.'], 400);
+
+        $stmt = $conn->prepare("INSERT INTO projects (name, client, projectType, status) VALUES (?, ?, ?, ?)");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare project insert.'], 500);
+        $stmt->bind_param('ssss', $name, $client, $projectType, $status);
+        $ok = $stmt->execute();
+        $insertId = (int)$stmt->insert_id;
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to add project.'], 400);
+        sendJson(['success' => true, 'data' => ['id' => $insertId]]);
+    }
+
+    if ($action === 'addMaster' && $table === 'categories') {
+        $name = trim((string)($data['name'] ?? ''));
+        $type = trim((string)($data['type'] ?? ''));
+        if ($name === '') sendJson(['success' => false, 'error' => 'Category name is required.'], 400);
+        $stmt = $conn->prepare("INSERT INTO categories (name, type) VALUES (?, ?)");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare category insert.'], 500);
+        $stmt->bind_param('ss', $name, $type);
+        $ok = $stmt->execute();
+        $insertId = (int)$stmt->insert_id;
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to add category.'], 400);
+        sendJson(['success' => true, 'data' => ['id' => $insertId]]);
+    }
+
+    if ($action === 'addMaster' && $table === 'vendor_categories') {
+        $name = trim((string)($data['name'] ?? ''));
+        if ($name === '') sendJson(['success' => false, 'error' => 'Vendor category name is required.'], 400);
+        $stmt = $conn->prepare("INSERT INTO vendor_categories (name) VALUES (?)");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare vendor category insert.'], 500);
+        $stmt->bind_param('s', $name);
+        $ok = $stmt->execute();
+        $insertId = (int)$stmt->insert_id;
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to add vendor category.'], 400);
+        sendJson(['success' => true, 'data' => ['id' => $insertId]]);
+    }
+
+    if ($action === 'addMaster' && $table === 'designations') {
+        $name = trim((string)($data['name'] ?? ''));
+        if ($name === '') sendJson(['success' => false, 'error' => 'Designation name is required.'], 400);
+        $stmt = $conn->prepare("INSERT INTO designations (name) VALUES (?)");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare designation insert.'], 500);
+        $stmt->bind_param('s', $name);
+        $ok = $stmt->execute();
+        $insertId = (int)$stmt->insert_id;
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to add designation.'], 400);
         sendJson(['success' => true, 'data' => ['id' => $insertId]]);
     }
 
@@ -158,6 +257,96 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         sendJson(['success' => true]);
     }
 
+    if ($action === 'updateMaster' && $table === 'clients') {
+        $id = (int)($data['id'] ?? 0);
+        if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid client id.'], 400);
+        $name = trim((string)($data['name'] ?? ''));
+        $email = trim((string)($data['email'] ?? ''));
+        $mobile = trim((string)($data['mobile'] ?? ''));
+        $address = trim((string)($data['address'] ?? ''));
+        $gstNumber = trim((string)($data['gSTNumber'] ?? $data['gstNumber'] ?? ''));
+        $stmt = $conn->prepare("UPDATE clients SET name=?, email=?, mobile=?, address=?, gstNumber=? WHERE id=?");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare client update.'], 500);
+        $stmt->bind_param('sssssi', $name, $email, $mobile, $address, $gstNumber, $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to update client.'], 400);
+        sendJson(['success' => true]);
+    }
+
+    if ($action === 'updateMaster' && $table === 'vendors') {
+        $id = (int)($data['id'] ?? 0);
+        if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid vendor id.'], 400);
+        $name = trim((string)($data['name'] ?? ''));
+        $email = trim((string)($data['email'] ?? ''));
+        $mobile = trim((string)($data['mobile'] ?? ''));
+        $address = trim((string)($data['address'] ?? ''));
+        $gstNumber = trim((string)($data['gSTNumber'] ?? $data['gstNumber'] ?? ''));
+        $stmt = $conn->prepare("UPDATE vendors SET name=?, email=?, mobile=?, address=?, gstNumber=? WHERE id=?");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare vendor update.'], 500);
+        $stmt->bind_param('sssssi', $name, $email, $mobile, $address, $gstNumber, $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to update vendor.'], 400);
+        sendJson(['success' => true]);
+    }
+
+    if ($action === 'updateMaster' && $table === 'projects') {
+        $id = (int)($data['id'] ?? 0);
+        if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid project id.'], 400);
+        $name = trim((string)($data['name'] ?? ''));
+        $client = trim((string)($data['client'] ?? ''));
+        $projectType = trim((string)($data['projectType'] ?? ''));
+        $status = trim((string)($data['status'] ?? 'Active'));
+        $stmt = $conn->prepare("UPDATE projects SET name=?, client=?, projectType=?, status=? WHERE id=?");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare project update.'], 500);
+        $stmt->bind_param('ssssi', $name, $client, $projectType, $status, $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to update project.'], 400);
+        sendJson(['success' => true]);
+    }
+
+    if ($action === 'updateMaster' && $table === 'categories') {
+        $id = (int)($data['id'] ?? 0);
+        if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid category id.'], 400);
+        $name = trim((string)($data['name'] ?? ''));
+        $type = trim((string)($data['type'] ?? ''));
+        $stmt = $conn->prepare("UPDATE categories SET name=?, type=? WHERE id=?");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare category update.'], 500);
+        $stmt->bind_param('ssi', $name, $type, $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to update category.'], 400);
+        sendJson(['success' => true]);
+    }
+
+    if ($action === 'updateMaster' && $table === 'vendor_categories') {
+        $id = (int)($data['id'] ?? 0);
+        if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid vendor category id.'], 400);
+        $name = trim((string)($data['name'] ?? ''));
+        $stmt = $conn->prepare("UPDATE vendor_categories SET name=? WHERE id=?");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare vendor category update.'], 500);
+        $stmt->bind_param('si', $name, $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to update vendor category.'], 400);
+        sendJson(['success' => true]);
+    }
+
+    if ($action === 'updateMaster' && $table === 'designations') {
+        $id = (int)($data['id'] ?? 0);
+        if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid designation id.'], 400);
+        $name = trim((string)($data['name'] ?? ''));
+        $stmt = $conn->prepare("UPDATE designations SET name=? WHERE id=?");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare designation update.'], 500);
+        $stmt->bind_param('si', $name, $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to update designation.'], 400);
+        sendJson(['success' => true]);
+    }
+
     if ($action === 'deleteRecord' && $table === 'users') {
         $id = (int)($data['id'] ?? 0);
         if ($id <= 0) {
@@ -171,6 +360,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$ok) {
             sendJson(['success' => false, 'error' => 'Failed to delete user.'], 400);
         }
+        sendJson(['success' => true]);
+    }
+
+    if ($action === 'deleteRecord' && in_array($table, ['clients', 'projects', 'vendors', 'categories', 'vendor_categories', 'designations'], true)) {
+        $id = (int)($data['id'] ?? 0);
+        if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid id.'], 400);
+        $stmt = $conn->prepare("DELETE FROM `{$table}` WHERE id=?");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare delete query.'], 500);
+        $stmt->bind_param('i', $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to delete record.'], 400);
         sendJson(['success' => true]);
     }
 
