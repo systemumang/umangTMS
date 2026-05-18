@@ -25,6 +25,13 @@ jobs:
       - name: Build Vite app
         run: npm run build
 
+      - name: Prepare deploy package
+        run: |
+          rm -rf deploy
+          mkdir -p deploy
+          cp -r dist/* deploy/
+          cp -r api deploy/api
+
       - name: Deploy to Hostinger (FTP)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -33,16 +40,6 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           port: ${{ secrets.FTP_PORT }}
           protocol: ftp
-          local-dir: ./
+          local-dir: ./deploy/
           server-dir: ./
-          exclude: |
-            **/.git*
-            **/.github/**
-            **/node_modules/**
-            **/src/**
-            **/*.ts
-            **/*.tsx
-            **/vite.config.*
-            **/package*.json
-            **/tsconfig*.json
           dangerous-clean-slate: true
