@@ -101,8 +101,8 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-opacity">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col animate-in fade-in zoom-in duration-200 border-2 border-blue-500">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4 bg-black/40 backdrop-blur-sm transition-opacity">
+      <div className="bg-white rounded-xl shadow-2xl w-[98vw] h-[96vh] max-w-none max-h-none flex flex-col animate-in fade-in zoom-in duration-200 border-2 border-blue-500">
         
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-black flex-shrink-0">
