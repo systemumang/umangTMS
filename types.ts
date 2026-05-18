@@ -159,6 +159,10 @@ export interface ActionLogEntry {
     clientName?: string; 
     vendor?: string;
     hours?: number;
+    time?: string;
+    goal?: string;
+    photos?: string;
+    pdf?: string;
 }
 
 export interface AppSettings {

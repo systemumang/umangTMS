@@ -89,7 +89,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'vendorcategories' => 'vendor_categories',
         'designations' => 'designations',
         'maintasks' => 'main_tasks',
-        'vendortasks' => 'vendor_tasks'
+        'vendortasks' => 'vendor_tasks',
+        'maintaskactionlog' => 'action_logs',
+        'vendortaskactionlog' => 'action_logs'
     ];
     $table = $targetTableMap[$target] ?? '';
 
@@ -326,9 +328,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $goal = (string)($data['goal'] ?? '');
         $photos = (string)($data['photos'] ?? '');
         $pdf = (string)($data['pdf'] ?? '');
+        $taskDate = (string)($data['taskDate'] ?? $data['date'] ?? '');
         $client = (string)($data['clientName'] ?? $data['client'] ?? '');
         $vendor = (string)($data['vendor'] ?? '');
         $vendorCategory = (string)($data['vendorCategory'] ?? '');
+        $skipLogRaw = strtolower((string)($data['skipLog'] ?? 'false'));
+        $skipLog = in_array($skipLogRaw, ['1', 'true', 'yes'], true);
 
         if ($table === 'main_tasks') {
             $stmt = $conn->prepare("UPDATE main_tasks SET title=?, description=?, project=?, category=?, owner=?, assignees=?, client=?, priority=?, status=?, dueDate=?, lastUpdateDate=?, lastUpdateRemarks=?, hours=?, time=?, goal=?, photos=?, pdf=? WHERE id=?");
@@ -343,6 +348,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ok = $stmt->execute();
         $stmt->close();
         if (!$ok) sendJson(['success' => false, 'error' => 'Failed to update task.'], 400);
+
+        if (!$skipLog && ($lastUpdateRemarks !== '' || $status !== 'Not Yet Started' || $hours > 0 || $goal !== '' || $photos !== '' || $pdf !== '')) {
+            $logId = (int)round(microtime(true) * 1000);
+            $updatedOn = '';
+            $timestamp = '';
+            if ($lastUpdateDate !== '') {
+                $dateTime = explode(' ', $lastUpdateDate, 2);
+                $updatedOn = $dateTime[0] ?? '';
+                $timestamp = $dateTime[1] ?? '';
+            }
+
+            $logStmt = $conn->prepare("INSERT INTO action_logs (id, taskId, taskTitle, taskDate, updateDate, project, client, category, owner, assignees, vendor, status, remarks, hours, time, goal, photos, pdf, updatedOn, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            if (!$logStmt) sendJson(['success' => false, 'error' => 'Failed to prepare action log insert.'], 500);
+            $logStmt->bind_param('iisssssssssssdssssss', $logId, $id, $title, $taskDate, $lastUpdateDate, $project, $client, $category, $owner, $assignees, $vendor, $status, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf, $updatedOn, $timestamp);
+            $logOk = $logStmt->execute();
+            $logError = $logStmt->error;
+            $logStmt->close();
+            if (!$logOk) sendJson(['success' => false, 'error' => 'Failed to add action log: ' . $logError], 400);
+        }
+
         sendJson(['success' => true]);
     }
 
@@ -461,6 +486,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ok = $stmt->execute();
         $stmt->close();
         if (!$ok) sendJson(['success' => false, 'error' => 'Failed to delete task.'], 400);
+        sendJson(['success' => true]);
+    }
+
+    if ($action === 'deleteRecord' && $table === 'action_logs') {
+        $id = (int)($data['id'] ?? 0);
+        if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid log id.'], 400);
+        $stmt = $conn->prepare("DELETE FROM action_logs WHERE id=?");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare log delete.'], 500);
+        $stmt->bind_param('i', $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to delete log.'], 400);
         sendJson(['success' => true]);
     }
 

@@ -514,7 +514,7 @@ export default function App() {
                 title: String(item.title || item.Title || item.task || item.taskTitle || item.Task || ''),
                 date: formatToIndianDate(item.date || item.Date || ''),
                 lastUpdateDate: formatToIndianDateTime(item.lastUpdate || item.lastUpdateDate || item.LastUpdateDate || ''),
-                remarks: String(item.notes || item.remarks || item.Remarks || ''),
+                remarks: String(item.description || item.notes || item.remarks || item.Remarks || ''),
                 lastUpdateRemarks: String(item.remark || item.lastUpdateRemarks || item.lastUpdateRemark || item.LastUpdateRemarks || ''),
                 status: String(item.status || item.Status || 'Not Yet Started'),
                 priority: String(item.priority || item.Priority || 'Medium'),
@@ -550,11 +550,15 @@ export default function App() {
                 id: Number(l.id || l.ID || 0),
                 taskId: Number(l.taskId || l.taskID || 0),
                 task: String(l.task || l.taskTitle || l.TaskTitle || l.Task || ''),
-                taskDate: formatToIndianDate(l.taskDate || l.TaskDate || ''),
-                updateDate: formatToIndianDateTime(l.updateDate || l.UpdateDate || l['update Date'] || l['Update Date'] || ''),
+                taskDate: formatToIndianDate(l.taskDate || l.TaskDate || l['task Date'] || l['Task Date'] || ''),
+                updateDate: formatToIndianDateTime(l.updateDate || l.UpdateDate || l['update Date'] || l['Update Date'] || l.updatedOn || l.UpdatedOn || ''),
                 clientName: rawClient,
                 assignees: String(l.assignees || l.Assignees || ''),
                 hours: Number(l.hours || 0), // Normalize hours in log
+                time: String(l.time || l.Time || ''),
+                goal: String(l.goal || l.Goal || ''),
+                photos: String(l.photos || ''),
+                pdf: String(l.pdf || ''),
                 project: (rawProject && rawClient && !rawProject.includes('(')) 
                     ? `${rawProject} (${rawClient})` 
                     : rawProject || '',
@@ -644,6 +648,7 @@ export default function App() {
       priority: taskData.priority || 'Medium',
       dueDate: formatToIndianDate(taskData.dueDate),
       hours: 0,
+      remarks: String(taskData.remarks || taskData.notes || taskData.description || ''),
     };
     setTasks(prev => [tempTask, ...prev]);
     setSyncingIds(prev => new Set(prev).add(tempId));

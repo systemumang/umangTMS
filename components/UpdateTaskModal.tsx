@@ -17,10 +17,31 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
   const [reassignSelection, setReassignSelection] = useState<string | string[]>([]);
   const [remarksInput, setRemarksInput] = useState<string>('');
   const [hoursInput, setHoursInput] = useState<string>('0');
+  const [goalInput, setGoalInput] = useState<string>('');
+  const [photosInput, setPhotosInput] = useState<string[]>([]);
+  const [pdfInput, setPdfInput] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isConfirming, setIsConfirming] = useState(false);
 
   const isVendorTask = task ? !!task.vendor && task.vendor.trim() !== '' : false;
+
+  const readFileAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const parsePhotos = (rawPhotos?: string): string[] => {
+    if (!rawPhotos) return [];
+    try {
+      const parsed = JSON.parse(rawPhotos);
+      return Array.isArray(parsed) ? parsed.filter(photo => typeof photo === 'string' && photo.trim() !== '') : [];
+    } catch {
+      return [];
+    }
+  };
 
   useEffect(() => {
     if (task) {
@@ -29,6 +50,9 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
       });
       setRemarksInput('');
       setHoursInput('0');
+      setGoalInput(task.goal || '');
+      setPhotosInput(parsePhotos(task.photos));
+      setPdfInput(task.pdf || '');
       setReassignSelection(isVendorTask ? '' : []);
       setError('');
       setIsConfirming(false);
@@ -54,6 +78,10 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
       setHoursInput(e.target.value);
   }
 
+  const handleGoalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      setGoalInput(e.target.value);
+  }
+
   const handlePreSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -72,6 +100,9 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
         status: formData.status as any,
         lastUpdateRemarks: remarksInput,
         hours: Number(hoursInput || 0), // This will be handled as "New hours logged" by server
+        goal: goalInput,
+        photos: JSON.stringify(photosInput || []),
+        pdf: pdfInput || '',
     };
     
     const hasReassignment = Array.isArray(reassignSelection) 
@@ -177,6 +208,77 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
                   onChange={handleRemarkChange}
                   className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none text-gray-900 resize-none"
                 ></textarea>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-900 block mb-1">Goal</label>
+                <input
+                  type="text"
+                  value={goalInput}
+                  onChange={handleGoalChange}
+                  placeholder="Enter goal"
+                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none text-gray-900"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-900 block mb-1">Photo (Up to 5)</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length > 5) {
+                        setError('Please upload maximum 5 photos');
+                        return;
+                      }
+                      const photoData = await Promise.all(files.map(readFileAsDataUrl));
+                      setPhotosInput(photoData);
+                      setError('');
+                    }}
+                    className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm"
+                  />
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>{photosInput.length} photo(s) selected</span>
+                    {photosInput.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setPhotosInput([])}
+                        className="text-red-500 hover:text-red-700 font-medium"
+                      >
+                        Clear Photos
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-900 block mb-1">PDF</label>
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const pdfData = await readFileAsDataUrl(file);
+                      setPdfInput(pdfData);
+                    }}
+                    className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm"
+                  />
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>{pdfInput ? 'PDF selected' : 'No PDF selected'}</span>
+                    {pdfInput && (
+                      <button
+                        type="button"
+                        onClick={() => setPdfInput('')}
+                        className="text-red-500 hover:text-red-700 font-medium"
+                      >
+                        Clear PDF
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {(formData.status === 'In Progress' || formData.status === 'Pending for Client' || formData.status === 'Pending for Owner') && (
