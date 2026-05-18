@@ -28,6 +28,7 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
     dashboardFilter = null,
     onClearDashboardFilter 
 }) => {
+  const [photoViewer, setPhotoViewer] = useState<{ photos: string[]; index: number } | null>(null);
   const todayISO = new Date().toLocaleDateString('en-CA');
   const [searchTerm, setSearchTerm] = useState('');
   const [updateDateFrom, setUpdateDateFrom] = useState(todayISO);
@@ -269,7 +270,7 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
   ]);
 
   const handleExportExcel = () => {
-    const headers = ['Task', 'Task Date', 'Update Date', 'Status', 'Minutes', 'Remarks', 'Owner', 'Project', 'Client'];
+    const headers = ['Task', 'Task Date', 'Update Date', 'Status', 'Minutes', 'Remarks', 'Goal', 'Photo', 'PDF', 'Owner', 'Project', 'Client'];
     if (isVendorView) headers.push('Vendor');
     else headers.push('Assignee');
 
@@ -283,6 +284,9 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
                 log.status,
                 log.hours || 0,
                 `"${String(log.remarks || '').replace(/"/g, '""')}"`, 
+                `"${String(log.goal || '').replace(/"/g, '""')}"`,
+                parsePhotos(log.photos).length > 0 ? `${parsePhotos(log.photos).length} photo(s)` : '-',
+                log.pdf ? 'Open PDF' : '-',
                 `"${log.owner}"`,
                 `"${String(log.project || '').split(' (')[0]}"`, 
                 `"${log.clientName || ''}"`
@@ -325,6 +329,9 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
       'Status',
       'Minutes',
       'Remarks',
+      'Goal',
+      'Photo',
+      'PDF',
       'Owner',
       'Project',
       'Client',
@@ -339,6 +346,9 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
       log.status || '-',
       log.hours || 0,
       log.remarks || '-',
+      log.goal || '-',
+      parsePhotos(log.photos).length > 0 ? `${parsePhotos(log.photos).length} photo(s)` : '-',
+      log.pdf ? 'Open PDF' : '-',
       log.owner || '-',
       String(log.project || '').split(' (')[0] || '-',
       log.clientName || '-',
@@ -391,6 +401,16 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
 
   const getFilterClass = (isActive: boolean) => 
     `w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-colors ${isActive ? 'bg-indigo-50 border-indigo-500 text-indigo-700 font-black' : 'bg-white border-indigo-300 text-black'}`;
+
+  const parsePhotos = (rawPhotos?: string): string[] => {
+    if (!rawPhotos) return [];
+    try {
+      const parsed = JSON.parse(rawPhotos);
+      return Array.isArray(parsed) ? parsed.filter(photo => typeof photo === 'string' && photo.trim() !== '') : [];
+    } catch {
+      return [];
+    }
+  };
 
   const thClass = "px-6 py-4 text-xs font-black text-white uppercase tracking-widest border-r border-black last:border-r-0 cursor-pointer !bg-blue-700 hover:bg-blue-800 transition-colors select-none whitespace-normal sticky top-0 z-10";
   const tdClass = "px-6 py-4 text-sm text-gray-900 border-r border-black last:border-r-0 whitespace-normal break-words align-top";
@@ -526,6 +546,32 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
                             <Building2 size={10} /> {log.clientName || '-'}
                         </div>
                     </div>
+                    <div className="space-y-0.5">
+                        <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Goal</span>
+                        <div className="text-[10px] text-blue-900 font-black whitespace-normal break-words">
+                            {log.goal || '-'}
+                        </div>
+                    </div>
+                    <div className="space-y-0.5">
+                        <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Photo</span>
+                        {parsePhotos(log.photos).length > 0 ? (
+                            <button type="button" onClick={() => setPhotoViewer({ photos: parsePhotos(log.photos), index: 0 })} className="text-[10px] text-indigo-600 font-black underline">
+                                {parsePhotos(log.photos).length} photo(s)
+                            </button>
+                        ) : (
+                            <div className="text-[10px] text-blue-900 font-black">-</div>
+                        )}
+                    </div>
+                    <div className="space-y-0.5">
+                        <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">PDF</span>
+                        {log.pdf ? (
+                            <a href={log.pdf} target="_blank" rel="noreferrer" className="text-[10px] text-indigo-600 font-black underline">
+                                Open PDF
+                            </a>
+                        ) : (
+                            <div className="text-[10px] text-blue-900 font-black">-</div>
+                        )}
+                    </div>
                     {isVendorView ? (
                          <div className="space-y-0.5">
                             <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Vendor</span>
@@ -568,6 +614,9 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
                 <th className={thClass} style={{ width: '120px' }} onClick={() => requestSort('status')}><div className="flex items-center">Status {getSortIcon('status')}</div></th>
                 <th className={thClass} style={{ width: '100px' }} onClick={() => requestSort('hours')}><div className="flex items-center">Minutes {getSortIcon('hours')}</div></th>
                 <th className={thClass} style={{ width: '300px' }} onClick={() => requestSort('remarks')}><div className="flex items-center">Remarks {getSortIcon('remarks')}</div></th>
+                <th className={thClass} style={{ width: '180px' }} onClick={() => requestSort('goal')}><div className="flex items-center">Goal {getSortIcon('goal')}</div></th>
+                <th className={thClass} style={{ width: '120px' }}><div className="flex items-center">Photo</div></th>
+                <th className={thClass} style={{ width: '120px' }}><div className="flex items-center">PDF</div></th>
                 <th className={thClass} style={{ width: '180px' }} onClick={() => requestSort('owner')}><div className="flex items-center">Owner {getSortIcon('owner')}</div></th>
                 {isVendorView ? (
                     <th className={thClass} style={{ width: '180px' }} onClick={() => requestSort('vendor')}><div className="flex items-center">Vendor {getSortIcon('vendor')}</div></th>
@@ -588,6 +637,17 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
                   <td className={tdClass}><span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-[10px] font-black uppercase tracking-tighter !whitespace-nowrap border border-blue-200">{log.status}</span></td>
                   <td className={`${tdClass} font-bold text-indigo-600 text-center`}>{log.hours || 0}</td>
                   <td className={`${tdClass} italic text-blue-800`} title={log.remarks}>{log.remarks}</td>
+                  <td className={tdClass}>{log.goal || '-'}</td>
+                  <td className={tdClass}>
+                    {parsePhotos(log.photos).length > 0 ? (
+                      <button type="button" onClick={() => setPhotoViewer({ photos: parsePhotos(log.photos), index: 0 })} className="text-indigo-600 underline">
+                        {parsePhotos(log.photos).length} photo(s)
+                      </button>
+                    ) : '-'}
+                  </td>
+                  <td className={tdClass}>
+                    {log.pdf ? <a href={log.pdf} target="_blank" rel="noreferrer" className="text-indigo-600 underline">Open PDF</a> : '-'}
+                  </td>
                   <td className={`${tdClass} font-bold text-xs uppercase`}>{log.owner}</td>
                   {isVendorView ? (
                     <td className={`${tdClass} font-bold text-xs uppercase`}>{log.vendor}</td>
@@ -599,7 +659,7 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
                   </td>
                 </tr>
               ))}
-              {paginatedLogs.length === 0 && (<tr><td colSpan={11} className="px-6 py-12 text-center text-blue-300 font-black uppercase">No update logs found.</td></tr>)}
+              {paginatedLogs.length === 0 && (<tr><td colSpan={14} className="px-6 py-12 text-center text-blue-300 font-black uppercase">No update logs found.</td></tr>)}
             </tbody>
           </table>
         </div>
@@ -624,6 +684,19 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
               </button>
           </div>
       </div>
+
+      {photoViewer && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4" onClick={() => setPhotoViewer(null)}>
+          <div className="relative w-full max-w-4xl rounded-2xl bg-white p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <button type="button" onClick={() => setPhotoViewer(null)} className="absolute right-3 top-3 rounded-full bg-white/90 p-2 text-gray-700 shadow hover:text-black">
+              <X size={18} />
+            </button>
+            <div className="flex min-h-[280px] items-center justify-center overflow-hidden rounded-xl bg-gray-100">
+              <img src={photoViewer.photos[photoViewer.index]} alt={`Log photo ${photoViewer.index + 1}`} className="max-h-[70vh] w-auto max-w-full object-contain" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

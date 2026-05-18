@@ -14,6 +14,7 @@ interface TaskHistoryModalProps {
 
 export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onClose, task, logs }) => {
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+  const [photoViewer, setPhotoViewer] = useState<{ photos: string[]; index: number } | null>(null);
 
   if (!isOpen || !task) return null;
 
@@ -28,6 +29,16 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
   });
   
   const isVendorTask = !!(task.vendor && task.vendor.trim() !== '');
+
+  const parsePhotos = (rawPhotos?: string): string[] => {
+    if (!rawPhotos) return [];
+    try {
+      const parsed = JSON.parse(rawPhotos);
+      return Array.isArray(parsed) ? parsed.filter(photo => typeof photo === 'string' && photo.trim() !== '') : [];
+    } catch {
+      return [];
+    }
+  };
   
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
@@ -39,37 +50,43 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
     doc.setFontSize(10);
     doc.text(`Project: ${task.project.split(' (')[0]} | Client: ${task.clientName || '-'}`, 14, 36);
 
-    let tableColumn: string[] = ["Task Date", "Update Date", "Status", "Remarks", "Owner", "Project", "Client"];
+	    let tableColumn: string[] = ["Task Date", "Update Date", "Status", "Remarks", "Owner", "Project", "Client", "Goal", "Photo", "PDF"];
     let tableRows: any[] = [];
 
     if (isVendorTask) {
         tableColumn.push("Vendor");
         tableColumn.push("Minutes");
-        tableRows = taskLogs.map(log => [
-            formatToIndianDate(log.taskDate),
-            formatToIndianDate(log.updateDate),
-            log.status,
-            log.remarks || '-',
-            log.owner,
-            log.project.split(' (')[0],
-            log.clientName || '-',
-            log.vendor || '-',
-            log.hours || 0
-        ]);
+	        tableRows = taskLogs.map(log => [
+	            formatToIndianDate(log.taskDate),
+	            formatToIndianDate(log.updateDate),
+	            log.status,
+	            log.remarks || '-',
+	            log.owner,
+	            log.project.split(' (')[0],
+	            log.clientName || '-',
+              log.goal || '-',
+              parsePhotos(log.photos).length > 0 ? `${parsePhotos(log.photos).length} photo(s)` : '-',
+              log.pdf ? 'Open PDF' : '-',
+	            log.vendor || '-',
+	            log.hours || 0
+	        ]);
     } else {
         tableColumn.push("Assignees");
         tableColumn.push("Minutes");
-        tableRows = taskLogs.map(log => [
-            formatToIndianDate(log.taskDate),
-            formatToIndianDate(log.updateDate),
-            log.status,
-            log.remarks || '-',
-            log.owner,
-            log.project.split(' (')[0],
-            log.clientName || '-',
-            log.assignees,
-            log.hours || 0
-        ]);
+	        tableRows = taskLogs.map(log => [
+	            formatToIndianDate(log.taskDate),
+	            formatToIndianDate(log.updateDate),
+	            log.status,
+	            log.remarks || '-',
+	            log.owner,
+	            log.project.split(' (')[0],
+	            log.clientName || '-',
+              log.goal || '-',
+              parsePhotos(log.photos).length > 0 ? `${parsePhotos(log.photos).length} photo(s)` : '-',
+              log.pdf ? 'Open PDF' : '-',
+	            log.assignees,
+	            log.hours || 0
+	        ]);
     }
 
     autoTable(doc, {
@@ -148,7 +165,7 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
                     </span>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-3 text-[10px]">
+	                  <div className="grid grid-cols-2 gap-3 text-[10px]">
                     <div className="space-y-0.5">
                       <span className="text-gray-400 font-bold uppercase block">Task Date</span>
                       <span className="font-bold text-black flex items-center gap-1">
@@ -156,12 +173,40 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
                         {formatToIndianDate(log.taskDate)}
                       </span>
                     </div>
-                    <div className="space-y-0.5">
-                      <span className="text-gray-400 font-bold uppercase block">Minutes</span>
-                      <span className="font-black text-indigo-600">{log.hours || 0}</span>
-                    </div>
-                    <div className="space-y-0.5">
-                      <span className="text-gray-400 font-bold uppercase block">Owner</span>
+	                    <div className="space-y-0.5">
+	                      <span className="text-gray-400 font-bold uppercase block">Minutes</span>
+	                      <span className="font-black text-indigo-600">{log.hours || 0}</span>
+	                    </div>
+                      <div className="space-y-0.5">
+                        <span className="text-gray-400 font-bold uppercase block">Goal</span>
+                        <span className="font-bold text-black break-words">{log.goal || '-'}</span>
+                      </div>
+                      <div className="space-y-0.5">
+                        <span className="text-gray-400 font-bold uppercase block">Photo</span>
+                        {parsePhotos(log.photos).length > 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => setPhotoViewer({ photos: parsePhotos(log.photos), index: 0 })}
+                            className="font-bold text-indigo-600 underline"
+                          >
+                            {parsePhotos(log.photos).length} photo(s)
+                          </button>
+                        ) : (
+                          <span className="font-bold text-black">-</span>
+                        )}
+                      </div>
+                      <div className="space-y-0.5">
+                        <span className="text-gray-400 font-bold uppercase block">PDF</span>
+                        {log.pdf ? (
+                          <a href={log.pdf} target="_blank" rel="noreferrer" className="font-bold text-indigo-600 underline">
+                            Open PDF
+                          </a>
+                        ) : (
+                          <span className="font-bold text-black">-</span>
+                        )}
+                      </div>
+	                    <div className="space-y-0.5">
+	                      <span className="text-gray-400 font-bold uppercase block">Owner</span>
                       <span className="font-bold text-black uppercase flex items-center gap-1">
                         <User size={10} className="text-gray-400" />
                         {log.owner}
@@ -193,17 +238,20 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
             <div className={`${viewMode === 'card' ? 'hidden md:block' : 'block'} border border-blue-200 rounded-xl overflow-x-auto shadow-sm`}>
               <table className="w-full text-left border-collapse min-w-[800px]">
                 <thead className="bg-blue-600">
-                  <tr className="border-b border-black">
-                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Task Date</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Update Date</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Status</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Remarks</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Owner(s)</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Project</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Client</th>
-                    {isVendorTask ? (
-                        <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Vendor</th>
-                    ) : (
+	                  <tr className="border-b border-black">
+	                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Task Date</th>
+	                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Update Date</th>
+	                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Status</th>
+	                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Remarks</th>
+	                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Owner(s)</th>
+	                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Project</th>
+	                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Client</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Goal</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Photo</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">PDF</th>
+	                    {isVendorTask ? (
+	                        <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Vendor</th>
+	                    ) : (
                         <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Assignee(s)</th>
                     )}
                     <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest">Minutes</th>
@@ -221,11 +269,26 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
                       </td>
                       <td className="px-6 py-4 text-xs text-black max-w-[300px] font-medium border-r border-black">"{log.remarks}"</td>
                       <td className="px-6 py-4 text-xs text-black font-bold uppercase border-r border-black">{log.owner}</td>
-                      <td className="px-6 py-4 text-xs text-black font-bold border-r border-black max-w-[150px] truncate" title={log.project.split(' (')[0]}>{log.project.split(' (')[0]}</td>
-                      <td className="px-6 py-4 text-xs text-black font-bold border-r border-black max-w-[150px] truncate" title={log.clientName}>{log.clientName || '-'}</td>
-                      {isVendorTask ? (
-                          <td className="px-6 py-4 text-xs text-black font-bold uppercase border-r border-black">{log.vendor || '-'}</td>
-                      ) : (
+	                      <td className="px-6 py-4 text-xs text-black font-bold border-r border-black max-w-[150px] truncate" title={log.project.split(' (')[0]}>{log.project.split(' (')[0]}</td>
+	                      <td className="px-6 py-4 text-xs text-black font-bold border-r border-black max-w-[150px] truncate" title={log.clientName}>{log.clientName || '-'}</td>
+                        <td className="px-6 py-4 text-xs text-black font-bold border-r border-black">{log.goal || '-'}</td>
+                        <td className="px-6 py-4 text-xs border-r border-black">
+                          {parsePhotos(log.photos).length > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => setPhotoViewer({ photos: parsePhotos(log.photos), index: 0 })}
+                              className="text-indigo-600 underline"
+                            >
+                              {parsePhotos(log.photos).length} photo(s)
+                            </button>
+                          ) : '-'}
+                        </td>
+                        <td className="px-6 py-4 text-xs border-r border-black">
+                          {log.pdf ? <a href={log.pdf} target="_blank" rel="noreferrer" className="text-indigo-600 underline">Open PDF</a> : '-'}
+                        </td>
+	                      {isVendorTask ? (
+	                          <td className="px-6 py-4 text-xs text-black font-bold uppercase border-r border-black">{log.vendor || '-'}</td>
+	                      ) : (
                           <td className="px-6 py-4 text-xs text-black font-bold border-r border-black">{log.assignees}</td>
                       )}
                       <td className="px-6 py-4 text-xs text-indigo-600 font-bold">{log.hours || 0}</td>
@@ -233,10 +296,10 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
                   ))}
                   {taskLogs.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="px-6 py-12 text-center text-black font-bold opacity-40 uppercase tracking-widest text-xs bg-gray-50/20">
-                        No update history found for this task.
-                      </td>
-                    </tr>
+	                      <td colSpan={12} className="px-6 py-12 text-center text-black font-bold opacity-40 uppercase tracking-widest text-xs bg-gray-50/20">
+	                        No update history found for this task.
+	                      </td>
+	                    </tr>
                   )}
                 </tbody>
               </table>
@@ -244,12 +307,25 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
           </div>
         </div>
 
-        <div className="p-6 border-t border-black bg-blue-50/20 rounded-b-xl flex justify-end flex-shrink-0">
-          <button onClick={onClose} className="px-8 py-2.5 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all uppercase shadow-lg shadow-blue-200">
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+	        <div className="p-6 border-t border-black bg-blue-50/20 rounded-b-xl flex justify-end flex-shrink-0">
+	          <button onClick={onClose} className="px-8 py-2.5 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all uppercase shadow-lg shadow-blue-200">
+	            Close
+	          </button>
+	        </div>
+	      </div>
+
+        {photoViewer && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4" onClick={() => setPhotoViewer(null)}>
+            <div className="relative w-full max-w-4xl rounded-2xl bg-white p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <button type="button" onClick={() => setPhotoViewer(null)} className="absolute right-3 top-3 rounded-full bg-white/90 p-2 text-gray-700 shadow hover:text-black">
+                <X size={18} />
+              </button>
+              <div className="flex min-h-[280px] items-center justify-center overflow-hidden rounded-xl bg-gray-100">
+                <img src={photoViewer.photos[photoViewer.index]} alt={`Log photo ${photoViewer.index + 1}`} className="max-h-[70vh] w-auto max-w-full object-contain" />
+              </div>
+            </div>
+          </div>
+        )}
+	    </div>
+	  );
+	};
