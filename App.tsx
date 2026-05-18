@@ -610,10 +610,9 @@ export default function App() {
       const normalizedUser = { ...user, id: Number(user.id), isActive: true };
       setCurrentUser(normalizedUser);
       setWorkspaceId('');
-      if (authData.apiUrl) {
-        setApiUrl(String(authData.apiUrl));
-        localStorage.setItem('taskpro_api_url', String(authData.apiUrl));
-      }
+      const mysqlApiUrl = '/api/init.php';
+      setApiUrl(mysqlApiUrl);
+      localStorage.setItem('taskpro_api_url', mysqlApiUrl);
       localStorage.setItem('taskpro_user', JSON.stringify(normalizedUser));
       localStorage.removeItem('taskpro_workspace_id');
       setActiveTab('dashboard');
