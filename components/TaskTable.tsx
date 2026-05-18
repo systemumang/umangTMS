@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Task, Project, User as UserType } from '../types';
-import { Edit2, Info, Calendar, Clock, User, Users, Briefcase, ArrowUpDown, ArrowUp, ArrowDown, Loader2, Trash2, Tag, Layout, Building2, Layers, AlertTriangle, ChevronDown, ChevronUp, Hammer } from 'lucide-react';
+import { Edit2, Info, Calendar, Clock, User, Users, ArrowUpDown, ArrowUp, ArrowDown, Loader2, Trash2, Tag, Layout, Building2, AlertTriangle, ChevronDown, ChevronUp, Hammer, X } from 'lucide-react';
 import { formatToIndianDate } from '../App';
 
 interface TaskTableProps {
@@ -43,6 +43,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
   startIndex
 }) => {
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+  const [photoViewer, setPhotoViewer] = useState<{ photos: string[]; index: number } | null>(null);
 
   const toggleExpand = (id: number) => {
     const newExpanded = new Set(expandedIds);
@@ -96,6 +97,22 @@ export const TaskTable: React.FC<TaskTableProps> = ({
     if (!lastUpdateDate) return false;
     const today = new Date().toLocaleDateString('en-GB'); // dd/MM/yyyy
     return lastUpdateDate.startsWith(today);
+  };
+
+  const parsePhotos = (rawPhotos?: string): string[] => {
+    if (!rawPhotos) return [];
+    try {
+      const parsed = JSON.parse(rawPhotos);
+      return Array.isArray(parsed) ? parsed.filter(photo => typeof photo === 'string' && photo.trim() !== '') : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const openPhotos = (rawPhotos?: string, index = 0) => {
+    const photos = parsePhotos(rawPhotos);
+    if (photos.length === 0) return;
+    setPhotoViewer({ photos, index: Math.max(0, Math.min(index, photos.length - 1)) });
   };
 
   const thClass = "px-4 py-3 text-xs font-black text-white uppercase tracking-widest border-r border-black last:border-r-0 cursor-pointer hover:bg-blue-800 transition-colors select-none whitespace-normal !bg-blue-700 sticky top-0 z-10";
@@ -183,17 +200,31 @@ export const TaskTable: React.FC<TaskTableProps> = ({
 	                    <td className={`${tdClass} font-bold text-indigo-600 text-center`}>{task.hours || 0}</td>
                       <td className={tdClass}>{task.time || '-'}</td>
                       <td className={tdClass}>
-                        {task.photos ? (() => {
-                          try {
-                            const arr = JSON.parse(task.photos || '[]');
-                            return `${Array.isArray(arr) ? arr.length : 0} photo(s)`;
-                          } catch {
-                            return '-';
-                          }
-                        })() : '-'}
+                        {parsePhotos(task.photos).length > 0 ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openPhotos(task.photos);
+                            }}
+                            className="text-indigo-600 underline hover:text-indigo-800"
+                          >
+                            {parsePhotos(task.photos).length} photo(s)
+                          </button>
+                        ) : '-'}
                       </td>
                       <td className={tdClass}>
-                        {task.pdf ? <a href={task.pdf} target="_blank" rel="noreferrer" className="text-indigo-600 underline">Open PDF</a> : '-'}
+                        {task.pdf ? (
+                          <a
+                            href={task.pdf}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-indigo-600 underline hover:text-indigo-800"
+                          >
+                            Open PDF
+                          </a>
+                        ) : '-'}
                       </td>
                       <td className={tdClass}>{task.goal || '-'}</td>
 	                    <td className={`${tdClass} font-bold text-xs uppercase`}>{task.owner}</td>
@@ -310,11 +341,60 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                     )}
                 </div>
 
-                {isExpanded && task.lastUpdateRemarks && task.lastUpdateRemarks.trim() !== '' && (
-                  <div className="flex items-start gap-2 bg-blue-50 p-2 rounded-lg text-blue-700 border border-blue-100 mt-2 min-w-0 overflow-hidden">
-                      <Info size={14} className="mt-0.5 shrink-0 opacity-70" />
-                      <p className="text-xs italic leading-relaxed whitespace-normal break-all">{task.lastUpdateRemarks}</p>
-                  </div>
+                {isExpanded && (
+                  <>
+                    {(task.time || task.goal || parsePhotos(task.photos).length > 0 || task.pdf) && (
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-4 mt-2">
+                        <div>
+                          <span className="text-[10px] uppercase font-black text-blue-900/60 block">Time</span>
+                          <span className="text-xs font-bold text-black">{task.time || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] uppercase font-black text-blue-900/60 block">Goal</span>
+                          <span className="text-xs font-bold text-black break-words">{task.goal || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] uppercase font-black text-blue-900/60 block">Photo</span>
+                          {parsePhotos(task.photos).length > 0 ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openPhotos(task.photos);
+                              }}
+                              className="text-xs font-bold text-indigo-600 underline"
+                            >
+                              {parsePhotos(task.photos).length} photo(s)
+                            </button>
+                          ) : (
+                            <span className="text-xs font-bold text-black">-</span>
+                          )}
+                        </div>
+                        <div>
+                          <span className="text-[10px] uppercase font-black text-blue-900/60 block">PDF</span>
+                          {task.pdf ? (
+                            <a
+                              href={task.pdf}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-xs font-bold text-indigo-600 underline"
+                            >
+                              Open PDF
+                            </a>
+                          ) : (
+                            <span className="text-xs font-bold text-black">-</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {task.lastUpdateRemarks && task.lastUpdateRemarks.trim() !== '' && (
+                      <div className="flex items-start gap-2 bg-blue-50 p-2 rounded-lg text-blue-700 border border-blue-100 mt-2 min-w-0 overflow-hidden">
+                          <Info size={14} className="mt-0.5 shrink-0 opacity-70" />
+                          <p className="text-xs italic leading-relaxed whitespace-normal break-all">{task.lastUpdateRemarks}</p>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -333,6 +413,47 @@ export const TaskTable: React.FC<TaskTableProps> = ({
           );
         })}
       </div>
+
+      {photoViewer && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4"
+          onClick={() => setPhotoViewer(null)}
+        >
+          <div
+            className="relative w-full max-w-4xl rounded-2xl bg-white p-4 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setPhotoViewer(null)}
+              className="absolute right-3 top-3 rounded-full bg-white/90 p-2 text-gray-700 shadow hover:text-black"
+            >
+              <X size={18} />
+            </button>
+            <div className="flex min-h-[280px] items-center justify-center overflow-hidden rounded-xl bg-gray-100">
+              <img
+                src={photoViewer.photos[photoViewer.index]}
+                alt={`Task photo ${photoViewer.index + 1}`}
+                className="max-h-[70vh] w-auto max-w-full object-contain"
+              />
+            </div>
+            {photoViewer.photos.length > 1 && (
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                {photoViewer.photos.map((photo, index) => (
+                  <button
+                    type="button"
+                    key={`${photo.slice(0, 32)}-${index}`}
+                    onClick={() => setPhotoViewer({ photos: photoViewer.photos, index })}
+                    className={`overflow-hidden rounded-lg border-2 ${index === photoViewer.index ? 'border-indigo-600' : 'border-transparent'}`}
+                  >
+                    <img src={photo} alt={`Thumbnail ${index + 1}`} className="h-16 w-16 object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 };

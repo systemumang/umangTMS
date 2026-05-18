@@ -54,6 +54,10 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     vendorCategory: string[]; 
     notes: string;
     priority: string;
+    time: string;
+    goal: string;
+    photos: string[];
+    pdf: string;
   }>({
     title: '',
     assignees: [],
@@ -64,9 +68,21 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     vendor: '',
     vendorCategory: [],
     notes: '',
-    priority: 'Medium'
+    priority: 'Medium',
+    time: '',
+    goal: '',
+    photos: [],
+    pdf: ''
   });
   const [isConfirming, setIsConfirming] = useState(false);
+
+  const readFileAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
 
   useEffect(() => {
     if (task && isOpen) {
@@ -85,6 +101,18 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
             currentProjectValue = `${currentProjectValue.trim()} (${task.clientName.trim()})`;
         }
 
+        let parsedPhotos: string[] = [];
+        if (task.photos) {
+            try {
+                const decodedPhotos = JSON.parse(task.photos);
+                if (Array.isArray(decodedPhotos)) {
+                    parsedPhotos = decodedPhotos.filter(photo => typeof photo === 'string');
+                }
+            } catch {
+                parsedPhotos = [];
+            }
+        }
+
         setFormData({
             title: task.title,
             assignees: task.assignees ? task.assignees.split(',').map(s => s.trim()) : [],
@@ -95,7 +123,11 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
             vendor: task.vendor || '',
             vendorCategory: task.vendorCategory ? task.vendorCategory.split(',').map(s => s.trim()) : [],
             notes: task.remarks || '',
-            priority: task.priority
+            priority: task.priority,
+            time: task.time || '',
+            goal: task.goal || '',
+            photos: parsedPhotos,
+            pdf: task.pdf || ''
         });
         setIsConfirming(false);
     }
@@ -168,6 +200,10 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
       dueDate: formData.dueDate,
       priority: formData.priority as any,
       project: formData.project, // Project is always saved as the combined string
+      time: formData.time,
+      goal: formData.goal,
+      photos: JSON.stringify(formData.photos || []),
+      pdf: formData.pdf || ''
     };
 
     if (isVendorMode) {
@@ -301,6 +337,89 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
               <div className="space-y-1">
                 <label className="text-sm font-medium text-black block mb-1">Notes</label>
                 <textarea name="notes" rows={4} value={formData.notes} onChange={handleChange} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none text-black font-medium resize-none"></textarea>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-black block mb-1">Time</label>
+                  <input
+                    name="time"
+                    type="time"
+                    value={formData.time}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none text-black font-medium"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-black block mb-1">Goal</label>
+                  <input
+                    name="goal"
+                    type="text"
+                    value={formData.goal}
+                    onChange={handleChange}
+                    placeholder="Enter goal"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none text-black font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-black block mb-1">Photo (Up to 5)</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length > 5) {
+                        alert('Please upload maximum 5 photos.');
+                        return;
+                      }
+                      const photoData = await Promise.all(files.map(readFileAsDataUrl));
+                      setFormData(prev => ({ ...prev, photos: photoData }));
+                    }}
+                    className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm"
+                  />
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>{formData.photos.length} photo(s) selected</span>
+                    {formData.photos.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, photos: [] }))}
+                        className="text-red-500 hover:text-red-700 font-medium"
+                      >
+                        Clear Photos
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-black block mb-1">PDF</label>
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const pdfData = await readFileAsDataUrl(file);
+                      setFormData(prev => ({ ...prev, pdf: pdfData }));
+                    }}
+                    className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm"
+                  />
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>{formData.pdf ? 'PDF selected' : 'No PDF selected'}</span>
+                    {formData.pdf && (
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, pdf: '' }))}
+                        className="text-red-500 hover:text-red-700 font-medium"
+                      >
+                        Clear PDF
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
