@@ -131,6 +131,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'addTask' && in_array($table, ['main_tasks', 'vendor_tasks'], true)) {
         $id = (int)($data['id'] ?? 0);
+        if ($id <= 0) {
+            $id = (int)round(microtime(true) * 1000);
+        }
         $date = (string)($data['date'] ?? '');
         $title = trim((string)($data['title'] ?? $data['task'] ?? ''));
         $description = (string)($data['notes'] ?? $data['description'] ?? '');
@@ -152,23 +155,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $vendor = (string)($data['vendor'] ?? '');
         $vendorCategory = (string)($data['vendorCategory'] ?? '');
 
-        if ($id <= 0 || $title === '') {
-            sendJson(['success' => false, 'error' => 'Task id and title are required.'], 400);
+        if ($title === '') {
+            sendJson(['success' => false, 'error' => 'Task title is required.'], 400);
         }
 
         if ($table === 'main_tasks') {
             $stmt = $conn->prepare("INSERT INTO main_tasks (id, date, title, description, project, category, owner, assignees, client, priority, status, dueDate, lastUpdateDate, lastUpdateRemarks, hours, time, goal, photos, pdf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare main task insert.'], 500);
-            $stmt->bind_param('issssssssssssssdssss', $id, $date, $title, $description, $project, $category, $owner, $assignees, $client, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf);
+            $stmt->bind_param('isssssssssssssdssss', $id, $date, $title, $description, $project, $category, $owner, $assignees, $client, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf);
         } else {
             $stmt = $conn->prepare("INSERT INTO vendor_tasks (id, date, title, description, project, category, owner, assignees, vendor, vendorCategory, priority, status, dueDate, lastUpdateDate, lastUpdateRemarks, hours, time, goal, photos, pdf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare vendor task insert.'], 500);
-            $stmt->bind_param('issssssssssssssssdssss', $id, $date, $title, $description, $project, $category, $owner, $assignees, $vendor, $vendorCategory, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf);
+            $stmt->bind_param('issssssssssssssdssss', $id, $date, $title, $description, $project, $category, $owner, $assignees, $vendor, $vendorCategory, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf);
         }
 
         $ok = $stmt->execute();
+        $stmtError = $stmt->error;
         $stmt->close();
-        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to add task.'], 400);
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to add task: ' . $stmtError], 400);
         sendJson(['success' => true, 'data' => ['id' => $id]]);
     }
 
