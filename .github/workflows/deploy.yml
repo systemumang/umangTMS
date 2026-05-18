@@ -27,12 +27,22 @@ jobs:
 
       - name: Deploy to Hostinger (FTP)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
+               with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           port: ${{ secrets.FTP_PORT }}
           protocol: ftp
-          local-dir: ./dist/
+          local-dir: ./
           server-dir: ./
+          exclude: |
+            **/.git*
+            **/.github/**
+            **/node_modules/**
+            **/src/**
+            **/*.ts
+            **/*.tsx
+            **/vite.config.*
+            **/package*.json
+            **/tsconfig*.json
           dangerous-clean-slate: true
