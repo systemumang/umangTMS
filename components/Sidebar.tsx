@@ -47,12 +47,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
   workspaceId
 }) => {
   const [openPendingGroup, setOpenPendingGroup] = useState(false);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    Dashboard: false,
+    Tasks: false,
+    Master: false,
+    'Recurring Tasks': false,
+    Vendor: false,
+  });
 
   useEffect(() => {
     if (pendingChildIds.includes(activeTab)) {
       setOpenPendingGroup(true);
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    const activeItem = items.find(item => item.id === activeTab);
+    const activeSection = activeItem?.section || 'main';
+    const sectionLabel = activeSection === 'main' ? 'Dashboard' : activeSection;
+    setOpenSections(prev => ({ ...prev, [sectionLabel]: true }));
+  }, [activeTab, items]);
 
   const groupedItems = items.reduce((acc, item) => {
     const section = item.section || 'main';
@@ -174,45 +188,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4">
-          {groupedItems['main'] && (
-             <ul className="space-y-1 px-3 mb-4">
-               {groupedItems['main'].map(item => (
-                  <li key={item.id}>
-                    <button
-                      onClick={() => {
-                        onTabChange(item.id);
-                        if (window.innerWidth < 768 && onClose) onClose();
-                      }}
-                      className={`group w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium
-                        ${activeTab === item.id 
-                          ? 'bg-indigo-600 text-white shadow-md' 
-                          : 'text-indigo-600 hover:bg-indigo-600 hover:text-white'
-                        }`}
-                    >
-                      <span className={`${activeTab === item.id ? 'text-white' : 'text-indigo-600 group-hover:text-white'}`}>
-                        {item.icon}
-                      </span>
-                      <span className="flex-1 text-left">{item.label}</span>
-                      {renderCount(item, activeTab === item.id)}
-                    </button>
-                  </li>
-               ))}
-             </ul>
-          )}
-
-          {['Tasks', 'Vendor', 'Master', 'Recurring Tasks'].map(section => groupedItems[section] && (
-            <div key={section} className="mb-2 px-3">
-               <div className="w-full px-4 py-2 mb-1">
-                  <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">{section}</span>
-               </div>
-               <ul className="space-y-1">
-                 {section === 'Tasks'
-                   ? renderTasksSection()
-                   : groupedItems[section].map(item => <li key={item.id}><NavButton item={item} /></li>)}
-               </ul>
-               <div className="mx-4 my-2 border-b border-indigo-200"></div>
-            </div>
-          ))}
+          {[
+            { key: 'Dashboard', source: 'main' },
+            { key: 'Tasks', source: 'Tasks' },
+            { key: 'Master', source: 'Master' },
+            { key: 'Recurring Tasks', source: 'Recurring Tasks' },
+            ...(groupedItems['Vendor'] ? [{ key: 'Vendor', source: 'Vendor' }] : [])
+          ].map(sectionInfo => {
+            const sectionItems = groupedItems[sectionInfo.source] || [];
+            if (sectionItems.length === 0) return null;
+            const isOpenSection = !!openSections[sectionInfo.key];
+            return (
+              <div key={sectionInfo.key} className="mb-2 px-3">
+                <button
+                  type="button"
+                  onClick={() => setOpenSections(prev => ({ ...prev, [sectionInfo.key]: !prev[sectionInfo.key] }))}
+                  className="w-full px-4 py-2 mb-1 flex items-center justify-between text-indigo-600 hover:bg-indigo-100/60 rounded-md"
+                >
+                  <span className="text-xs font-bold uppercase tracking-wider">{sectionInfo.key}</span>
+                  {isOpenSection ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </button>
+                {isOpenSection && (
+                  <ul className="space-y-1">
+                    {sectionInfo.key === 'Tasks'
+                      ? renderTasksSection()
+                      : sectionItems.map(item => <li key={item.id}><NavButton item={item} /></li>)}
+                  </ul>
+                )}
+                <div className="mx-4 my-2 border-b border-indigo-200"></div>
+              </div>
+            );
+          })}
         </nav>
 
         <div className="hidden md:block p-4 bg-white/50 border-t-2 border-indigo-500 space-y-3">

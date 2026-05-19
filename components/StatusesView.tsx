@@ -9,9 +9,10 @@ interface StatusesViewProps {
   onAddStatus: (status: Omit<StatusMaster, 'id'>) => void;
   onEditStatus: (status: StatusMaster) => void;
   onDeleteStatus: (id: number) => void;
+  sidebarCollapsed?: boolean;
 }
 
-export const StatusesView: React.FC<StatusesViewProps> = ({ statuses, onAddStatus, onEditStatus, onDeleteStatus }) => {
+export const StatusesView: React.FC<StatusesViewProps> = ({ statuses, onAddStatus, onEditStatus, onDeleteStatus, sidebarCollapsed = false }) => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selected, setSelected] = useState<StatusMaster | null>(null);
@@ -20,7 +21,7 @@ export const StatusesView: React.FC<StatusesViewProps> = ({ statuses, onAddStatu
 
   return (
     <div className="space-y-6 pb-10">
-      <div><h2 className="text-2xl font-bold text-indigo-600">Status</h2></div>
+      <div className={sidebarCollapsed ? 'pl-14 md:pl-16' : ''}><h2 className="text-2xl font-bold text-indigo-600">Status</h2></div>
       <div className="bg-white p-4 rounded-lg shadow-sm border border-indigo-300 flex justify-end">
         <button onClick={() => { setSelected(null); setIsEditOpen(true); }} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium shadow-sm">
           <Plus size={16} />
@@ -86,4 +87,3 @@ export const StatusesView: React.FC<StatusesViewProps> = ({ statuses, onAddStatu
     </div>
   );
 };
-

@@ -16,6 +16,7 @@ interface RecurringTasksViewProps {
   title?: string;
   filterType?: 'all' | 'due';
   currentUser?: any;
+  sidebarCollapsed?: boolean;
 }
 
 type SortConfig = {
@@ -33,7 +34,8 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
     onDelete, 
     title = "Recurring Tasks",
     filterType = 'all',
-    currentUser
+    currentUser,
+    sidebarCollapsed = false
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
@@ -298,7 +300,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
   return (
     <div className="space-y-6 pb-10">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex justify-between items-start md:block">
+        <div className={`flex justify-between items-start md:block ${sidebarCollapsed ? 'pl-14 md:pl-16' : ''}`}>
             <div>
                 <h2 className="text-2xl font-bold text-indigo-600 flex items-center gap-2">
                     {filterType === 'due' && <AlertCircle className="text-red-500" size={24} />}
