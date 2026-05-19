@@ -376,6 +376,7 @@ export default function App() {
   const [isRecurringHistoryModalOpen, setIsRecurringHistoryModalOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const sidebarCollapsedBeforeViewRef = useRef<boolean | null>(null);
+  const lastAutoCollapsedTabRef = useRef<string>('');
   const [selectedTaskForHistory, setSelectedTaskForHistory] = useState<Task | null>(null);
   const [selectedRecurringTask, setSelectedRecurringTask] = useState<RecurringTask | null>(null);
 
@@ -635,6 +636,22 @@ export default function App() {
       setActiveTab('all-tasks');
     }
   }, [activeTab]);
+
+  // Auto-hide left sidebar for non-dashboard pages (more working space).
+  // Users can always bring it back via the fixed "Menu" button.
+  useEffect(() => {
+    if (layoutMode !== 'side') return;
+    if (!currentUser) return;
+
+    const shouldAutoCollapse = activeTab !== 'dashboard';
+    if (!shouldAutoCollapse) return;
+
+    // Only auto-collapse once per tab to avoid fighting the user if they re-open it.
+    if (lastAutoCollapsedTabRef.current === activeTab) return;
+    lastAutoCollapsedTabRef.current = activeTab;
+
+    setIsSidebarCollapsed(true);
+  }, [layoutMode, activeTab, currentUser]);
 
   // Auto-hide left sidebar when any modal is open (View/Update/Add),
   // and restore it back when all modals close.
