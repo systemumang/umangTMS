@@ -636,14 +636,27 @@ export default function App() {
     }
   }, [activeTab]);
 
-  // Auto-hide left sidebar when opening "View" modals (History screens),
-  // and restore it back when the modal closes.
+  // Auto-hide left sidebar when any modal is open (View/Update/Add),
+  // and restore it back when all modals close.
   useEffect(() => {
     if (layoutMode !== 'side') return;
 
-    const isViewOpen = isHistoryModalOpen || isRecurringHistoryModalOpen;
+    const isAnyModalOpen =
+      isTaskModalOpen ||
+      isCategoryModalOpen ||
+      isProjectModalOpen ||
+      isUserModalOpen ||
+      isClientModalOpen ||
+      isVendorModalOpen ||
+      isVendorCategoryModalOpen ||
+      isDesignationModalOpen ||
+      isRecurringTaskModalOpen ||
+      isRecurringTaskUpdateModalOpen ||
+      isEditRecurringTaskModalOpen ||
+      isHistoryModalOpen ||
+      isRecurringHistoryModalOpen;
 
-    if (isViewOpen) {
+    if (isAnyModalOpen) {
       if (sidebarCollapsedBeforeViewRef.current === null) {
         sidebarCollapsedBeforeViewRef.current = isSidebarCollapsed;
       }
@@ -655,7 +668,23 @@ export default function App() {
       setIsSidebarCollapsed(sidebarCollapsedBeforeViewRef.current);
       sidebarCollapsedBeforeViewRef.current = null;
     }
-  }, [layoutMode, isHistoryModalOpen, isRecurringHistoryModalOpen, isSidebarCollapsed]);
+  }, [
+    layoutMode,
+    isTaskModalOpen,
+    isCategoryModalOpen,
+    isProjectModalOpen,
+    isUserModalOpen,
+    isClientModalOpen,
+    isVendorModalOpen,
+    isVendorCategoryModalOpen,
+    isDesignationModalOpen,
+    isRecurringTaskModalOpen,
+    isRecurringTaskUpdateModalOpen,
+    isEditRecurringTaskModalOpen,
+    isHistoryModalOpen,
+    isRecurringHistoryModalOpen,
+    isSidebarCollapsed,
+  ]);
 
   const handleLogin = async (email: string, pass: string) => {
     setIsLoading(true);
