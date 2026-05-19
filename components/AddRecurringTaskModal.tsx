@@ -162,12 +162,14 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 	            </div>
 		            <div className="space-y-1">
 		              <label className="text-sm font-medium text-black">Goal</label>
-	              <input
-	                type="number"
-	                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
-	                value={formData.goal}
-	                onChange={(e) => setFormData(p => ({ ...p, goal: e.target.value === '' ? '' : Number(e.target.value) }))}
-		                placeholder="Optional goal / outcome"
+		              <input
+		                type="number"
+                    min="0"
+                    step="1"
+		                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+		                value={formData.goal}
+		                onChange={(e) => setFormData(p => ({ ...p, goal: e.target.value === '' ? '' : Number(e.target.value) }))}
+			                placeholder="Enter numeric goal"
 		              />
 		            </div>
             <SearchableSelect

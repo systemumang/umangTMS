@@ -23,6 +23,14 @@ function sendJson(array $payload, int $statusCode = 200): void {
     exit;
 }
 
+function normalizeNumericGoal($raw): string {
+    if ($raw === null) return '';
+    $value = trim((string)$raw);
+    if ($value === '') return '';
+    if (!is_numeric($value)) return '';
+    return (string)(0 + $value);
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $action = isset($_GET['action']) ? (string)$_GET['action'] : '';
     if ($action !== 'init') {
@@ -156,7 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $lastUpdateRemarks = (string)($data['remark'] ?? $data['lastUpdateRemarks'] ?? '');
         $hours = (float)($data['hours'] ?? 0);
         $time = (string)($data['time'] ?? '');
-        $goal = (string)($data['goal'] ?? '');
+        $goal = normalizeNumericGoal($data['goal'] ?? '');
         $photos = (string)($data['photos'] ?? '');
         $pdf = (string)($data['pdf'] ?? '');
         $vendor = (string)($data['vendor'] ?? '');
@@ -303,7 +311,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $frequencyDays = (int)($data['frequencyDays'] ?? 0);
         $startDate = trim((string)($data['startDate'] ?? ''));
         $time = trim((string)($data['time'] ?? ''));
-        $goal = trim((string)($data['goal'] ?? ''));
+        $goal = normalizeNumericGoal($data['goal'] ?? '');
         $status = trim((string)($data['status'] ?? 'Not Yet Started'));
 
         if ($title === '') sendJson(['success' => false, 'error' => 'Recurring task title is required.'], 400);
@@ -332,7 +340,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $assignee = trim((string)($data['assignee'] ?? ''));
         $status = trim((string)($data['status'] ?? ''));
         $remarks = trim((string)($data['remarks'] ?? ''));
-        $goal = trim((string)($data['goal'] ?? ''));
+        $goal = normalizeNumericGoal($data['goal'] ?? '');
         $photos = (string)($data['photos'] ?? '');
         $pdf = (string)($data['pdf'] ?? '');
         $updatedOn = trim((string)($data['updatedOn'] ?? ''));
@@ -418,10 +426,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	        $lastUpdateRemarks = (string)($data['remark'] ?? $data['lastUpdateRemarks'] ?? '');
 	        $hours = (float)($data['hours'] ?? 0);
 	        $time = (string)($data['time'] ?? '');
-	        $logGoal = (string)($data['goal'] ?? '');
+	        $logGoal = normalizeNumericGoal($data['goal'] ?? '');
 	        $logPhotos = (string)($data['photos'] ?? '');
 	        $logPdf = (string)($data['pdf'] ?? '');
-	        $goal = (string)($existingRow['goal'] ?? '');
+	        $goal = normalizeNumericGoal($existingRow['goal'] ?? '');
 	        $photos = (string)($existingRow['photos'] ?? '');
 	        $pdf = (string)($existingRow['pdf'] ?? '');
 	        $taskDate = (string)($data['taskDate'] ?? $data['date'] ?? '');
@@ -594,7 +602,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $frequencyDays = array_key_exists('frequencyDays', $data) ? (int)$data['frequencyDays'] : (int)($row['frequencyDays'] ?? 0);
         $startDate = array_key_exists('startDate', $data) ? trim((string)$data['startDate']) : (string)($row['startDate'] ?? '');
         $time = array_key_exists('time', $data) ? trim((string)$data['time']) : (string)($row['time'] ?? '');
-        $goal = array_key_exists('goal', $data) ? trim((string)$data['goal']) : (string)($row['goal'] ?? '');
+        $goal = array_key_exists('goal', $data) ? normalizeNumericGoal($data['goal']) : normalizeNumericGoal($row['goal'] ?? '');
         $status = array_key_exists('status', $data) ? trim((string)$data['status']) : (string)($row['status'] ?? 'Not Yet Started');
         $lastUpdatedOn = array_key_exists('lastUpdatedOn', $data) ? trim((string)$data['lastUpdatedOn']) : (string)($row['lastUpdatedOn'] ?? '');
         $lastUpdateRemarks = array_key_exists('lastUpdateRemarks', $data) ? (string)$data['lastUpdateRemarks'] : (string)($row['lastUpdateRemarks'] ?? '');

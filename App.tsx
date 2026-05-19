@@ -1079,6 +1079,22 @@ export default function App() {
     }
   };
 
+  const isAnyFormModalOpen =
+    isTaskModalOpen ||
+    isCategoryModalOpen ||
+    isProjectModalOpen ||
+    isUserModalOpen ||
+    isClientModalOpen ||
+    isVendorModalOpen ||
+    isVendorCategoryModalOpen ||
+    isDesignationModalOpen ||
+    isRecurringTaskModalOpen ||
+    isRecurringTaskUpdateModalOpen ||
+    isEditRecurringTaskModalOpen ||
+    isHistoryModalOpen ||
+    isRecurringHistoryModalOpen ||
+    isFirmModalOpen;
+
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden font-inter">
       {!currentUser ? (
@@ -1123,20 +1139,22 @@ export default function App() {
                    <img src="https://i.ibb.co/YBSjM7Gg/Chat-GPT-Image-Dec-18-2025-10-23-18-AM.png" className="h-8 w-8" alt="Logo" />
                    <h1 className="text-xl font-bold text-indigo-600">TaskPro</h1>
                 </div>
-                <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-gray-500 hover:bg-gray-100 rounded-md">
-                  <Menu size={24} />
-                </button>
+                  {!isAnyFormModalOpen && (
+	                  <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-gray-500 hover:bg-gray-100 rounded-md">
+	                    <Menu size={24} />
+	                  </button>
+                  )}
               </header>
             )}
 
 		            <main className="flex-1 overflow-y-auto pt-2 md:pt-4 px-2 md:px-4 pb-0 custom-scrollbar relative">
-		              {layoutMode === 'side' && isSidebarCollapsed && (
-		                <button
-		                  type="button"
-		                  onClick={() => setIsSidebarCollapsed(false)}
-		                  className="inline-flex items-center justify-center fixed top-6 left-4 z-[120] w-11 h-11 bg-white border-2 border-indigo-200 text-indigo-700 rounded-xl shadow-lg hover:bg-indigo-50"
-		                  title="Show menu"
-		                >
+			              {layoutMode === 'side' && isSidebarCollapsed && !isAnyFormModalOpen && (
+			                <button
+			                  type="button"
+			                  onClick={() => setIsSidebarCollapsed(false)}
+			                  className="hidden md:inline-flex items-center justify-center fixed top-6 left-4 z-[120] w-11 h-11 bg-white border-2 border-indigo-200 text-indigo-700 rounded-xl shadow-lg hover:bg-indigo-50"
+			                  title="Show menu"
+			                >
 		                  <Menu size={18} />
 		                </button>
 		              )}

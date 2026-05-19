@@ -360,14 +360,16 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-black block mb-1">Goal</label>
-                  <input
-                    name="goal"
-                    type="number"
-                    value={formData.goal}
-                    onChange={handleChange}
-                    placeholder="Enter goal"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none text-black font-medium"
-                  />
+	                  <input
+	                    name="goal"
+	                    type="number"
+                      min="0"
+                      step="1"
+	                    value={formData.goal}
+	                    onChange={(e) => setFormData(prev => ({ ...prev, goal: e.target.value === '' ? '' : Number(e.target.value) }))}
+	                    placeholder="Enter goal"
+	                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none text-black font-medium"
+	                  />
                 </div>
               </div>
 

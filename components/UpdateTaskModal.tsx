@@ -81,7 +81,8 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
   }
 
   const handleGoalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      setGoalInput(e.target.value);
+      const value = e.target.value.replace(/[^\d.]/g, '');
+      setGoalInput(value);
   }
 
   const handlePreSubmit = (e: React.FormEvent) => {
@@ -215,7 +216,9 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
               <div className="space-y-1">
                 <label className="text-sm font-medium text-gray-900 block mb-1">Goal</label>
                 <input
-                  type="text"
+                  type="number"
+                  min="0"
+                  step="1"
                   value={goalInput}
                   onChange={handleGoalChange}
                   placeholder="Enter goal"
