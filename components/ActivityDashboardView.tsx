@@ -30,7 +30,8 @@ export const ActivityDashboardView: React.FC<ActivityDashboardViewProps> = ({ lo
   const pivotedData = useMemo(() => {
     // Defensive: some logs may only have updatedOn (date) instead of updateDate (date+time).
     const filteredLogs = logs.filter(log => {
-      const logISO = parseToISO(String(log.updateDate || log.updatedOn || '').trim());
+      const rawDate = String(log.updateDate || (log as any).updatedOn || '').trim();
+      const logISO = parseToISO(rawDate);
       if (fromDate && logISO < fromDate) return false;
       if (toDate && logISO > toDate) return false;
       return true;
@@ -46,13 +47,17 @@ export const ActivityDashboardView: React.FC<ActivityDashboardViewProps> = ({ lo
     }
 
     filteredLogs.forEach(log => {
-      const dateStr = formatToIndianDate(log.updateDate);
+      const dateStr = formatToIndianDate(String(log.updateDate || (log as any).updatedOn || ''));
       const names = (log.assignees || log.owner || 'Unknown')
         .split(',')
         .map(s => s.trim())
         .filter(Boolean);
 
       names.forEach(name => {
+        // If the user list is missing or the role filter excluded someone, still show data for names we see in logs.
+        if (!employeesSet.has(name)) {
+            employeesSet.add(name);
+        }
         if (employeesSet.has(name)) {
             if (!datesMap.has(dateStr)) {
                 datesMap.set(dateStr, new Map());
