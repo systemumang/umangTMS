@@ -224,8 +224,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
 	            {VENDOR_MODULE_ENABLED && (
 	              <QuickAction label="Add Vendor" icon={<Truck size={18} />} colorClass="bg-orange-500 hover:bg-orange-600 text-white" onClick={onOpenAddVendor}/>
 	            )}
-	            <QuickAction label="Add Client" icon={<Building2 size={18} />} colorClass="bg-pink-500 hover:bg-pink-600 text-white" onClick={onOpenAddClient}/>
-	            <QuickAction label="Add Project" icon={<Folder size={18} />} colorClass="bg-emerald-500 hover:bg-emerald-600 text-white" onClick={onOpenAddProject}/>
 	          </div>
 	        </div>
 	      )}
@@ -249,7 +247,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
 	      <div className="grid grid-cols-1 gap-8">
 	        <PendingTable title="Pending by Assignee" headerLabel="Assignee Name" data={assigneeData} onRowClick={(name) => onFilterChange('assignee', name)}/>
 	        <PendingTable title="Pending by Priority" headerLabel="Priority Level" data={priorityData} onRowClick={(name) => onFilterChange('priority', name)} className="bg-indigo-50/30"/>
-	        <PendingTable title="Pending by Project" headerLabel="Project Name" data={projectData} onRowClick={(name) => onFilterChange('project', name)}/>
 	        <PendingTable title="Pending by Categorywise" headerLabel="Category Name" data={categoryData} onRowClick={(name) => onFilterChange('category', name)} className="bg-indigo-50/30"/>
 	        {VENDOR_MODULE_ENABLED && (
 	          <PendingTable title="Pending by Vendor" headerLabel="Vendor Name" data={vendorData} onRowClick={(name) => onFilterChange('vendor', name)} className="bg-orange-50/30"/>

@@ -289,7 +289,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
     const filterText = `Applied Filters: ${getFilterSummary()}`;
     const generatedOn = `Generated on: ${new Date().toLocaleString('en-GB')}`;
 
-    const headers = ['Date', 'Task', 'Notes', 'Category', 'Responsible', 'Owner', 'Project', 'Client', 'Status', 'Last Update Date', 'Last Update Remark', 'Priority', 'Due Date'];
+    const headers = ['Date', 'Task', 'Notes', 'Category', 'Responsible', 'Owner', 'Status', 'Last Update Date', 'Last Update Remark', 'Priority', 'Due Date'];
     
     const csvRows = [
         `"${filterText}"`,
@@ -308,8 +308,6 @@ export const TasksView: React.FC<TasksViewProps> = ({
                 `"${t.category || '-'}"`,
                 `"${resp}"`,
                 `"${t.owner}"`,
-                `"${t.project.split(' (')[0]}"`,
-                `"${t.clientName || ''}"`,
                 `"${t.status}"`,
                 `"${lastDate}"`,
                 `"${lastRemark.replace(/"/g, '""')}"`,
@@ -348,8 +346,6 @@ export const TasksView: React.FC<TasksViewProps> = ({
       'Date',
       'Task',
       ...(hasAnyNotes ? ['Notes'] : []),
-      'Project',
-      'Client',
       'Responsible',
       'Status',
       'P',
@@ -368,8 +364,6 @@ export const TasksView: React.FC<TasksViewProps> = ({
       ];
       if (hasAnyNotes) row.push(t.remarks || '-');
       row.push(
-        t.project.split(' (')[0],
-        t.clientName || '-',
         isVendorView ? (t.vendor || '-') : (t.assignees || '-'),
         t.status,
         String(t.priority || '-').trim() ? String(t.priority || '-').trim().charAt(0).toUpperCase() : '-',
@@ -383,9 +377,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
     const columnStyles: any = {
       2: { cellWidth: 35 },
-      [hasAnyNotes ? 5 : 4]: { cellWidth: 25 },
-      [hasAnyNotes ? 10 : 9]: { cellWidth: 35 },
-      [hasAnyNotes ? 12 : 11]: { cellWidth: 12, halign: 'center' }
+      [hasAnyNotes ? 8 : 7]: { cellWidth: 35 },
+      [hasAnyNotes ? 10 : 9]: { cellWidth: 12, halign: 'center' }
     };
     if (hasAnyNotes) {
       columnStyles[3] = { cellWidth: 35 };
@@ -676,7 +669,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
           <Search className="absolute left-3 top-2.5 text-indigo-600" size={18} />
           <input 
             type="text" 
-            placeholder="Search all columns (Task, Project, Assignee, Status, etc)..." 
+            placeholder="Search all columns (Task, Assignee, Status, etc)..." 
             className={`w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-100 text-sm transition-colors ${searchTerm ? 'bg-indigo-50 border-indigo-500 text-indigo-700 font-medium' : 'border-indigo-300 text-indigo-700'}`} 
             value={searchTerm} 
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -688,8 +681,6 @@ export const TasksView: React.FC<TasksViewProps> = ({
 	             <SearchableSelect label="Priority" options={priorityOptions} value={filterPriority} onChange={setFilterPriority} multiple={true} placeholder="All Priorities" className="text-sm"/>
 	             <SearchableSelect label="Category" options={categoryOptions} value={filterCategory} onChange={setFilterCategory} multiple={true} placeholder="All Categories" className="text-sm"/>
                <SearchableSelect label="Firm" options={firmOptions} value={filterFirm} onChange={setFilterFirm} multiple={true} placeholder="All Firms" className="text-sm"/>
-	             {!isVendorView && <SearchableSelect label="Project" options={projectOptions} value={filterProject} onChange={setFilterProject} multiple={true} placeholder="All Projects" className="text-sm"/>}
-             {!isVendorView && <SearchableSelect label="Client" options={clientOptions} value={filterClient} onChange={setFilterClient} multiple={true} placeholder="All Clients" className="text-sm"/>}
              <SearchableSelect label="Owner" options={ownerOptions} value={filterOwner} onChange={setFilterOwner} multiple={true} placeholder="All Owners" className="text-sm"/>
              {!isVendorView && <SearchableSelect label="Assignee" options={assigneeOptions} value={filterAssignee} onChange={setFilterAssignee} multiple={true} placeholder="All Assignees" className="text-sm"/>}
              {isVendorView && setFilterVendor && <SearchableSelect label="Vendor" options={vendorOptions} value={filterVendor} onChange={setFilterVendor} multiple={true} placeholder="All Vendors" className="text-sm"/>}

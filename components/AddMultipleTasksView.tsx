@@ -113,7 +113,6 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
 
   const isRowComplete = (r: AddRow) => {
     return r.title.trim() !== '' && 
-           r.project !== '' && 
            r.assignees.length > 0 && 
            r.owner !== '' && 
            r.category !== '' && 
@@ -172,7 +171,6 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
                 <tr>
                   <th className={thClass} style={{ width: columnWidths.task }}>TASK <ResizeHandle col="task" /></th>
                   <th className={thClass} style={{ width: columnWidths.priority }}>PRIORITY <ResizeHandle col="priority" /></th>
-                  <th className={thClass} style={{ width: columnWidths.project }}>PROJECT <ResizeHandle col="project" /></th>
                   <th className={thClass} style={{ width: columnWidths.assignee }}>ASSIGNEE <ResizeHandle col="assignee" /></th>
                   <th className={thClass} style={{ width: columnWidths.owner }}>TASK OWNER <ResizeHandle col="owner" /></th>
                   <th className={thClass} style={{ width: columnWidths.category }}>CATEGORY <ResizeHandle col="category" /></th>
@@ -216,21 +214,6 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
                         <option value="Low">Low</option>
                       </select>
                     </td>
-	                    <td className={tdClass}>
-	                      <SearchableSelect
-	                        options={projectOptions}
-	                        value={row.project}
-	                        onChange={(val) => updateField(row.id, 'project', val)}
-	                        placeholder="Project..."
-	                        className="!min-h-0 text-[10px]"
-	                        allowCreate
-	                        onCreateOption={(v) => {
-	                          onOpenAddProject?.(v);
-	                          return false;
-	                        }}
-	                        createLabel={(v) => `Add Project "${v}"`}
-	                      />
-	                    </td>
                     <td className={tdClass}>
                       <SearchableSelect
                         multiple
@@ -348,15 +331,6 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
                     />
                   </div>
                 </div>
-
-                <SearchableSelect
-                  label="Project"
-                  options={projectOptions}
-                  value={row.project}
-                  onChange={(val) => updateField(row.id, 'project', val)}
-                  placeholder="Project..."
-                  className="text-sm"
-                />
 
                 <SearchableSelect
                   label="Assignee"

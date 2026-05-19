@@ -166,10 +166,8 @@ export const TaskTable: React.FC<TaskTableProps> = ({
 	                <th className={thClass} style={{ width: '350px' }} onClick={() => requestSort('title')}><div className="flex items-center">Task {getSortIcon('title')}</div></th>
 	                <th className={thClass} style={{ width: '320px' }} onClick={() => requestSort('remarks')}><div className="flex items-center">Notes {getSortIcon('remarks')}</div></th>
 	                <th className={thClass} style={{ width: '120px' }} onClick={() => requestSort('date')}><div className="flex items-center">Date {getSortIcon('date')}</div></th>
-		                <th className={thClass} style={{ width: '200px' }} onClick={() => requestSort('clientName')}><div className="flex items-center">Client {getSortIcon('clientName')}</div></th>
                     <th className={thClass} style={{ width: '160px' }} onClick={() => requestSort('firm')}><div className="flex items-center">Firm {getSortIcon('firm')}</div></th>
 		                <th className={thClass} style={{ width: '150px' }} onClick={() => requestSort('category')}><div className="flex items-center">Category {getSortIcon('category')}</div></th>
-	                <th className={thClass} style={{ width: '200px' }} onClick={() => requestSort('project')}><div className="flex items-center">Project {getSortIcon('project')}</div></th>
 	                <th className={thClass} style={{ width: '100px' }} onClick={() => requestSort('priority')}><div className="flex items-center">Priority {getSortIcon('priority')}</div></th>
 	                <th className={thClass} style={{ width: '100px' }} onClick={() => requestSort('time')}><div className="flex items-center">Time {getSortIcon('time')}</div></th>
 	                <th className={thClass} style={{ width: '120px' }}><div className="flex items-center">Photo</div></th>
@@ -214,10 +212,8 @@ export const TaskTable: React.FC<TaskTableProps> = ({
 	                    <td className={`${tdClass} font-bold`} title={task.title}>{task.title || '-'}</td>
 	                    <td className={`${tdClass} italic text-gray-700`} title={task.remarks}>{task.remarks || '-'}</td>
 	                    <td className={`${tdClass}`}><div className="flex items-center gap-1">{isSyncing && <Loader2 className="animate-spin text-blue-500" size={12} />}{formatDate(task.date)}</div></td>
-		                    <td className={`${tdClass} font-bold text-xs`} title={task.clientName}>{task.clientName || '-'}</td>
                     <td className={tdClass}>{task.firm || '-'}</td>
 		                    <td className={tdClass}>{displayCategory}</td>
-	                    <td className={`${tdClass} font-bold text-xs`} title={task.project.split(' (')[0]}>{task.project.split(' (')[0]}</td>
 	                    <td className={tdClass}>{task.priority}</td>
 	                      <td className={tdClass}>{task.time || '-'}</td>
 	                      <td className={tdClass}>
@@ -325,16 +321,6 @@ export const TaskTable: React.FC<TaskTableProps> = ({
 
               <div className="space-y-3 mb-5">
                 <div className="grid grid-cols-2 gap-x-3 gap-y-4">
-                    <div className="space-y-1">
-                        <span className="text-[10px] uppercase font-black text-blue-900/60">Project</span>
-                        <div className="flex items-center gap-1.5 text-xs text-black font-bold uppercase whitespace-normal break-words">
-                          <Layout size={12} className="text-orange-600 shrink-0" /> {task.project.split(' (')[0]}
-                        </div>
-                    </div>
-	                    <div className="space-y-1">
-	                        <span className="text-[10px] uppercase font-black text-blue-900/60">Client</span>
-	                        <div className="flex items-center gap-1.5 text-xs text-black font-bold uppercase whitespace-normal break-words"><Building2 size={12} className="text-pink-600" /> {task.clientName || '-'}</div>
-	                    </div>
                       <div className="space-y-1">
                         <span className="text-[10px] uppercase font-black text-blue-900/60">Firm</span>
                         <div className="flex items-center gap-1.5 text-xs text-black font-bold uppercase whitespace-normal break-words">{task.firm || '-'}</div>

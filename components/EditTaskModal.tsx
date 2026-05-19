@@ -181,7 +181,6 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const isFormValid = () => {
 	    const basicValid = formData.title.trim() !== '' && 
 	                       formData.owner !== '' && 
-	                       formData.project !== '' &&
                          formData.firm !== '';
 
     if (isVendorMode) return basicValid && formData.vendor !== '';
@@ -278,15 +277,6 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
               </div>
 
 	              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-	                  <label className="text-sm font-medium text-black block mb-1">Project <span className="text-red-500">*</span></label>
-	                  <div className="flex gap-2">
-	                      <div className="flex-1">
-	                          <SearchableSelect options={projectOptions} value={formData.project} onChange={(val) => setFormData(prev => ({ ...prev, project: val }))} placeholder="Select Project..." required />
-	                      </div>
-	                      <button type="button" onClick={onAddProject} className="px-3 py-2 text-gray-500 hover:text-indigo-600 border border-gray-200 hover:bg-indigo-50 rounded-lg h-[42px]"><Plus size={18} /></button>
-	                  </div>
-                  </div>
                   <div className="space-y-1">
                     <SearchableSelect
                       label="Firm"
