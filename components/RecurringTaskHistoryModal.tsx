@@ -28,6 +28,18 @@ export const RecurringTaskHistoryModal: React.FC<RecurringTaskHistoryModalProps>
     return [];
   };
 
+  const normalizePdfHref = (raw?: string): string => {
+    if (!raw) return '';
+    const s = String(raw).trim();
+    if (!s) return '';
+    if (s.startsWith('data:')) return s;
+    if (/^https?:\/\//i.test(s)) return s;
+    if (/^[A-Za-z0-9+/=\r\n]+$/.test(s)) {
+      return `data:application/pdf;base64,${s.replace(/\s+/g, '')}`;
+    }
+    return s;
+  };
+
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '-';
     const s = String(dateStr).trim();
@@ -157,8 +169,8 @@ export const RecurringTaskHistoryModal: React.FC<RecurringTaskHistoryModalProps>
 	                      )}
 	                    </td>
 	                    <td className="px-6 py-4 text-sm">
-	                      {action.pdf ? (
-	                        <a href={action.pdf} target="_blank" rel="noreferrer" className="text-indigo-600 underline font-semibold">
+	                      {normalizePdfHref(action.pdf) ? (
+	                        <a href={normalizePdfHref(action.pdf)} target="_blank" rel="noreferrer" className="text-indigo-600 underline font-semibold">
 	                          Open PDF
 	                        </a>
 	                      ) : (
@@ -208,8 +220,8 @@ export const RecurringTaskHistoryModal: React.FC<RecurringTaskHistoryModalProps>
 	                        </div>
 	                        <div>
 	                          <span className="text-gray-500 font-semibold uppercase">PDF</span>{' '}
-	                          {action.pdf ? (
-	                            <a href={action.pdf} target="_blank" rel="noreferrer" className="text-indigo-600 underline font-semibold">
+	                          {normalizePdfHref(action.pdf) ? (
+	                            <a href={normalizePdfHref(action.pdf)} target="_blank" rel="noreferrer" className="text-indigo-600 underline font-semibold">
 	                              Open
 	                            </a>
 	                          ) : (

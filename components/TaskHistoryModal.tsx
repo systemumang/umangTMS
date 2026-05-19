@@ -110,10 +110,10 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
       headStyles: { fillColor: [59, 130, 246] },
     });
 
-    doc.save(`Task_History_${task.id}.pdf`);
-  };
+	    doc.save(`Task_History_${task.id}.pdf`);
+	  };
 
-  return (
+	  return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4 bg-black/40 backdrop-blur-sm transition-opacity">
       <div className="bg-white rounded-xl shadow-2xl w-[98vw] h-[96vh] max-w-none max-h-none flex flex-col animate-in fade-in zoom-in duration-200 border-2 border-blue-500">
         
@@ -135,14 +135,49 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
           </button>
         </div>
 
-        {/* Content */}
-        <div className="overflow-auto p-4 md:p-6 space-y-6">
-          {/* Detailed History Table */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-extrabold text-black uppercase tracking-widest flex items-center gap-2">
-                 <History className="text-blue-500" size={16} /> UPDATE HISTORY LOG
-              </h3>
+	        {/* Content */}
+	        <div className="overflow-auto p-4 md:p-6 space-y-6">
+	          {/* Task (Master) Attachments */}
+	          <div className="bg-white border-2 border-blue-200 rounded-xl p-4 shadow-sm">
+	            <div className="text-xs font-black text-blue-600 uppercase tracking-widest mb-3">Task (Master)</div>
+	            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-[11px]">
+	              <div className="space-y-1">
+	                <div className="text-[10px] font-black text-gray-500 uppercase">Goal</div>
+	                <div className="font-bold text-black whitespace-normal break-words">{task.goal || '-'}</div>
+	              </div>
+	              <div className="space-y-1">
+	                <div className="text-[10px] font-black text-gray-500 uppercase">Photo</div>
+	                {parsePhotos(task.photos).length > 0 ? (
+	                  <button
+	                    type="button"
+	                    onClick={() => setPhotoViewer({ photos: parsePhotos(task.photos), index: 0 })}
+	                    className="text-indigo-600 underline font-bold text-left"
+	                  >
+	                    {parsePhotos(task.photos).length} photo(s)
+	                  </button>
+	                ) : (
+	                  <div className="font-bold text-black">-</div>
+	                )}
+	              </div>
+	              <div className="space-y-1">
+	                <div className="text-[10px] font-black text-gray-500 uppercase">PDF</div>
+	                {normalizePdfHref(task.pdf) ? (
+	                  <a href={normalizePdfHref(task.pdf)} target="_blank" rel="noreferrer" className="text-indigo-600 underline font-bold">
+	                    Open PDF
+	                  </a>
+	                ) : (
+	                  <div className="font-bold text-black">-</div>
+	                )}
+	              </div>
+	            </div>
+	          </div>
+
+	          {/* Detailed History Table */}
+	          <div className="space-y-4">
+	            <div className="flex items-center justify-between">
+	              <h3 className="text-sm font-extrabold text-black uppercase tracking-widest flex items-center gap-2">
+	                 <History className="text-blue-500" size={16} /> UPDATE HISTORY LOG
+	              </h3>
               <div className="flex bg-blue-50 p-1 rounded-lg border border-blue-200">
                   <button
                     onClick={() => setViewMode('card')}

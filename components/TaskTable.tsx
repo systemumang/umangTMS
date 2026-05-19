@@ -99,15 +99,27 @@ export const TaskTable: React.FC<TaskTableProps> = ({
     return lastUpdateDate.startsWith(today);
   };
 
-  const parsePhotos = (rawPhotos?: string): string[] => {
-    if (!rawPhotos) return [];
-    try {
-      const parsed = JSON.parse(rawPhotos);
-      return Array.isArray(parsed) ? parsed.filter(photo => typeof photo === 'string' && photo.trim() !== '') : [];
-    } catch {
-      return [];
-    }
-  };
+	  const parsePhotos = (rawPhotos?: string): string[] => {
+	    if (!rawPhotos) return [];
+	    try {
+	      const parsed = JSON.parse(rawPhotos);
+	      return Array.isArray(parsed) ? parsed.filter(photo => typeof photo === 'string' && photo.trim() !== '') : [];
+	    } catch {
+	      return [];
+	    }
+	  };
+
+	  const normalizePdfHref = (raw?: string): string => {
+	    if (!raw) return '';
+	    const s = String(raw).trim();
+	    if (!s) return '';
+	    if (s.startsWith('data:')) return s;
+	    if (/^https?:\/\//i.test(s)) return s;
+	    if (/^[A-Za-z0-9+/=\r\n]+$/.test(s)) {
+	      return `data:application/pdf;base64,${s.replace(/\s+/g, '')}`;
+	    }
+	    return s;
+	  };
 
   const openPhotos = (rawPhotos?: string, index = 0) => {
     const photos = parsePhotos(rawPhotos);
@@ -135,26 +147,26 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                     />
                   </th>
                 )}
-                <th className="px-4 py-3 text-xs font-black text-white uppercase tracking-widest border-r border-black w-16 text-center whitespace-nowrap !bg-blue-700 sticky top-0 z-10">S.No.</th>
-                <th className={thClass} style={{ width: '350px' }} onClick={() => requestSort('title')}><div className="flex items-center">Task {getSortIcon('title')}</div></th>
-                <th className={thClass} style={{ width: '320px' }} onClick={() => requestSort('remarks')}><div className="flex items-center">Task Notes {getSortIcon('remarks')}</div></th>
-                <th className={thClass} style={{ width: '120px' }} onClick={() => requestSort('date')}><div className="flex items-center">Date {getSortIcon('date')}</div></th>
-                <th className={thClass} style={{ width: '200px' }} onClick={() => requestSort('project')}><div className="flex items-center">Project {getSortIcon('project')}</div></th>
-                <th className={thClass} style={{ width: '200px' }} onClick={() => requestSort('clientName')}><div className="flex items-center">Client {getSortIcon('clientName')}</div></th>
-                <th className={thClass} style={{ width: '120px' }} onClick={() => requestSort('status')}><div className="flex items-center">Status {getSortIcon('status')}</div></th>
-                <th className={thClass} style={{ width: '150px' }} onClick={() => requestSort('lastUpdateDate')}><div className="flex items-center">Last Update {getSortIcon('lastUpdateDate')}</div></th>
-                <th className={thClass} style={{ width: '300px' }} onClick={() => requestSort('lastUpdateRemarks')}><div className="flex items-center">Remark {getSortIcon('lastUpdateRemarks')}</div></th>
-                <th className={thClass} style={{ width: '100px' }} onClick={() => requestSort('priority')}><div className="flex items-center">Priority {getSortIcon('priority')}</div></th>
-                <th className={thClass} style={{ width: '120px' }} onClick={() => requestSort('dueDate')}><div className="flex items-center">Due Date {getSortIcon('dueDate')}</div></th>
-                <th className={thClass} style={{ width: '100px' }} onClick={() => requestSort('hours')}><div className="flex items-center">Minutes {getSortIcon('hours')}</div></th>
-                <th className={thClass} style={{ width: '100px' }} onClick={() => requestSort('time')}><div className="flex items-center">Time {getSortIcon('time')}</div></th>
-                <th className={thClass} style={{ width: '120px' }}><div className="flex items-center">Photo</div></th>
-                <th className={thClass} style={{ width: '120px' }}><div className="flex items-center">PDF</div></th>
-                <th className={thClass} style={{ width: '180px' }} onClick={() => requestSort('goal')}><div className="flex items-center">Goal {getSortIcon('goal')}</div></th>
-                <th className={thClass} style={{ width: '180px' }} onClick={() => requestSort('owner')}><div className="flex items-center">Owner {getSortIcon('owner')}</div></th>
-                <th className={thClass} style={{ width: '180px' }} onClick={() => requestSort(isVendorView ? 'vendor' : 'assignees')}><div className="flex items-center">{isVendorView ? 'Vendor' : 'Assignees'} {getSortIcon(isVendorView ? 'vendor' : 'assignees')}</div></th>
-                <th className={thClass} style={{ width: '150px' }} onClick={() => requestSort('category')}><div className="flex items-center">Category{getSortIcon('category')}</div></th>
-                <th className="px-4 py-3 text-xs font-black text-white uppercase tracking-widest border-r border-black last:border-r-0 text-center !bg-blue-700 sticky top-0 z-10" style={{ width: '190px' }}>Actions</th>
+	                <th className="px-4 py-3 text-xs font-black text-white uppercase tracking-widest border-r border-black w-16 text-center whitespace-nowrap !bg-blue-700 sticky top-0 z-10">S.No.</th>
+	                <th className={thClass} style={{ width: '350px' }} onClick={() => requestSort('title')}><div className="flex items-center">Task {getSortIcon('title')}</div></th>
+	                <th className={thClass} style={{ width: '320px' }} onClick={() => requestSort('remarks')}><div className="flex items-center">Notes {getSortIcon('remarks')}</div></th>
+	                <th className={thClass} style={{ width: '120px' }} onClick={() => requestSort('date')}><div className="flex items-center">Date {getSortIcon('date')}</div></th>
+	                <th className={thClass} style={{ width: '200px' }} onClick={() => requestSort('clientName')}><div className="flex items-center">Client {getSortIcon('clientName')}</div></th>
+	                <th className={thClass} style={{ width: '150px' }} onClick={() => requestSort('category')}><div className="flex items-center">Category {getSortIcon('category')}</div></th>
+	                <th className={thClass} style={{ width: '200px' }} onClick={() => requestSort('project')}><div className="flex items-center">Project {getSortIcon('project')}</div></th>
+	                <th className={thClass} style={{ width: '100px' }} onClick={() => requestSort('priority')}><div className="flex items-center">Priority {getSortIcon('priority')}</div></th>
+	                <th className={thClass} style={{ width: '100px' }} onClick={() => requestSort('time')}><div className="flex items-center">Time {getSortIcon('time')}</div></th>
+	                <th className={thClass} style={{ width: '120px' }}><div className="flex items-center">Photo</div></th>
+	                <th className={thClass} style={{ width: '120px' }}><div className="flex items-center">PDF</div></th>
+	                <th className={thClass} style={{ width: '180px' }} onClick={() => requestSort('goal')}><div className="flex items-center">Goal {getSortIcon('goal')}</div></th>
+	                <th className={thClass} style={{ width: '120px' }} onClick={() => requestSort('dueDate')}><div className="flex items-center">Due Date {getSortIcon('dueDate')}</div></th>
+	                <th className={thClass} style={{ width: '150px' }} onClick={() => requestSort('lastUpdateDate')}><div className="flex items-center">Last Update {getSortIcon('lastUpdateDate')}</div></th>
+	                <th className={thClass} style={{ width: '120px' }} onClick={() => requestSort('status')}><div className="flex items-center">Status {getSortIcon('status')}</div></th>
+	                <th className={thClass} style={{ width: '300px' }} onClick={() => requestSort('lastUpdateRemarks')}><div className="flex items-center">Remark {getSortIcon('lastUpdateRemarks')}</div></th>
+	                <th className={thClass} style={{ width: '100px' }} onClick={() => requestSort('hours')}><div className="flex items-center">Minutes {getSortIcon('hours')}</div></th>
+	                <th className={thClass} style={{ width: '180px' }} onClick={() => requestSort('owner')}><div className="flex items-center">Owner {getSortIcon('owner')}</div></th>
+	                <th className={thClass} style={{ width: '180px' }} onClick={() => requestSort(isVendorView ? 'vendor' : 'assignees')}><div className="flex items-center">{isVendorView ? 'Vendor' : 'Assignee'} {getSortIcon(isVendorView ? 'vendor' : 'assignees')}</div></th>
+	                <th className="px-4 py-3 text-xs font-black text-white uppercase tracking-widest border-r border-black last:border-r-0 text-center !bg-blue-700 sticky top-0 z-10" style={{ width: '190px' }}>Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black">
@@ -182,25 +194,17 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                         />
                       </td>
                     )}
-                    <td className={`${tdClass} text-center font-bold text-blue-600 !whitespace-nowrap`}>{startIndex + idx}</td>
-                    <td className={`${tdClass} font-bold`} title={task.title}>{task.title || '-'}</td>
-                    <td className={`${tdClass} italic text-gray-700`} title={task.remarks}>{task.remarks || '-'}</td>
-                    <td className={`${tdClass}`}><div className="flex items-center gap-1">{isSyncing && <Loader2 className="animate-spin text-blue-500" size={12} />}{formatDate(task.date)}</div></td>
-                    <td className={`${tdClass} font-bold text-xs`} title={task.project.split(' (')[0]}>{task.project.split(' (')[0]}</td>
-                    <td className={`${tdClass} font-bold text-xs`} title={task.clientName}>{task.clientName || '-'}</td>
-                    <td className={tdClass}><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>{task.status}</span></td>
-                    <td className={`${tdClass}`}>
-                        {task.status === 'Not Yet Started' ? '-' : (formatDate(task.lastUpdateDate || ''))}
-                    </td>
-                    <td className={`${tdClass} italic text-gray-700`} title={task.lastUpdateRemarks}>
-                        {task.status === 'Not Yet Started' ? '-' : (task.lastUpdateRemarks || '-')}
-                    </td>
-                    <td className={tdClass}>{task.priority}</td>
-                    <td className={`${tdClass}`}>{formatDate(task.dueDate)}</td>
-	                    <td className={`${tdClass} font-bold text-indigo-600 text-center`}>{task.hours || 0}</td>
-                      <td className={tdClass}>{task.time || '-'}</td>
-                      <td className={tdClass}>
-                        {parsePhotos(task.photos).length > 0 ? (
+	                    <td className={`${tdClass} text-center font-bold text-blue-600 !whitespace-nowrap`}>{startIndex + idx}</td>
+	                    <td className={`${tdClass} font-bold`} title={task.title}>{task.title || '-'}</td>
+	                    <td className={`${tdClass} italic text-gray-700`} title={task.remarks}>{task.remarks || '-'}</td>
+	                    <td className={`${tdClass}`}><div className="flex items-center gap-1">{isSyncing && <Loader2 className="animate-spin text-blue-500" size={12} />}{formatDate(task.date)}</div></td>
+	                    <td className={`${tdClass} font-bold text-xs`} title={task.clientName}>{task.clientName || '-'}</td>
+	                    <td className={tdClass}>{displayCategory}</td>
+	                    <td className={`${tdClass} font-bold text-xs`} title={task.project.split(' (')[0]}>{task.project.split(' (')[0]}</td>
+	                    <td className={tdClass}>{task.priority}</td>
+	                      <td className={tdClass}>{task.time || '-'}</td>
+	                      <td className={tdClass}>
+	                        {parsePhotos(task.photos).length > 0 ? (
                           <button
                             type="button"
                             onClick={(e) => {
@@ -213,29 +217,37 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                           </button>
                         ) : '-'}
                       </td>
-                      <td className={tdClass}>
-                        {task.pdf ? (
-                          <a
-                            href={task.pdf}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-indigo-600 underline hover:text-indigo-800"
-                          >
-                            Open PDF
-                          </a>
-                        ) : '-'}
-                      </td>
-                      <td className={tdClass}>{task.goal || '-'}</td>
-	                    <td className={`${tdClass} font-bold text-xs uppercase`}>{task.owner}</td>
-                    <td className={tdClass}>
-                        <div className="flex items-center gap-1 font-bold text-xs uppercase">
-                            {task.vendor ? <Hammer size={12} className="text-orange-500 shrink-0"/> : <Users size={12} className="text-indigo-700 shrink-0"/>}
-                            {responsibleParty}
-                        </div>
-                    </td>
-                    <td className={tdClass}>{displayCategory}</td>
-                    <td className={`${tdClass} text-center`}>
+	                      <td className={tdClass}>
+	                        {normalizePdfHref(task.pdf) ? (
+	                          <a
+	                            href={normalizePdfHref(task.pdf)}
+	                            target="_blank"
+	                            rel="noreferrer"
+	                            onClick={(e) => e.stopPropagation()}
+	                            className="text-indigo-600 underline hover:text-indigo-800"
+	                          >
+	                            Open PDF
+	                          </a>
+	                        ) : '-'}
+		                      </td>
+	                      <td className={tdClass}>{task.goal || '-'}</td>
+	                    <td className={`${tdClass}`}>{formatDate(task.dueDate)}</td>
+	                    <td className={`${tdClass}`}>
+	                        {task.status === 'Not Yet Started' ? '-' : (formatDate(task.lastUpdateDate || ''))}
+	                    </td>
+	                    <td className={tdClass}><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>{task.status}</span></td>
+	                    <td className={`${tdClass} italic text-gray-700`} title={task.lastUpdateRemarks}>
+	                        {task.status === 'Not Yet Started' ? '-' : (task.lastUpdateRemarks || '-')}
+	                    </td>
+	                    <td className={`${tdClass} font-bold text-indigo-600 text-center`}>{task.hours || 0}</td>
+		                    <td className={`${tdClass} font-bold text-xs uppercase`}>{task.owner}</td>
+	                    <td className={tdClass}>
+	                        <div className="flex items-center gap-1 font-bold text-xs uppercase">
+	                            {task.vendor ? <Hammer size={12} className="text-orange-500 shrink-0"/> : <Users size={12} className="text-indigo-700 shrink-0"/>}
+	                            {responsibleParty}
+	                        </div>
+	                    </td>
+	                    <td className={`${tdClass} text-center`}>
   <div className="flex items-center justify-center gap-2 whitespace-nowrap" onDoubleClick={(e) => e.stopPropagation()}>
     <button onClick={() => onUpdateTask(task)} disabled={isSyncing} className="px-3 py-1 bg-blue-600 rounded text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-30 uppercase whitespace-nowrap shrink-0">Update</button>
     <button onClick={() => onEditTask(task)} disabled={isSyncing} className="p-1 text-blue-600 hover:text-blue-800 disabled:opacity-30 shrink-0"><Edit2 size={16} /></button>

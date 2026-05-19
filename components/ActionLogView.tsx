@@ -402,15 +402,27 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
   const getFilterClass = (isActive: boolean) => 
     `w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-colors ${isActive ? 'bg-indigo-50 border-indigo-500 text-indigo-700 font-black' : 'bg-white border-indigo-300 text-black'}`;
 
-  const parsePhotos = (rawPhotos?: string): string[] => {
-    if (!rawPhotos) return [];
-    try {
-      const parsed = JSON.parse(rawPhotos);
-      return Array.isArray(parsed) ? parsed.filter(photo => typeof photo === 'string' && photo.trim() !== '') : [];
-    } catch {
-      return [];
-    }
-  };
+	  const parsePhotos = (rawPhotos?: string): string[] => {
+	    if (!rawPhotos) return [];
+	    try {
+	      const parsed = JSON.parse(rawPhotos);
+	      return Array.isArray(parsed) ? parsed.filter(photo => typeof photo === 'string' && photo.trim() !== '') : [];
+	    } catch {
+	      return [];
+	    }
+	  };
+
+	  const normalizePdfHref = (raw?: string): string => {
+	    if (!raw) return '';
+	    const s = String(raw).trim();
+	    if (!s) return '';
+	    if (s.startsWith('data:')) return s;
+	    if (/^https?:\/\//i.test(s)) return s;
+	    if (/^[A-Za-z0-9+/=\r\n]+$/.test(s)) {
+	      return `data:application/pdf;base64,${s.replace(/\s+/g, '')}`;
+	    }
+	    return s;
+	  };
 
   const thClass = "px-6 py-4 text-xs font-black text-white uppercase tracking-widest border-r border-black last:border-r-0 cursor-pointer !bg-blue-700 hover:bg-blue-800 transition-colors select-none whitespace-normal sticky top-0 z-10";
   const tdClass = "px-6 py-4 text-sm text-gray-900 border-r border-black last:border-r-0 whitespace-normal break-words align-top";
@@ -564,13 +576,13 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
                     </div>
                     <div className="space-y-0.5">
                         <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">PDF</span>
-                        {log.pdf ? (
-                            <a href={log.pdf} target="_blank" rel="noreferrer" className="text-[10px] text-indigo-600 font-black underline">
-                                Open PDF
-                            </a>
-                        ) : (
-                            <div className="text-[10px] text-blue-900 font-black">-</div>
-                        )}
+	                        {normalizePdfHref(log.pdf) ? (
+	                            <a href={normalizePdfHref(log.pdf)} target="_blank" rel="noreferrer" className="text-[10px] text-indigo-600 font-black underline">
+	                                Open PDF
+	                            </a>
+	                        ) : (
+	                            <div className="text-[10px] text-blue-900 font-black">-</div>
+	                        )}
                     </div>
                     {isVendorView ? (
                          <div className="space-y-0.5">
@@ -645,9 +657,9 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
                       </button>
                     ) : '-'}
                   </td>
-                  <td className={tdClass}>
-                    {log.pdf ? <a href={log.pdf} target="_blank" rel="noreferrer" className="text-indigo-600 underline">Open PDF</a> : '-'}
-                  </td>
+	                  <td className={tdClass}>
+	                    {normalizePdfHref(log.pdf) ? <a href={normalizePdfHref(log.pdf)} target="_blank" rel="noreferrer" className="text-indigo-600 underline">Open PDF</a> : '-'}
+	                  </td>
                   <td className={`${tdClass} font-bold text-xs uppercase`}>{log.owner}</td>
                   {isVendorView ? (
                     <td className={`${tdClass} font-bold text-xs uppercase`}>{log.vendor}</td>
