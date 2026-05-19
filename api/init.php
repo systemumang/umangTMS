@@ -169,7 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($table === 'main_tasks') {
             $stmt = $conn->prepare("INSERT INTO main_tasks (id, date, title, description, project, firm, category, owner, assignees, client, priority, status, dueDate, lastUpdateDate, lastUpdateRemarks, hours, time, goal, photos, pdf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare main task insert.'], 500);
-            $stmt->bind_param('isssssssssssssssdssss', $id, $date, $title, $description, $project, $firm, $category, $owner, $assignees, $client, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf);
+            $stmt->bind_param('issssssssssssssdssss', $id, $date, $title, $description, $project, $firm, $category, $owner, $assignees, $client, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf);
         } else {
             $stmt = $conn->prepare("INSERT INTO vendor_tasks (id, date, title, description, project, firm, category, owner, assignees, vendor, vendorCategory, priority, status, dueDate, lastUpdateDate, lastUpdateRemarks, hours, time, goal, photos, pdf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare vendor task insert.'], 500);
@@ -434,11 +434,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($table === 'main_tasks') {
             $stmt = $conn->prepare("UPDATE main_tasks SET title=?, description=?, project=?, firm=?, category=?, owner=?, assignees=?, client=?, priority=?, status=?, dueDate=?, lastUpdateDate=?, lastUpdateRemarks=?, hours=?, time=?, goal=?, photos=?, pdf=? WHERE id=?");
             if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare main task update.'], 500);
-            $stmt->bind_param('ssssssssssssssdssssi', $title, $description, $project, $firm, $category, $owner, $assignees, $client, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf, $id);
+            $stmt->bind_param('sssssssssssssdssssi', $title, $description, $project, $firm, $category, $owner, $assignees, $client, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf, $id);
         } else {
             $stmt = $conn->prepare("UPDATE vendor_tasks SET title=?, description=?, project=?, firm=?, category=?, owner=?, assignees=?, vendor=?, vendorCategory=?, priority=?, status=?, dueDate=?, lastUpdateDate=?, lastUpdateRemarks=?, hours=?, time=?, goal=?, photos=?, pdf=? WHERE id=?");
             if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare vendor task update.'], 500);
-            $stmt->bind_param('sssssssssssssssdssssi', $title, $description, $project, $firm, $category, $owner, $assignees, $vendor, $vendorCategory, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf, $id);
+            $stmt->bind_param('ssssssssssssssdssssi', $title, $description, $project, $firm, $category, $owner, $assignees, $vendor, $vendorCategory, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf, $id);
         }
 
         $ok = $stmt->execute();
@@ -457,7 +457,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $logStmt = $conn->prepare("INSERT INTO action_logs (id, taskId, taskTitle, taskDate, updateDate, project, firm, client, category, owner, assignees, vendor, status, remarks, hours, time, goal, photos, pdf, updatedOn, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             if (!$logStmt) sendJson(['success' => false, 'error' => 'Failed to prepare action log insert.'], 500);
-            $logStmt->bind_param('iisssssssssssssdssssss', $logId, $id, $title, $taskDate, $lastUpdateDate, $project, $firm, $client, $category, $owner, $assignees, $vendor, $status, $lastUpdateRemarks, $hours, $time, $logGoal, $logPhotos, $logPdf, $updatedOn, $timestamp);
+            $logStmt->bind_param('iissssssssssssdssssss', $logId, $id, $title, $taskDate, $lastUpdateDate, $project, $firm, $client, $category, $owner, $assignees, $vendor, $status, $lastUpdateRemarks, $hours, $time, $logGoal, $logPhotos, $logPdf, $updatedOn, $timestamp);
 	            $logOk = $logStmt->execute();
 	            $logError = $logStmt->error;
 	            $logStmt->close();
