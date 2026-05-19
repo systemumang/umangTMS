@@ -28,31 +28,31 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
 	  // Fix: Explicitly define periodicity type to avoid 'Fixed Days' narrowing
 			  const [formData, setFormData] = useState<{
 			    title: string;
-			    goal: string;
-          firm: string;
+			    goal: number | '';
+			    firm: string;
 			    category: string;
-		    assignee: string;
-		    frequencyDays: number | '';
-		    startDate: string;
-		    time: string;
-		    periodicity: 'Fixed Days' | 'Weekly' | 'Monthly' | 'Yearly';
-		    recurrenceDay: number;
-		    recurrenceMonth: string;
-		  }>({
+			    assignee: string;
+			    frequencyDays: number | '';
+			    startDate: string;
+			    time: string;
+			    status: string;
+			    periodicity: 'Fixed Days' | 'Weekly' | 'Monthly' | 'Yearly';
+			    recurrenceDay: number;
+			    recurrenceMonth: string;
+			  }>({
 			    title: '',
 			    goal: '',
-          firm: '',
-		    category: '',
-		    assignee: '',
-		    frequencyDays: '',
-		    startDate: '',
-		    time: '',
-		    periodicity: 'Fixed Days',
-		    recurrenceDay: 1,
-		    recurrenceMonth: 'January'
-		  });
-
-  useEffect(() => {
+			    firm: '',
+			    category: '',
+			    assignee: '',
+			    frequencyDays: '',
+			    startDate: '',
+			    time: '',
+			    status: 'In Progress',
+			    periodicity: 'Fixed Days',
+			    recurrenceDay: 1,
+			    recurrenceMonth: 'January'
+			  });
 		    if (task) {
 			      setFormData({
 			        title: task.title,
@@ -114,10 +114,10 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
 		            <div className="space-y-1">
 		              <label className="text-sm font-medium text-black">Goal</label>
 	              <input
-	                type="text"
+	                type="number"
 	                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
 	                value={formData.goal}
-	                onChange={(e) => setFormData(p => ({ ...p, goal: e.target.value }))}
+	                onChange={(e) => setFormData(p => ({ ...p, goal: e.target.value === '' ? '' : Number(e.target.value) }))}
 		                placeholder="Optional goal / outcome"
 		              />
 		            </div>

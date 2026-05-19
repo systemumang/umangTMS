@@ -58,7 +58,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     notes: string;
     priority: string;
     time: string;
-    goal: string;
+    goal: number | '';
     photos: string[];
     pdf: string;
   }>({
@@ -362,7 +362,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                   <label className="text-sm font-medium text-black block mb-1">Goal</label>
                   <input
                     name="goal"
-                    type="text"
+                    type="number"
                     value={formData.goal}
                     onChange={handleChange}
                     placeholder="Enter goal"

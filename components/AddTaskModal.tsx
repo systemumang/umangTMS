@@ -56,7 +56,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
     vendorCategory: string[]; 
     notes: string;
     time: string;
-    goal: string;
+    goal: number | '';
     photos: string[];
     pdf: string;
   }>({
@@ -402,7 +402,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
                 <label className="text-sm font-medium text-black block mb-1">Goal</label>
                 <input
                   name="goal"
-                  type="text"
+                  type="number"
                   value={formData.goal}
                   onChange={handleChange}
                   placeholder="Enter goal"
