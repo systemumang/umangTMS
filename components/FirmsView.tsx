@@ -30,7 +30,6 @@ export const FirmsView: React.FC<FirmsViewProps> = ({ firms, onAddFirm, onDelete
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className={sidebarCollapsed ? 'pl-14 md:pl-16' : ''}>
           <h2 className="text-2xl font-bold text-indigo-600">Firms</h2>
-          <p className="text-sm text-gray-500 mt-1">Manage firm list for firm-wise tasks</p>
         </div>
       </div>
 

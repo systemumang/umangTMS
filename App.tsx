@@ -100,8 +100,8 @@ const navItems: NavItem[] = [
 	  ] as NavItem[]) : []),
   
   // Recurring Tasks Section
+  { id: 'recurring-tasks', label: 'Recurring Master', icon: <RotateCcw size={20} />, section: 'Recurring Tasks' },
   { id: 'due-recurring-tasks', label: 'Due Recurring', icon: <AlertCircle size={20} />, section: 'Recurring Tasks' },
-  { id: 'recurring-tasks', label: 'Recurring Rules', icon: <RotateCcw size={20} />, section: 'Recurring Tasks' },
   { id: 'recurring-actions', label: 'Recurring Log', icon: <History size={20} />, section: 'Recurring Tasks' },
   
   // Master Section

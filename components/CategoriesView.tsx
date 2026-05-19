@@ -74,7 +74,7 @@ export const CategoriesView: React.FC<CategoriesViewProps> = ({ categories, onAd
   return (
     <div className="space-y-6 pb-10">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div><h2 className="text-2xl font-bold text-indigo-600">Categories</h2><p className="text-sm text-gray-500 mt-1">Manage task categories</p></div>
+        <div><h2 className="text-2xl font-bold text-indigo-600">Categories</h2></div>
       </div>
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-indigo-300 flex flex-col md:flex-row gap-4 items-center justify-between">

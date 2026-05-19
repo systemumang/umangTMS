@@ -57,7 +57,6 @@ export const UsersView: React.FC<UsersViewProps> = ({ users, designations, onAdd
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-indigo-600">Users</h2>
-          <p className="text-sm text-gray-500 mt-1">Pre-register users and manage their roles</p>
         </div>
       </div>
 
