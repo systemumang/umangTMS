@@ -1050,7 +1050,7 @@ export default function App() {
 		                <button
 		                  type="button"
 		                  onClick={() => setIsSidebarCollapsed(false)}
-		                  className="hidden md:inline-flex items-center gap-2 fixed top-4 left-4 z-40 px-3 py-2 bg-white border border-indigo-200 text-indigo-700 rounded-lg shadow hover:bg-indigo-50"
+		                  className="inline-flex items-center gap-2 fixed top-4 left-4 z-[120] px-3 py-2 bg-white border-2 border-indigo-200 text-indigo-700 rounded-lg shadow-lg hover:bg-indigo-50"
 		                  title="Show menu"
 		                >
 		                  <Menu size={18} />
