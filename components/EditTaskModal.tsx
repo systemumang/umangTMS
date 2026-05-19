@@ -266,13 +266,24 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                   <label className="text-sm font-medium text-black block mb-1">Task <span className="text-red-500">*</span></label>
                   <input name="title" type="text" required value={formData.title} onChange={handleChange} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none text-black font-medium" />
                 </div>
-                <div className="w-full md:w-40">
+                <div className="w-full md:w-56">
                   <label className="text-sm font-medium text-black block mb-1">Priority <span className="text-red-500">*</span></label>
-                  <select name="priority" value={formData.priority} onChange={handleChange} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-black font-medium focus:ring-2 focus:ring-indigo-100 outline-none">
-                      <option value="High">High</option>
-                      <option value="Medium">Medium</option>
-                      <option value="Low">Low</option>
-                  </select>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['High', 'Medium', 'Low'] as const).map((priorityOption) => (
+                      <button
+                        key={priorityOption}
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, priority: priorityOption }))}
+                        className={`px-3 py-2 rounded-lg border text-sm font-semibold transition-colors ${
+                          formData.priority === priorityOption
+                            ? 'bg-indigo-600 text-white border-indigo-600'
+                            : 'bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50'
+                        }`}
+                      >
+                        {priorityOption}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 

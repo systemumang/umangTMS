@@ -29,7 +29,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   value,
   onChange,
   multiple = false,
-  placeholder = 'Select...',
+  placeholder: placeholderText = 'Select...',
   required = false,
   className = '',
   disabled = false,
@@ -38,6 +38,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   createLabel,
   compact = false
 }) => {
+  const normalizedPlaceholder = placeholderText ? 'Select' : 'Select';
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -143,7 +144,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   const getDisplayValue = () => {
     if (multiple) {
        const vals = Array.isArray(currentValues) ? currentValues : [];
-	       if (vals.length === 0) return <span className="text-black">{placeholder}</span>;
+	       if (vals.length === 0) return <span className="text-black">{normalizedPlaceholder}</span>;
        
        return (
          <div className="flex flex-wrap gap-1.5 py-0.5">
@@ -163,7 +164,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
       return selectedOption ? (
         <span className="text-black font-medium">{selectedOption.label}</span>
       ) : (
-        <span className="text-black">{placeholder}</span>
+        <span className="text-black">{normalizedPlaceholder}</span>
       );
     }
   };

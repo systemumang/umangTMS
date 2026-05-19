@@ -1028,7 +1028,7 @@ export default function App() {
         return <Dashboard 
           isAdmin={isAdmin} tasks={visibleTasks} users={users} projects={projects} categories={categories} actionLogs={visibleActionLogs} recurringActions={visibleRecurringActions}
           onNavigate={setActiveTab} onFilterChange={handleDashboardFilterChange} onOpenNewTask={() => { setIsTaskModalVendorMode(false); setIsTaskModalOpen(true); }} 
-          onOpenAddUser={() => setIsUserModalOpen(true)} onOpenAddProject={() => setIsProjectModalOpen(true)} onOpenAddClient={() => setIsClientModalOpen(true)} onOpenAddVendor={() => setIsVendorModalOpen(true)} 
+          onOpenAddUser={() => setIsUserModalOpen(true)} onOpenAddCategory={() => setIsCategoryModalOpen(true)} onOpenAddProject={() => setIsProjectModalOpen(true)} onOpenAddClient={() => setIsClientModalOpen(true)} onOpenAddVendor={() => setIsVendorModalOpen(true)} 
         />;
       case 'all-tasks': return <TasksView title="All Tasks" tasks={visibleTasks.filter(t => !t.vendor || t.vendor === '')} {...commonTaskProps} filterType="all" />;
       case 'add-multiple': return (
@@ -1166,10 +1166,7 @@ export default function App() {
                         <div className="absolute inset-0 border-4 border-indigo-100 rounded-full"></div>
                         <div className="absolute inset-0 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
                     </div>
-                    <div className="flex flex-col items-center">
-                        <p className="text-indigo-600 font-black uppercase tracking-widest text-sm animate-pulse">Loading Workspace...</p>
-                        <p className="text-gray-400 text-[10px] mt-1 font-bold uppercase tracking-tighter">Synchronizing with Tasks</p>
-                    </div>
+                    <p className="text-indigo-600 font-black uppercase tracking-widest text-sm animate-pulse">Loading...</p>
                 </div>
               ) : (
 	                <div className="max-w-[98%] mx-auto h-full flex flex-col">

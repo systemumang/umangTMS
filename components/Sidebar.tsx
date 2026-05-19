@@ -72,13 +72,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const NavButton = ({ item, isChild = false }: { item: NavItem; isChild?: boolean }) => {
     const isActive = activeTab === item.id;
+    const hideOnMobile = item.id === 'add-multiple' || item.id === 'update-multiple';
     return (
       <button
         onClick={() => {
           onTabChange(item.id);
           if (window.innerWidth < 768 && onClose) onClose();
         }}
-        className={`group w-full flex items-center gap-3 ${isChild ? 'pl-12 pr-4 py-2' : 'px-4 py-2.5'} rounded-md text-sm font-medium ml-2 border-l-2 
+        className={`group w-full ${hideOnMobile ? 'hidden md:flex' : 'flex'} items-center gap-3 ${isChild ? 'pl-12 pr-4 py-2' : 'px-4 py-2.5'} rounded-md text-sm font-medium ml-2 border-l-2 
           ${isActive 
             ? 'bg-indigo-600 border-indigo-700 text-white shadow-sm' 
             : 'border-transparent text-indigo-600 hover:bg-indigo-600 hover:text-white'
@@ -214,7 +215,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           ))}
         </nav>
 
-        <div className="p-4 bg-white/50 border-t-2 border-indigo-500 space-y-3">
+        <div className="hidden md:block p-4 bg-white/50 border-t-2 border-indigo-500 space-y-3">
           <div className="flex flex-col gap-2 p-1">
             <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest px-1">Layout Mode</span>
             <div className="flex bg-indigo-100/50 p-1 rounded-lg border border-indigo-200">

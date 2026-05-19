@@ -12,6 +12,7 @@ interface DashboardProps {
   isAdmin: boolean;
   onOpenNewTask: () => void;
   onOpenAddUser: () => void;
+  onOpenAddCategory: () => void;
   onOpenAddProject: () => void;
   onOpenAddClient: () => void;
   onOpenAddVendor: () => void;
@@ -29,6 +30,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   isAdmin,
   onOpenNewTask, 
   onOpenAddUser,
+  onOpenAddCategory,
   onOpenAddProject,
   onOpenAddClient,
   onOpenAddVendor,
@@ -221,6 +223,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 	          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
 	            <QuickAction label="New Task" icon={<Plus size={18} />} colorClass="bg-blue-600 hover:bg-blue-700 text-white" onClick={onOpenNewTask}/>
 	            <QuickAction label="Add User" icon={<UserPlus size={18} />} colorClass="bg-indigo-500 hover:bg-indigo-600 text-white" onClick={onOpenAddUser}/>
+              <QuickAction label="Add Category" icon={<Tags size={18} />} colorClass="bg-violet-500 hover:bg-violet-600 text-white" onClick={onOpenAddCategory}/>
 	            {VENDOR_MODULE_ENABLED && (
 	              <QuickAction label="Add Vendor" icon={<Truck size={18} />} colorClass="bg-orange-500 hover:bg-orange-600 text-white" onClick={onOpenAddVendor}/>
 	            )}
@@ -247,7 +250,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 	      <div className="grid grid-cols-1 gap-8">
 	        <PendingTable title="Pending by Assignee" headerLabel="Assignee Name" data={assigneeData} onRowClick={(name) => onFilterChange('assignee', name)}/>
 	        <PendingTable title="Pending by Priority" headerLabel="Priority Level" data={priorityData} onRowClick={(name) => onFilterChange('priority', name)} className="bg-indigo-50/30"/>
-	        <PendingTable title="Pending by Categorywise" headerLabel="Category Name" data={categoryData} onRowClick={(name) => onFilterChange('category', name)} className="bg-indigo-50/30"/>
+	        <PendingTable title="Pending by Category" headerLabel="Category Name" data={categoryData} onRowClick={(name) => onFilterChange('category', name)} className="bg-indigo-50/30"/>
 	        {VENDOR_MODULE_ENABLED && (
 	          <PendingTable title="Pending by Vendor" headerLabel="Vendor Name" data={vendorData} onRowClick={(name) => onFilterChange('vendor', name)} className="bg-orange-50/30"/>
 	        )}
