@@ -450,13 +450,11 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
                 <button onClick={() => setViewMode('card')} className={`p-1.5 rounded-md transition-all ${viewMode === 'card' ? 'bg-white shadow text-blue-600' : 'text-blue-500'}`}><LayoutGrid size={18} /></button>
                 <button onClick={() => setViewMode('table')} className={`p-1.5 rounded-md transition-all ${viewMode === 'table' ? 'bg-white shadow text-indigo-600' : 'text-blue-500'}`}><LayoutList size={18} /></button>
             </div>
-            <button onClick={handleExportExcel} className="flex-1 md:flex-none flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white border-2 border-blue-700 rounded-md hover:bg-blue-700 text-xs font-black uppercase tracking-widest shadow-sm transition-colors">
+            <button onClick={handleExportExcel} title="Export Excel" className="flex items-center justify-center p-2.5 bg-blue-600 text-white border-2 border-blue-700 rounded-md hover:bg-blue-700 shadow-sm transition-colors">
               <FileText size={16} />
-              <span>Export Excel</span>
             </button>
-            <button onClick={handleExportPDF} className="flex-1 md:flex-none flex items-center justify-center space-x-2 px-4 py-2 bg-white text-blue-700 border-2 border-blue-700 rounded-md hover:bg-blue-50 text-xs font-black uppercase tracking-widest shadow-sm transition-colors">
+            <button onClick={handleExportPDF} title="Export PDF" className="flex items-center justify-center p-2.5 bg-white text-blue-700 border-2 border-blue-700 rounded-md hover:bg-blue-50 shadow-sm transition-colors">
               <Download size={16} />
-              <span>Export PDF</span>
             </button>
             <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center space-x-1 px-3 py-2 border-2 rounded-md text-xs font-black shadow-sm transition-all duration-200 uppercase tracking-widest ${showFilters ? 'bg-blue-600 border-blue-700 text-white' : 'bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100'}`} title="Toggle Filters">
               <Filter size={16} />

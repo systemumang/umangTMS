@@ -554,7 +554,10 @@ export default function App() {
             };
         });
 
-        setTasks(normalizeTasks([...(data.mainTasks || []), ...(data.vendorTasks || [])]));
+        setTasks(
+          normalizeTasks([...(data.mainTasks || []), ...(data.vendorTasks || [])])
+            .sort((a: any, b: any) => Number(b.id || 0) - Number(a.id || 0))
+        );
         setUsers((data.users || []).map((u: any) => ({ ...u, id: Number(u.id), isActive: String(u.isActive).toUpperCase() === 'TRUE' })));
         setProjects((data.projects || []).map((p: any) => ({ ...p, id: Number(p.id) })));
         setClients((data.clients || []).map((c: any) => ({ ...c, id: Number(c.id), gstNumber: c.gstNumber || c.gSTNumber || c.GSTNumber || '' })));
@@ -589,7 +592,7 @@ export default function App() {
         });
         setActionLogs(normalizedLogs);
 		        setRecurringTasks((data.recurringTasks || []).map((t: any) => ({
-		            ...t,
+			            ...t,
 		            id: Number(t.id),
 		            frequencyDays: Number(t.frequencyDays || 30),
 		            periodicity: (t.periodicity || t.frequencyType || 'Fixed Days') as any,
@@ -600,7 +603,7 @@ export default function App() {
 			            goal: String(t.goal || ''),
                   firm: String(t.firm || ''),
 			            status: String(t.status || 'Not Yet Started') as any
-		        })));
+			        })).sort((a: any, b: any) => Number(b.id || 0) - Number(a.id || 0)));
 		        setRecurringActions((data.recurringActions || []).map((a: any) => ({
 		          ...a,
 		          id: Number(a.id || 0),
@@ -1241,7 +1244,7 @@ export default function App() {
 	            return;
 	          }
 	          const createdId = Number(createResult?.data?.id || Date.now());
-	          setRecurringTasks(prev => [...prev, { ...t, id: createdId, status: 'Not Yet Started' } as any]);
+	          setRecurringTasks(prev => [{ ...t, id: createdId, status: 'Not Yet Started' } as any, ...prev]);
 	        }}
 		        users={users}
 		        categories={categories}

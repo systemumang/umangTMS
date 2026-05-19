@@ -9,19 +9,12 @@ export const TelegramSetupView: React.FC = () => {
 
   return (
     <div className="space-y-8 pb-10 max-w-4xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col gap-4">
         <div>
           <h2 className="text-2xl font-bold text-indigo-600">Telegram Group Setup</h2>
           <p className="text-sm text-gray-500 mt-1">
             Follow these steps to find your Telegram Group Chat ID for notifications.
           </p>
-        </div>
-        <div className="flex-shrink-0">
-            <img 
-              src="https://i.ibb.co/YBSjM7Gg/Chat-GPT-Image-Dec-18-2025-10-23-18-AM.png" 
-              alt="TaskPro Logo" 
-              className="h-16 w-auto opacity-80" 
-            />
         </div>
       </div>
 

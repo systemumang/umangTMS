@@ -67,7 +67,7 @@ export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> =
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
             <div className="space-y-1">
-              <label className="text-sm font-medium text-black">Update Status *</label>
+              <label className="text-sm font-medium text-black">Update Status <span className="text-red-500">*</span></label>
               <select 
                 value={status}
                 onChange={(e) => setStatus(e.target.value as any)}
@@ -80,7 +80,7 @@ export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> =
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium text-black">Update Remarks *</label>
+              <label className="text-sm font-medium text-black">Update Remarks <span className="text-red-500">*</span></label>
               <textarea 
                 required
                 rows={4}
@@ -97,7 +97,7 @@ export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> =
                 min="0"
                 step="1"
                 className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
-                placeholder="Enter numeric goal"
+                placeholder=""
                 value={goal}
                 onChange={(e) => setGoal(e.target.value.replace(/[^\d.]/g, ''))}
               />

@@ -83,6 +83,16 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
   const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
+  const handlePeriodChange = (value: 'Fixed Days' | 'Weekly' | 'Monthly' | 'Yearly') => {
+    setFormData(prev => ({
+      ...prev,
+      periodicity: value,
+      frequencyDays: value === 'Fixed Days' ? prev.frequencyDays : '',
+      recurrenceDay: value === 'Weekly' ? 0 : 1,
+      recurrenceMonth: value === 'Yearly' ? prev.recurrenceMonth : 'January'
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.frequencyDays === '') return;
@@ -107,7 +117,7 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
 	            <div className="space-y-1">
-	              <label className="text-sm font-medium text-black">Task Title *</label>
+	              <label className="text-sm font-medium text-black">Task <span className="text-red-500">*</span></label>
 	              <input 
 	                type="text"
 	                required
@@ -125,7 +135,7 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
 		                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
 		                value={formData.goal}
 		                onChange={(e) => setFormData(p => ({ ...p, goal: e.target.value === '' ? '' : Number(e.target.value) }))}
-			                placeholder="Enter numeric goal"
+			                placeholder=""
 		              />
 		            </div>
             <div className="space-y-1">
@@ -164,23 +174,35 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
               />
             </div>
 
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-black">Period <span className="text-red-500">*</span></label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { value: 'Fixed Days', label: 'Fixed Interval' },
+                  { value: 'Weekly', label: 'Weekly' },
+                  { value: 'Monthly', label: 'Monthly' },
+                  { value: 'Yearly', label: 'Yearly' }
+                ].map((periodOption) => (
+                  <button
+                    key={periodOption.value}
+                    type="button"
+                    onClick={() => handlePeriodChange(periodOption.value as any)}
+                    className={`px-3 py-2 rounded-lg border text-sm font-semibold transition-colors ${
+                      formData.periodicity === periodOption.value
+                        ? 'bg-indigo-600 text-white border-indigo-600'
+                        : 'bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50'
+                    }`}
+                  >
+                    {periodOption.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {formData.periodicity === 'Fixed Days' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-black">Periodicity</label>
-                  <select 
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
-                    value={formData.periodicity}
-                    onChange={(e) => setFormData(p => ({ ...p, periodicity: e.target.value as any }))}
-                  >
-                    <option value="Fixed Days">Fixed Interval (Days)</option>
-                    <option value="Weekly">Weekly</option>
-                    <option value="Monthly">Monthly</option>
-                    <option value="Yearly">Yearly</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-black">Frequency (Days) *</label>
+                  <label className="text-sm font-medium text-black">Frequency (Days) <span className="text-red-500">*</span></label>
                   <input 
                     type="number"
                     required
@@ -191,25 +213,11 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
                   />
                 </div>
               </div>
-            ) : (
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-black">Periodicity</label>
-                <select 
-                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
-                  value={formData.periodicity}
-                  onChange={(e) => setFormData(p => ({ ...p, periodicity: e.target.value as any }))}
-                >
-                  <option value="Fixed Days">Fixed Interval (Days)</option>
-                  <option value="Weekly">Weekly</option>
-                  <option value="Monthly">Monthly</option>
-                  <option value="Yearly">Yearly</option>
-                </select>
-              </div>
-            )}
+            ) : null}
 
             {formData.periodicity === 'Weekly' && (
               <div className="space-y-1">
-                <label className="text-sm font-medium text-black">Day of Week *</label>
+                <label className="text-sm font-medium text-black">Day of Week <span className="text-red-500">*</span></label>
                 <select 
                   className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
                   value={formData.recurrenceDay}
@@ -224,7 +232,7 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
 
             {formData.periodicity === 'Monthly' && (
               <div className="space-y-1">
-                <label className="text-sm font-medium text-black">Day of Month (1-31) *</label>
+                <label className="text-sm font-medium text-black">Day of Month (1-31) <span className="text-red-500">*</span></label>
                 <input 
                   type="number"
                   required
@@ -240,7 +248,7 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
             {formData.periodicity === 'Yearly' && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-black">Month *</label>
+                  <label className="text-sm font-medium text-black">Month <span className="text-red-500">*</span></label>
                   <select 
                     className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
                     value={formData.recurrenceMonth}
@@ -252,7 +260,7 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-black">Day (1-31) *</label>
+                  <label className="text-sm font-medium text-black">Day (1-31) <span className="text-red-500">*</span></label>
                   <input 
                     type="number"
                     required
@@ -268,7 +276,7 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
 
 	            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 	              <div className="space-y-1">
-	                <label className="text-sm font-medium text-black">Start Date *</label>
+	                <label className="text-sm font-medium text-black">Start Date <span className="text-red-500">*</span></label>
 	                <input 
 	                  type="date"
 	                  required
@@ -279,7 +287,7 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
 	              </div>
 
 	              <div className="space-y-1">
-	                <label className="text-sm font-medium text-black">Time *</label>
+	                <label className="text-sm font-medium text-black">Time <span className="text-red-500">*</span></label>
 	                <input
 	                  type="time"
 	                  required
