@@ -498,23 +498,26 @@ export default function App() {
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const fetchData = useCallback(async (showLoading = true) => {
-    if (!apiUrl) return;
-    if (showLoading) setIsLoading(true);
-    else setIsSyncing(true);
-    if (abortControllerRef.current) abortControllerRef.current.abort();
-    abortControllerRef.current = new AbortController();
-    
-    try {
-      const response = await fetch(`${apiUrl}${apiUrl.includes('?') ? '&' : '?'}action=init&_cb=${Date.now()}`, { 
-        signal: abortControllerRef.current.signal,
-        cache: 'no-store',
-        mode: 'cors'
-      });
-      const result = await safeJsonParse(response, 'Data Load');
-      
-      if (result.success) {
-        const { data } = result;
+	  const fetchData = useCallback(async (showLoading = true) => {
+	    if (!apiUrl) return;
+	    if (showLoading) setIsLoading(true);
+	    else setIsSyncing(true);
+	    if (abortControllerRef.current) abortControllerRef.current.abort();
+	    abortControllerRef.current = new AbortController();
+	    const timeoutId = window.setTimeout(() => {
+	      try { abortControllerRef.current?.abort(); } catch {}
+	    }, 20000);
+	    
+	    try {
+	      const response = await fetch(`${apiUrl}${apiUrl.includes('?') ? '&' : '?'}action=init&_cb=${Date.now()}`, { 
+	        signal: abortControllerRef.current.signal,
+	        cache: 'no-store',
+	        mode: 'cors'
+	      });
+	      const result = await safeJsonParse(response, 'Data Load');
+	      
+	      if (result.success) {
+	        const { data } = result;
         const normalizeTasks = (list: any[]) => (list || []).map(item => {
             const rawProject = String(item.project || item.Project || '').trim();
             const rawClient = String(item.clientName || item['client Name'] || item['Client Name'] || item.client || item.Client || '').trim();
@@ -604,16 +607,24 @@ export default function App() {
 		          timestamp: formatToHHMM(getCaseInsensitive(a, 'timestamp') || ''),
 		          updatedOn: formatToIndianDate(getCaseInsensitive(a, 'updatedOn') || '')
 		        })));
-        if (data.settings) setSettings(data.settings);
-        setLastSynced(new Date());
-      }
-    } catch (error: any) {
-      if (error.name !== 'AbortError') console.error("fetchData error:", error);
-    } finally {
-      if (showLoading) setIsLoading(false);
-      setIsSyncing(false);
-    }
-  }, [apiUrl]);
+	        if (data.settings) setSettings(data.settings);
+	        setLastSynced(new Date());
+	      } else {
+	        setApiError(result?.error || 'Failed to load data.');
+	      }
+	    } catch (error: any) {
+	      if (error?.name === 'AbortError') {
+	        setApiError('Loading timed out. Please refresh.');
+	      } else {
+	        console.error("fetchData error:", error);
+	        setApiError(error?.message || 'Failed to load data.');
+	      }
+	    } finally {
+	      window.clearTimeout(timeoutId);
+	      if (showLoading) setIsLoading(false);
+	      setIsSyncing(false);
+	    }
+	  }, [apiUrl]);
 
   useEffect(() => {
     if (apiUrl && currentUser) {
