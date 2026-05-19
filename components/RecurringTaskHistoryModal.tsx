@@ -40,6 +40,20 @@ export const RecurringTaskHistoryModal: React.FC<RecurringTaskHistoryModalProps>
     return s;
   };
 
+  const openPdf = async (raw?: string) => {
+    const href = normalizePdfHref(raw);
+    if (!href) return;
+    try {
+      const res = await fetch(href);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      window.open(url, '_blank', 'noopener,noreferrer');
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+      window.open(href, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '-';
     const s = String(dateStr).trim();
@@ -170,9 +184,9 @@ export const RecurringTaskHistoryModal: React.FC<RecurringTaskHistoryModalProps>
 	                    </td>
 	                    <td className="px-6 py-4 text-sm">
 	                      {normalizePdfHref(action.pdf) ? (
-	                        <a href={normalizePdfHref(action.pdf)} target="_blank" rel="noreferrer" className="text-indigo-600 underline font-semibold">
+	                        <button type="button" onClick={() => openPdf(action.pdf)} className="text-indigo-600 underline font-semibold">
 	                          Open PDF
-	                        </a>
+	                        </button>
 	                      ) : (
 	                        <span className="text-gray-400">-</span>
 	                      )}
@@ -221,9 +235,9 @@ export const RecurringTaskHistoryModal: React.FC<RecurringTaskHistoryModalProps>
 	                        <div>
 	                          <span className="text-gray-500 font-semibold uppercase">PDF</span>{' '}
 	                          {normalizePdfHref(action.pdf) ? (
-	                            <a href={normalizePdfHref(action.pdf)} target="_blank" rel="noreferrer" className="text-indigo-600 underline font-semibold">
+	                            <button type="button" onClick={() => openPdf(action.pdf)} className="text-indigo-600 underline font-semibold">
 	                              Open
-	                            </a>
+	                            </button>
 	                          ) : (
 	                            <span className="text-gray-400">-</span>
 	                          )}

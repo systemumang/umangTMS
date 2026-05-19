@@ -371,32 +371,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         sendJson(['success' => true]);
     }
 
-    if ($action === 'updateTask' && in_array($table, ['main_tasks', 'vendor_tasks'], true)) {
-        $id = (int)($data['id'] ?? 0);
-        if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid task id.'], 400);
+	    if ($action === 'updateTask' && in_array($table, ['main_tasks', 'vendor_tasks'], true)) {
+	        $id = (int)($data['id'] ?? 0);
+	        if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid task id.'], 400);
 
-        $title = trim((string)($data['title'] ?? $data['task'] ?? ''));
-        $description = (string)($data['notes'] ?? $data['description'] ?? '');
-        $project = (string)($data['project'] ?? '');
-        $category = (string)($data['category'] ?? '');
-        $owner = (string)($data['owner'] ?? '');
-        $assignees = (string)($data['assignees'] ?? '');
-        $priority = (string)($data['priority'] ?? 'Medium');
-        $status = (string)($data['status'] ?? 'Not Yet Started');
-        $dueDate = (string)($data['due Date'] ?? $data['dueDate'] ?? '');
-        $lastUpdateDate = (string)($data['lastUpdateDate'] ?? $data['last Update'] ?? '');
-        $lastUpdateRemarks = (string)($data['remark'] ?? $data['lastUpdateRemarks'] ?? '');
-        $hours = (float)($data['hours'] ?? 0);
-        $time = (string)($data['time'] ?? '');
-        $goal = (string)($data['goal'] ?? '');
-        $photos = (string)($data['photos'] ?? '');
-        $pdf = (string)($data['pdf'] ?? '');
-        $taskDate = (string)($data['taskDate'] ?? $data['date'] ?? '');
-        $client = (string)($data['clientName'] ?? $data['client'] ?? '');
-        $vendor = (string)($data['vendor'] ?? '');
-        $vendorCategory = (string)($data['vendorCategory'] ?? '');
-        $skipLogRaw = strtolower((string)($data['skipLog'] ?? 'false'));
-        $skipLog = in_array($skipLogRaw, ['1', 'true', 'yes'], true);
+	        // Preserve the original (master) attachments on the task record.
+	        // Updates to goal/photos/pdf should be stored only in action_logs.
+	        $existingStmt = $conn->prepare("SELECT goal, photos, pdf FROM `{$table}` WHERE id=? LIMIT 1");
+	        if (!$existingStmt) sendJson(['success' => false, 'error' => 'Failed to prepare task lookup.'], 500);
+	        $existingStmt->bind_param('i', $id);
+	        $existingStmt->execute();
+	        $existingRes = $existingStmt->get_result();
+	        $existingRow = $existingRes ? $existingRes->fetch_assoc() : null;
+	        $existingStmt->close();
+	        if (!$existingRow) sendJson(['success' => false, 'error' => 'Task not found.'], 404);
+
+	        $title = trim((string)($data['title'] ?? $data['task'] ?? ''));
+	        $description = (string)($data['notes'] ?? $data['description'] ?? '');
+	        $project = (string)($data['project'] ?? '');
+	        $category = (string)($data['category'] ?? '');
+	        $owner = (string)($data['owner'] ?? '');
+	        $assignees = (string)($data['assignees'] ?? '');
+	        $priority = (string)($data['priority'] ?? 'Medium');
+	        $status = (string)($data['status'] ?? 'Not Yet Started');
+	        $dueDate = (string)($data['due Date'] ?? $data['dueDate'] ?? '');
+	        $lastUpdateDate = (string)($data['lastUpdateDate'] ?? $data['last Update'] ?? '');
+	        $lastUpdateRemarks = (string)($data['remark'] ?? $data['lastUpdateRemarks'] ?? '');
+	        $hours = (float)($data['hours'] ?? 0);
+	        $time = (string)($data['time'] ?? '');
+	        $logGoal = (string)($data['goal'] ?? '');
+	        $logPhotos = (string)($data['photos'] ?? '');
+	        $logPdf = (string)($data['pdf'] ?? '');
+	        $goal = (string)($existingRow['goal'] ?? '');
+	        $photos = (string)($existingRow['photos'] ?? '');
+	        $pdf = (string)($existingRow['pdf'] ?? '');
+	        $taskDate = (string)($data['taskDate'] ?? $data['date'] ?? '');
+	        $client = (string)($data['clientName'] ?? $data['client'] ?? '');
+	        $vendor = (string)($data['vendor'] ?? '');
+	        $vendorCategory = (string)($data['vendorCategory'] ?? '');
+	        $skipLogRaw = strtolower((string)($data['skipLog'] ?? 'false'));
+	        $skipLog = in_array($skipLogRaw, ['1', 'true', 'yes'], true);
 
         if ($table === 'main_tasks') {
             $stmt = $conn->prepare("UPDATE main_tasks SET title=?, description=?, project=?, category=?, owner=?, assignees=?, client=?, priority=?, status=?, dueDate=?, lastUpdateDate=?, lastUpdateRemarks=?, hours=?, time=?, goal=?, photos=?, pdf=? WHERE id=?");
@@ -410,25 +424,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $ok = $stmt->execute();
         $stmt->close();
-        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to update task.'], 400);
+	        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to update task.'], 400);
 
-        if (!$skipLog && ($lastUpdateRemarks !== '' || $status !== 'Not Yet Started' || $hours > 0 || $goal !== '' || $photos !== '' || $pdf !== '')) {
-            $logId = (int)round(microtime(true) * 1000);
-            $updatedOn = '';
-            $timestamp = '';
-            if ($lastUpdateDate !== '') {
-                $dateTime = explode(' ', $lastUpdateDate, 2);
-                $updatedOn = $dateTime[0] ?? '';
-                $timestamp = $dateTime[1] ?? '';
-            }
+	        if (!$skipLog && ($lastUpdateRemarks !== '' || $status !== 'Not Yet Started' || $hours > 0 || $logGoal !== '' || $logPhotos !== '' || $logPdf !== '')) {
+	            $logId = (int)round(microtime(true) * 1000);
+	            $updatedOn = '';
+	            $timestamp = '';
+	            if ($lastUpdateDate !== '') {
+	                $dateTime = explode(' ', $lastUpdateDate, 2);
+	                $updatedOn = $dateTime[0] ?? '';
+	                $timestamp = $dateTime[1] ?? '';
+	            }
 
-            $logStmt = $conn->prepare("INSERT INTO action_logs (id, taskId, taskTitle, taskDate, updateDate, project, client, category, owner, assignees, vendor, status, remarks, hours, time, goal, photos, pdf, updatedOn, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            if (!$logStmt) sendJson(['success' => false, 'error' => 'Failed to prepare action log insert.'], 500);
-            $logStmt->bind_param('iisssssssssssdssssss', $logId, $id, $title, $taskDate, $lastUpdateDate, $project, $client, $category, $owner, $assignees, $vendor, $status, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf, $updatedOn, $timestamp);
-            $logOk = $logStmt->execute();
-            $logError = $logStmt->error;
-            $logStmt->close();
-            if (!$logOk) sendJson(['success' => false, 'error' => 'Failed to add action log: ' . $logError], 400);
+	            $logStmt = $conn->prepare("INSERT INTO action_logs (id, taskId, taskTitle, taskDate, updateDate, project, client, category, owner, assignees, vendor, status, remarks, hours, time, goal, photos, pdf, updatedOn, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+	            if (!$logStmt) sendJson(['success' => false, 'error' => 'Failed to prepare action log insert.'], 500);
+	            $logStmt->bind_param('iisssssssssssdssssss', $logId, $id, $title, $taskDate, $lastUpdateDate, $project, $client, $category, $owner, $assignees, $vendor, $status, $lastUpdateRemarks, $hours, $time, $logGoal, $logPhotos, $logPdf, $updatedOn, $timestamp);
+	            $logOk = $logStmt->execute();
+	            $logError = $logStmt->error;
+	            $logStmt->close();
+	            if (!$logOk) sendJson(['success' => false, 'error' => 'Failed to add action log: ' . $logError], 400);
         }
 
         sendJson(['success' => true]);

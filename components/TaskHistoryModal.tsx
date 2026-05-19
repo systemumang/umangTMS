@@ -52,6 +52,20 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
 	    }
 	    return s;
 	  };
+
+	  const openPdf = async (raw?: string) => {
+	    const href = normalizePdfHref(raw);
+	    if (!href) return;
+	    try {
+	      const res = await fetch(href);
+	      const blob = await res.blob();
+	      const url = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+	      window.open(url, '_blank', 'noopener,noreferrer');
+	      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+	    } catch {
+	      window.open(href, '_blank', 'noopener,noreferrer');
+	    }
+	  };
   
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
@@ -162,9 +176,9 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
 	              <div className="space-y-1">
 	                <div className="text-[10px] font-black text-gray-500 uppercase">PDF</div>
 	                {normalizePdfHref(task.pdf) ? (
-	                  <a href={normalizePdfHref(task.pdf)} target="_blank" rel="noreferrer" className="text-indigo-600 underline font-bold">
+	                  <button type="button" onClick={() => openPdf(task.pdf)} className="text-indigo-600 underline font-bold text-left">
 	                    Open PDF
-	                  </a>
+	                  </button>
 	                ) : (
 	                  <div className="font-bold text-black">-</div>
 	                )}
@@ -246,9 +260,9 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
 	                      <div className="space-y-0.5">
 	                        <span className="text-gray-400 font-bold uppercase block">PDF</span>
 	                        {normalizePdfHref(log.pdf) ? (
-	                          <a href={normalizePdfHref(log.pdf)} target="_blank" rel="noreferrer" className="font-bold text-indigo-600 underline">
+	                          <button type="button" onClick={() => openPdf(log.pdf)} className="font-bold text-indigo-600 underline text-left">
 	                            Open PDF
-	                          </a>
+	                          </button>
 	                        ) : (
 	                          <span className="font-bold text-black">-</span>
 	                        )}
@@ -332,7 +346,11 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
                           ) : '-'}
                         </td>
 	                        <td className="px-6 py-4 text-xs border-r border-black">
-	                          {normalizePdfHref(log.pdf) ? <a href={normalizePdfHref(log.pdf)} target="_blank" rel="noreferrer" className="text-indigo-600 underline">Open PDF</a> : '-'}
+	                          {normalizePdfHref(log.pdf) ? (
+	                            <button type="button" onClick={() => openPdf(log.pdf)} className="text-indigo-600 underline">
+	                              Open PDF
+	                            </button>
+	                          ) : '-'}
 	                        </td>
 	                      {isVendorTask ? (
 	                          <td className="px-6 py-4 text-xs text-black font-bold uppercase border-r border-black">{log.vendor || '-'}</td>

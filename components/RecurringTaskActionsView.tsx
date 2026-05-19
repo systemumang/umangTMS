@@ -155,6 +155,20 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
 	    return s;
 	  };
 
+	  const openPdf = async (raw?: string) => {
+	    const href = normalizePdfHref(raw);
+	    if (!href) return;
+	    try {
+	      const res = await fetch(href);
+	      const blob = await res.blob();
+	      const url = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+	      window.open(url, '_blank', 'noopener,noreferrer');
+	      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+	    } catch {
+	      window.open(href, '_blank', 'noopener,noreferrer');
+	    }
+	  };
+
   const handleClearFilters = () => {
     setFilterCategory('All'); 
     setFilterAssignee('All'); 
@@ -263,9 +277,9 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
 	                  <div className="space-y-0.5">
 	                    <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">PDF</span>
 	                    {normalizePdfHref(action.pdf) ? (
-	                      <a href={normalizePdfHref(action.pdf)} target="_blank" rel="noreferrer" className="text-indigo-600 underline font-bold">
+	                      <button type="button" onClick={() => openPdf(action.pdf)} className="text-indigo-600 underline font-bold text-left">
 	                        Open
-	                      </a>
+	                      </button>
 	                    ) : (
 	                      <div className="text-blue-900 font-bold">-</div>
 	                    )}
@@ -324,9 +338,9 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
 	                  </td>
 	                  <td className={tdClass}>
 	                    {normalizePdfHref(action.pdf) ? (
-	                      <a href={normalizePdfHref(action.pdf)} target="_blank" rel="noreferrer" className="text-indigo-600 underline font-bold">
+	                      <button type="button" onClick={() => openPdf(action.pdf)} className="text-indigo-600 underline font-bold">
 	                        Open PDF
-	                      </a>
+	                      </button>
 	                    ) : (
 	                      '-'
 	                    )}

@@ -424,6 +424,20 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
 	    return s;
 	  };
 
+	  const openPdf = async (raw?: string) => {
+	    const href = normalizePdfHref(raw);
+	    if (!href) return;
+	    try {
+	      const res = await fetch(href);
+	      const blob = await res.blob();
+	      const url = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+	      window.open(url, '_blank', 'noopener,noreferrer');
+	      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+	    } catch {
+	      window.open(href, '_blank', 'noopener,noreferrer');
+	    }
+	  };
+
   const thClass = "px-6 py-4 text-xs font-black text-white uppercase tracking-widest border-r border-black last:border-r-0 cursor-pointer !bg-blue-700 hover:bg-blue-800 transition-colors select-none whitespace-normal sticky top-0 z-10";
   const tdClass = "px-6 py-4 text-sm text-gray-900 border-r border-black last:border-r-0 whitespace-normal break-words align-top";
 
@@ -577,9 +591,9 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
                     <div className="space-y-0.5">
                         <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">PDF</span>
 	                        {normalizePdfHref(log.pdf) ? (
-	                            <a href={normalizePdfHref(log.pdf)} target="_blank" rel="noreferrer" className="text-[10px] text-indigo-600 font-black underline">
+	                            <button type="button" onClick={() => openPdf(log.pdf)} className="text-[10px] text-indigo-600 font-black underline text-left">
 	                                Open PDF
-	                            </a>
+	                            </button>
 	                        ) : (
 	                            <div className="text-[10px] text-blue-900 font-black">-</div>
 	                        )}
@@ -658,7 +672,11 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
                     ) : '-'}
                   </td>
 	                  <td className={tdClass}>
-	                    {normalizePdfHref(log.pdf) ? <a href={normalizePdfHref(log.pdf)} target="_blank" rel="noreferrer" className="text-indigo-600 underline">Open PDF</a> : '-'}
+	                    {normalizePdfHref(log.pdf) ? (
+	                      <button type="button" onClick={() => openPdf(log.pdf)} className="text-indigo-600 underline">
+	                        Open PDF
+	                      </button>
+	                    ) : '-'}
 	                  </td>
                   <td className={`${tdClass} font-bold text-xs uppercase`}>{log.owner}</td>
                   {isVendorView ? (

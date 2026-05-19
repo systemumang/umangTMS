@@ -121,6 +121,21 @@ export const TaskTable: React.FC<TaskTableProps> = ({
 	    return s;
 	  };
 
+	  const openPdf = async (raw?: string) => {
+	    const href = normalizePdfHref(raw);
+	    if (!href) return;
+	    try {
+	      const res = await fetch(href);
+	      const blob = await res.blob();
+	      const url = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+	      window.open(url, '_blank', 'noopener,noreferrer');
+	      // Best-effort cleanup (browser may block immediate revoke if still loading).
+	      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+	    } catch (err) {
+	      window.open(href, '_blank', 'noopener,noreferrer');
+	    }
+	  };
+
   const openPhotos = (rawPhotos?: string, index = 0) => {
     const photos = parsePhotos(rawPhotos);
     if (photos.length === 0) return;
@@ -219,17 +234,18 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                       </td>
 	                      <td className={tdClass}>
 	                        {normalizePdfHref(task.pdf) ? (
-	                          <a
-	                            href={normalizePdfHref(task.pdf)}
-	                            target="_blank"
-	                            rel="noreferrer"
-	                            onClick={(e) => e.stopPropagation()}
+	                          <button
+	                            type="button"
+	                            onClick={(e) => {
+	                              e.stopPropagation();
+	                              openPdf(task.pdf);
+	                            }}
 	                            className="text-indigo-600 underline hover:text-indigo-800"
 	                          >
 	                            Open PDF
-	                          </a>
+	                          </button>
 	                        ) : '-'}
-		                      </td>
+	                      </td>
 	                      <td className={tdClass}>{task.goal || '-'}</td>
 	                    <td className={`${tdClass}`}>{formatDate(task.dueDate)}</td>
 	                    <td className={`${tdClass}`}>
