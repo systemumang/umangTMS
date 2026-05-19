@@ -20,15 +20,6 @@ interface SidebarProps {
   workspaceId?: string;
 }
 
-const pendingChildIds = [
-  'pending',
-  'pending-client',
-  'pending-owner',
-  'pending-training',
-  'pending-billing',
-  'pending-payment'
-];
-
 export const Sidebar: React.FC<SidebarProps> = ({ 
   items, 
   activeTab, 
@@ -55,11 +46,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
     Vendor: false,
   });
 
+  const pendingChildIds = React.useMemo(
+    () => items
+      .filter(item => item.section === 'Tasks' && (item.id === 'pending' || item.id.startsWith('pending-status:')))
+      .map(item => item.id),
+    [items]
+  );
+
   useEffect(() => {
     if (pendingChildIds.includes(activeTab)) {
       setOpenPendingGroup(true);
     }
-  }, [activeTab]);
+  }, [activeTab, pendingChildIds]);
 
   useEffect(() => {
     const activeItem = items.find(item => item.id === activeTab);

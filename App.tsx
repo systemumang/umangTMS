@@ -82,11 +82,6 @@ const navItems: NavItem[] = [
   { id: 'add-multiple', label: 'Add Multiple', icon: <ListPlus size={20} />, section: 'Tasks' },
   { id: 'pending-group', label: 'Pending', icon: <Clock size={20} />, section: 'Tasks' },
   { id: 'pending', label: 'Pending Tasks', icon: <Clock size={20} />, section: 'Tasks' },
-  { id: 'pending-client', label: 'Pending for Client', icon: <UserCheck size={20} />, section: 'Tasks' },
-  { id: 'pending-owner', label: 'Pending for Owner', icon: <UserCog size={20} />, section: 'Tasks' },
-  { id: 'pending-training', label: 'Pending for Training', icon: <GraduationCap size={20} />, section: 'Tasks' },
-  { id: 'pending-billing', label: 'Pending for Billing', icon: <IndianRupee size={20} />, section: 'Tasks' },
-  { id: 'pending-payment', label: 'Pending for Payment', icon: <Wallet size={20} />, section: 'Tasks' },
   { id: 'completed', label: 'Completed Tasks', icon: <CheckCircle size={20} />, section: 'Tasks' },
   { id: 'update-multiple', label: 'Update Multiple', icon: <ListChecks size={20} />, section: 'Tasks' },
   { id: 'activity-dashboard', label: 'Activity Dashboard', icon: <BarChart3 size={20} />, section: 'Tasks' },
@@ -224,6 +219,8 @@ async function safeJsonParse(response: Response, sourceName: string) {
 }
 
 export default function App() {
+  const normalizeStatusName = (value: string) => String(value || '').trim().toLowerCase();
+  const makePendingStatusId = (statusName: string) => `pending-status:${encodeURIComponent(normalizeStatusName(statusName))}`;
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('taskpro_user');
     return saved ? JSON.parse(saved) : null;
@@ -232,16 +229,6 @@ export default function App() {
   const [apiUrl, setApiUrl] = useState<string>(() => localStorage.getItem('taskpro_api_url') || '');
 
   const isAdmin = currentUser?.role === 'Admin';
-
-  // Master item IDs for filtering
-  const masterIds = ['users', 'firms', 'categories', 'statuses', ...(VENDOR_MODULE_ENABLED ? ['vendor-categories', 'vendors'] : []), 'settings', 'telegram-setup'];
-
-  // Navigation Logic based on Role
-  const filteredNavItems = useMemo(() => {
-    if (isAdmin) return navItems;
-    // Hide 'Master' items for Employees
-    return navItems.filter(item => !masterIds.includes(item.id));
-  }, [isAdmin]);
 
   const [activeTab, setActiveTab] = useState(() => {
     return 'dashboard';
@@ -273,6 +260,40 @@ export default function App() {
     officeTokenId: '', officeTelegramGroupId: '', whatsappGroupId: '', masId: '',
     masPassword: '', metaAccessToken: '', metaPhoneNumberId: '', metaWabaId: '', metaVerifyToken: ''
   });
+
+  // Master item IDs for filtering
+  const masterIds = ['users', 'firms', 'categories', 'statuses', ...(VENDOR_MODULE_ENABLED ? ['vendor-categories', 'vendors'] : []), 'settings', 'telegram-setup'];
+  const pendingStatusNavItems = useMemo<NavItem[]>(() => {
+    return statuses
+      .map(s => String(s.name || '').trim())
+      .filter(Boolean)
+      .filter(name => {
+        const normalized = normalizeStatusName(name);
+        return normalized !== 'in progress' && normalized !== 'completed';
+      })
+      .map(name => ({
+        id: makePendingStatusId(name),
+        label: name,
+        icon: <Clock size={20} />,
+        section: 'Tasks'
+      }));
+  }, [statuses]);
+  const resolvedNavItems = useMemo<NavItem[]>(() => {
+    const pendingGroupIndex = navItems.findIndex(item => item.id === 'pending-group');
+    if (pendingGroupIndex < 0) return navItems;
+    return [
+      ...navItems.slice(0, pendingGroupIndex + 1),
+      ...pendingStatusNavItems,
+      ...navItems.slice(pendingGroupIndex + 1),
+    ];
+  }, [pendingStatusNavItems]);
+
+  // Navigation Logic based on Role
+  const filteredNavItems = useMemo(() => {
+    if (isAdmin) return resolvedNavItems;
+    // Hide 'Master' items for Employees
+    return resolvedNavItems.filter(item => !masterIds.includes(item.id));
+  }, [isAdmin, resolvedNavItems]);
 
   // Data subsets based on user role
   const visibleTasks = useMemo(() => {
@@ -320,11 +341,6 @@ export default function App() {
 	      'all-tasks': employeeTasks.length,
 	      'pending-group': employeeTasks.filter(t => t.status !== 'Completed').length,
 	      'pending': employeeTasks.filter(t => t.status !== 'Completed').length,
-	      'pending-client': employeeTasks.filter(t => t.status === 'Pending for Client').length,
-	      'pending-owner': employeeTasks.filter(t => t.status === 'Pending for Owner').length,
-	      'pending-training': employeeTasks.filter(t => t.status === 'Pending for Training').length,
-	      'pending-billing': employeeTasks.filter(t => t.status === 'Pending for Billing').length,
-	      'pending-payment': employeeTasks.filter(t => t.status === 'Pending for Payment').length,
 	      'completed': employeeTasks.filter(t => t.status === 'Completed').length,
 	      'action-log': employeeLogs.length,
 	      'vendor-tasks': vendorTasksOnly.length,
@@ -334,13 +350,17 @@ export default function App() {
 	      'recurring-tasks': visibleRecurringTasks.length,
 	      'recurring-actions': visibleRecurringActions.length,
 	    };
+      pendingStatusNavItems.forEach(item => {
+        const decoded = decodeURIComponent(item.id.replace('pending-status:', ''));
+        counts[item.id] = employeeTasks.filter(t => normalizeStatusName(t.status) === decoded).length;
+      });
 
     return filteredNavItems.map(item => (
       Object.prototype.hasOwnProperty.call(counts, item.id)
         ? { ...item, count: counts[item.id] }
         : item
     ));
-  }, [filteredNavItems, visibleTasks, visibleActionLogs, visibleRecurringTasks, visibleRecurringActions]);
+	  }, [filteredNavItems, visibleTasks, visibleActionLogs, visibleRecurringTasks, visibleRecurringActions, pendingStatusNavItems]);
 
   const [lastAddedCategory, setLastAddedCategory] = useState<string>('');
   const [lastAddedProject, setLastAddedProject] = useState<string>('');
@@ -867,17 +887,13 @@ export default function App() {
 	    else if (type === 'project') { setActiveTab('pending'); setFilterProject([value]); }
 	    else if (type === 'priority') { setActiveTab('pending'); setFilterPriority([value]); }
 	    else if (type === 'category') { setActiveTab('pending'); setFilterCategory([value]); }
-    else if (type === 'status') { 
-        if (value === 'Overdue') setActiveTab('pending');
-        else if (value === 'Completed') setActiveTab('completed');
-        else if (value === 'Pending for Client') setActiveTab('pending-client');
-        else if (value === 'Pending for Owner') setActiveTab('pending-owner');
-        else if (value === 'Pending for Training') setActiveTab('pending-training');
-        else if (value === 'Pending for Billing') setActiveTab('pending-billing');
-        else if (value === 'Pending for Payment') setActiveTab('pending-payment');
-        else setActiveTab('all-tasks');
-        setFilterStatus([value]);
-    }
+	    else if (type === 'status') { 
+	        if (value === 'Overdue') setActiveTab('pending');
+	        else if (value === 'Completed') setActiveTab('completed');
+	        else if (value) setActiveTab(makePendingStatusId(value));
+	        else setActiveTab('all-tasks');
+	        setFilterStatus([value]);
+	    }
     else if (type === 'employee-log') { setActiveTab('action-log'); setLogDashboardFilter({ type: 'assignee', value: value, dateFrom: today, dateTo: today }); }
 	    else if (type === 'vendor-log') {
 	      if (!VENDOR_MODULE_ENABLED) return;
@@ -979,8 +995,12 @@ export default function App() {
       link.click();
     };
 
+      const taskStatusOptions = Array.from(new Set(
+        ['Not Yet Started', ...statuses.map(s => String(s.name || '').trim()).filter(Boolean)]
+      ));
 	    const commonTaskProps = {
-	      users, projects, vendors, firms, categories, syncingIds, vendorCategories, currentUser,
+		      users, projects, vendors, firms, categories, syncingIds, vendorCategories, currentUser,
+          taskStatuses: taskStatusOptions,
         showCollapsedMenuButton: layoutMode === 'side' && isSidebarCollapsed && !isAnyFormModalOpen,
         onShowMenu: () => setIsSidebarCollapsed(false),
 	      sidebarCollapsed: layoutMode === 'side' && isSidebarCollapsed,
@@ -1032,13 +1052,26 @@ export default function App() {
       }
     };
 
-    switch (activeTab) {
+      if (activeTab.startsWith('pending-status:')) {
+        const targetStatus = decodeURIComponent(activeTab.replace('pending-status:', ''));
+        const viewTitle = pendingStatusNavItems.find(x => x.id === activeTab)?.label || 'Pending';
+        return <TasksView title={viewTitle} tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && normalizeStatusName(t.status) === targetStatus)} {...commonTaskProps} filterType="all" />;
+      }
+
+	    switch (activeTab) {
       case 'dashboard': 
-        return <Dashboard 
-          isAdmin={isAdmin} tasks={visibleTasks} users={users} projects={projects} categories={categories} actionLogs={visibleActionLogs} recurringActions={visibleRecurringActions}
-          onNavigate={setActiveTab} onFilterChange={handleDashboardFilterChange} onOpenNewTask={() => { setIsTaskModalVendorMode(false); setIsTaskModalOpen(true); }} 
-          onOpenAddUser={() => setIsUserModalOpen(true)} onOpenAddCategory={() => setIsCategoryModalOpen(true)} onOpenAddProject={() => setIsProjectModalOpen(true)} onOpenAddClient={() => setIsClientModalOpen(true)} onOpenAddVendor={() => setIsVendorModalOpen(true)} 
-        />;
+	        return <Dashboard 
+	          isAdmin={isAdmin} tasks={visibleTasks} users={users} projects={projects} categories={categories} actionLogs={visibleActionLogs} recurringActions={visibleRecurringActions}
+	          onNavigate={(tab) => {
+              if (tab === 'pending-client') setActiveTab(makePendingStatusId('Pending for Client'));
+              else if (tab === 'pending-owner') setActiveTab(makePendingStatusId('Pending for Owner'));
+              else if (tab === 'pending-training') setActiveTab(makePendingStatusId('Pending for Training'));
+              else if (tab === 'pending-billing') setActiveTab(makePendingStatusId('Pending for Billing'));
+              else if (tab === 'pending-payment') setActiveTab(makePendingStatusId('Pending for Payment'));
+              else setActiveTab(tab);
+            }} onFilterChange={handleDashboardFilterChange} onOpenNewTask={() => { setIsTaskModalVendorMode(false); setIsTaskModalOpen(true); }} 
+	          onOpenAddUser={() => setIsUserModalOpen(true)} onOpenAddCategory={() => setIsCategoryModalOpen(true)} onOpenAddProject={() => setIsProjectModalOpen(true)} onOpenAddClient={() => setIsClientModalOpen(true)} onOpenAddVendor={() => setIsVendorModalOpen(true)} 
+	        />;
       case 'all-tasks': return <TasksView title="All Tasks" tasks={visibleTasks.filter(t => !t.vendor || t.vendor === '')} {...commonTaskProps} filterType="all" />;
       case 'add-multiple': return (
         <AddMultipleTasksView
@@ -1061,12 +1094,7 @@ export default function App() {
         />
       );
       case 'pending': return <TasksView title="Pending Tasks" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status !== 'Completed')} {...commonTaskProps} filterType="pending" />;
-      case 'pending-client': return <TasksView title="Pending for Client" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Pending for Client')} {...commonTaskProps} filterType="all" />;
-      case 'pending-owner': return <TasksView title="Pending for Owner" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Pending for Owner')} {...commonTaskProps} filterType="all" />;
-      case 'pending-training': return <TasksView title="Pending for Training" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Pending for Training')} {...commonTaskProps} filterType="all" />;
-      case 'pending-billing': return <TasksView title="Pending for Billing" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Pending for Billing')} {...commonTaskProps} filterType="all" />;
-      case 'pending-payment': return <TasksView title="Pending for Payment" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Pending for Payment')} {...commonTaskProps} filterType="all" />;
-      case 'completed': return <TasksView title="Completed Tasks" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Completed')} {...commonTaskProps} filterType="completed" />;
+	      case 'completed': return <TasksView title="Completed Tasks" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Completed')} {...commonTaskProps} filterType="completed" />;
       case 'update-multiple': return <UpdateMultipleView projects={projects} tasks={visibleTasks.filter(t => t.status !== 'Completed')} onUpdateTasks={async (updates) => { for (const u of updates) await handleUpdateTaskOptimistic(u); setActiveTab('pending'); }} />;
       case 'activity-dashboard': return <ActivityDashboardView logs={visibleActionLogs.filter(l => !l.vendor || l.vendor === '')} users={users} currentUser={currentUser} />;
       case 'action-log': return <ActionLogView logs={visibleActionLogs.filter(l => !l.vendor || l.vendor === '')} projects={projects} onDeleteLog={(logId, taskId) => handleDeleteLog(logId, taskId, false)} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
@@ -1167,7 +1195,7 @@ export default function App() {
             )}
 
 		            <main className="flex-1 overflow-y-auto pt-2 md:pt-4 px-2 md:px-4 pb-0 custom-scrollbar relative">
-			              {layoutMode === 'side' && isSidebarCollapsed && !isAnyFormModalOpen && activeTab !== 'all-tasks' && activeTab !== 'pending' && activeTab !== 'pending-client' && activeTab !== 'pending-owner' && activeTab !== 'pending-training' && activeTab !== 'pending-billing' && activeTab !== 'pending-payment' && activeTab !== 'completed' && (
+			              {layoutMode === 'side' && isSidebarCollapsed && !isAnyFormModalOpen && activeTab !== 'all-tasks' && activeTab !== 'pending' && !activeTab.startsWith('pending-status:') && activeTab !== 'completed' && (
 			                <button
 			                  type="button"
 			                  onClick={() => setIsSidebarCollapsed(false)}

@@ -21,6 +21,7 @@ interface TasksViewProps {
   categories: Category[];
   vendors: Vendor[];
   firms: Firm[];
+  taskStatuses: string[];
   onUpdateTask: (task: Task) => void;
   onEditTask: (task: Task) => void;
   onBulkUpdateTask: (ids: number[], updates: Partial<Task>) => void;
@@ -81,7 +82,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
   projects,
   categories,
   vendors,
-  firms,
+	  firms,
+    taskStatuses,
   onUpdateTask,
   onEditTask,
   onBulkUpdateTask,
@@ -404,11 +406,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   };
 
 	  const statusOptionsAll = [
-	    { value: 'Not Yet Started', label: 'Not Yet Started' },
-	    { value: 'In Progress', label: 'In Progress' },
-	    { value: 'Pending for Client', label: 'Pending for Client' },
-	    { value: 'Pending for Owner', label: 'Pending for Owner' },
-	    { value: 'Completed', label: 'Completed' },
+      ...taskStatuses.map(s => ({ value: s, label: s })),
 	    { value: 'Overdue', label: 'Overdue' }
 	  ];
 	  const priorityOptionsAll = [
@@ -724,7 +722,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
           </div>
       </div>
 
-      <UpdateTaskModal isOpen={isUpdateModalOpen} onClose={() => setIsUpdateModalOpen(false)} task={selectedTask} onUpdate={onUpdateTask} users={users} vendors={vendors}/>
+	      <UpdateTaskModal isOpen={isUpdateModalOpen} onClose={() => setIsUpdateModalOpen(false)} task={selectedTask} onUpdate={onUpdateTask} users={users} vendors={vendors} statusOptions={taskStatuses}/>
       <EditTaskModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} task={selectedTask} onSave={onEditTask} onAddCategory={onAddCategory} onAddProject={onAddProject} onAddVendorCategory={onAddVendorCategory!} users={users} categories={categories} projects={projects} firms={firms} vendors={vendors} vendorCategories={vendorCategories} isVendorView={isVendorView} lastAddedCategory={lastAddedCategory} lastAddedProject={lastAddedProject} lastAddedVendorCategory={lastAddedVendorCategory} onClearLastAdded={onClearLastAdded} />
       <BulkUpdateModal isOpen={isBulkUpdateModalOpen} onClose={() => setIsBulkUpdateModalOpen(false)} count={selectedIds.length} onUpdate={handleBulkUpdate} users={users} vendors={vendors} categories={categories} isVendorView={isVendorView} mode={bulkMode} />
 

@@ -10,9 +10,10 @@ interface UpdateTaskModalProps {
   onUpdate: (task: Task) => void;
   users: User[];
   vendors?: Vendor[];
+  statusOptions: string[];
 }
 
-export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClose, task, onUpdate, users, vendors = [] }) => {
+export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClose, task, onUpdate, users, vendors = [], statusOptions }) => {
   const [formData, setFormData] = useState<Partial<Task>>({});
   const [reassignSelection, setReassignSelection] = useState<string | string[]>([]);
   const [remarksInput, setRemarksInput] = useState<string>('');
@@ -176,11 +177,9 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
                       onChange={handleChange}
                       className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
                     >
-                      <option value="Not Yet Started">Not Yet Started</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Pending for Client">Pending for Client</option>
-                      <option value="Pending for Owner">Pending for Owner</option>
-                      <option value="Completed">Completed</option>
+                      {statusOptions.map((status) => (
+                        <option key={status} value={status}>{status}</option>
+                      ))}
                     </select>
                 </div>
                 <div className="space-y-1">

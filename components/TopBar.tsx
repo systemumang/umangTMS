@@ -15,15 +15,6 @@ interface TopBarProps {
   hasError?: boolean;
 }
 
-const pendingChildIds = [
-  'pending',
-  'pending-client',
-  'pending-owner',
-  'pending-training',
-  'pending-billing',
-  'pending-payment'
-];
-
 export const TopBar: React.FC<TopBarProps> = ({ 
   items, 
   activeTab, 
@@ -41,6 +32,12 @@ export const TopBar: React.FC<TopBarProps> = ({
   const dropdownPortalRef = useRef<HTMLDivElement>(null);
   const dropdownAnchorRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
+  const pendingChildIds = useMemo(
+    () => items
+      .filter(item => item.section === 'Tasks' && (item.id === 'pending' || item.id.startsWith('pending-status:')))
+      .map(item => item.id),
+    [items]
+  );
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -59,7 +56,7 @@ export const TopBar: React.FC<TopBarProps> = ({
     if (pendingChildIds.includes(activeTab)) {
       setOpenPendingGroup(true);
     }
-  }, [activeTab]);
+  }, [activeTab, pendingChildIds]);
 
   useEffect(() => {
     if (!openDropdown) {
