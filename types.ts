@@ -192,3 +192,9 @@ export interface AppSettings {
   metaWabaId: string;
   metaVerifyToken: string;
 }
+
+export interface StatusMaster {
+  id: number;
+  name: string;
+  is_system?: number | boolean;
+}

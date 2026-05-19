@@ -27,10 +27,17 @@ export const FirmsView: React.FC<FirmsViewProps> = ({ firms, onAddFirm, onDelete
 
   return (
     <div className="space-y-6 pb-10">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex items-center justify-between gap-3 md:gap-4">
         <div className={sidebarCollapsed ? 'pl-14 md:pl-16' : ''}>
           <h2 className="text-2xl font-bold text-indigo-600">Firms</h2>
         </div>
+        <button
+          onClick={onAddFirm}
+          className="md:hidden inline-flex items-center justify-center w-10 h-10 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 shadow-sm"
+          title="Add Firm"
+        >
+          <Plus size={18} />
+        </button>
       </div>
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-indigo-300 flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -44,7 +51,7 @@ export const FirmsView: React.FC<FirmsViewProps> = ({ firms, onAddFirm, onDelete
             className="w-full pl-10 pr-4 py-2 border border-indigo-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 text-sm"
           />
         </div>
-        <button onClick={onAddFirm} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium shadow-sm">
+        <button onClick={onAddFirm} className="hidden md:flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium shadow-sm">
           <Plus size={16} />
           <span>Add Firm</span>
         </button>

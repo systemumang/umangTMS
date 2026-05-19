@@ -64,6 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'users' => $users,
             'designations' => fetchAllRows($conn, 'designations'),
             'categories' => fetchAllRows($conn, 'categories'),
+            'statuses' => fetchAllRows($conn, 'status_master'),
             'vendorCategories' => fetchAllRows($conn, 'vendor_categories'),
             'projects' => fetchAllRows($conn, 'projects'),
             'clients' => fetchAllRows($conn, 'clients'),
@@ -96,6 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'firms' => 'firms',
         'vendors' => 'vendors',
         'categories' => 'categories',
+        'statuses' => 'status_master',
         'vendorcategories' => 'vendor_categories',
         'designations' => 'designations',
         'maintasks' => 'main_tasks',
@@ -255,6 +257,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $insertId = (int)$stmt->insert_id;
         $stmt->close();
         if (!$ok) sendJson(['success' => false, 'error' => 'Failed to add category.'], 400);
+        sendJson(['success' => true, 'data' => ['id' => $insertId]]);
+    }
+
+    if ($action === 'addMaster' && $table === 'status_master') {
+        $name = trim((string)($data['name'] ?? ''));
+        if ($name === '') sendJson(['success' => false, 'error' => 'Status name is required.'], 400);
+        $stmt = $conn->prepare("INSERT INTO status_master (name, is_system) VALUES (?, 0)");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare status insert.'], 500);
+        $stmt->bind_param('s', $name);
+        $ok = $stmt->execute();
+        $insertId = (int)$stmt->insert_id;
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to add status.'], 400);
         sendJson(['success' => true, 'data' => ['id' => $insertId]]);
     }
 
@@ -543,6 +558,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         sendJson(['success' => true]);
     }
 
+    if ($action === 'updateMaster' && $table === 'status_master') {
+        $id = (int)($data['id'] ?? 0);
+        if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid status id.'], 400);
+        $name = trim((string)($data['name'] ?? ''));
+        if ($name === '') sendJson(['success' => false, 'error' => 'Status name is required.'], 400);
+        $check = $conn->prepare("SELECT is_system, name FROM status_master WHERE id=? LIMIT 1");
+        if (!$check) sendJson(['success' => false, 'error' => 'Failed to validate status.'], 500);
+        $check->bind_param('i', $id);
+        $check->execute();
+        $row = $check->get_result()?->fetch_assoc();
+        $check->close();
+        if (!$row) sendJson(['success' => false, 'error' => 'Status not found.'], 404);
+        if ((int)($row['is_system'] ?? 0) === 1 || in_array(strtolower(trim((string)($row['name'] ?? ''))), ['in progress', 'completed'], true)) {
+            sendJson(['success' => false, 'error' => 'Default status cannot be updated.'], 400);
+        }
+        $stmt = $conn->prepare("UPDATE status_master SET name=? WHERE id=?");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare status update.'], 500);
+        $stmt->bind_param('si', $name, $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to update status.'], 400);
+        sendJson(['success' => true]);
+    }
+
     if ($action === 'updateMaster' && $table === 'firms') {
         $id = (int)($data['id'] ?? 0);
         if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid firm id.'], 400);
@@ -679,9 +718,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         sendJson(['success' => true]);
     }
 
-    if ($action === 'deleteRecord' && in_array($table, ['clients', 'projects', 'firms', 'vendors', 'categories', 'vendor_categories', 'designations'], true)) {
+    if ($action === 'deleteRecord' && in_array($table, ['clients', 'projects', 'firms', 'vendors', 'categories', 'vendor_categories', 'designations', 'status_master'], true)) {
         $id = (int)($data['id'] ?? 0);
         if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid id.'], 400);
+        if ($table === 'status_master') {
+            $check = $conn->prepare("SELECT is_system, name FROM status_master WHERE id=? LIMIT 1");
+            if (!$check) sendJson(['success' => false, 'error' => 'Failed to validate status.'], 500);
+            $check->bind_param('i', $id);
+            $check->execute();
+            $row = $check->get_result()?->fetch_assoc();
+            $check->close();
+            if (!$row) sendJson(['success' => false, 'error' => 'Status not found.'], 404);
+            if ((int)($row['is_system'] ?? 0) === 1 || in_array(strtolower(trim((string)($row['name'] ?? ''))), ['in progress', 'completed'], true)) {
+                sendJson(['success' => false, 'error' => 'Default status cannot be deleted.'], 400);
+            }
+        }
         $stmt = $conn->prepare("DELETE FROM `{$table}` WHERE id=?");
         if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare delete query.'], 500);
         $stmt->bind_param('i', $id);

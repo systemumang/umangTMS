@@ -1,0 +1,89 @@
+import React, { useState } from 'react';
+import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { StatusMaster } from '../types';
+import { AddStatusModal } from './AddStatusModal';
+import { ConfirmationModal } from './ConfirmationModal';
+
+interface StatusesViewProps {
+  statuses: StatusMaster[];
+  onAddStatus: (status: Omit<StatusMaster, 'id'>) => void;
+  onEditStatus: (status: StatusMaster) => void;
+  onDeleteStatus: (id: number) => void;
+}
+
+export const StatusesView: React.FC<StatusesViewProps> = ({ statuses, onAddStatus, onEditStatus, onDeleteStatus }) => {
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [selected, setSelected] = useState<StatusMaster | null>(null);
+
+  const isLocked = (status: StatusMaster) => Boolean(Number(status.is_system || 0)) || ['in progress', 'completed'].includes(String(status.name || '').trim().toLowerCase());
+
+  return (
+    <div className="space-y-6 pb-10">
+      <div><h2 className="text-2xl font-bold text-indigo-600">Status</h2></div>
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-indigo-300 flex justify-end">
+        <button onClick={() => { setSelected(null); setIsEditOpen(true); }} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium shadow-sm">
+          <Plus size={16} />
+          <span>Add Status</span>
+        </button>
+      </div>
+
+      <div className="bg-white rounded-lg border border-black shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-indigo-600 border-b border-indigo-700">
+                <th className="px-6 py-4 text-xs font-semibold text-white uppercase tracking-wider border-r border-indigo-500">S.No.</th>
+                <th className="px-6 py-4 text-xs font-semibold text-white uppercase tracking-wider border-r border-indigo-500">Status Name</th>
+                <th className="px-6 py-4 text-xs font-semibold text-white uppercase tracking-wider text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-black">
+              {statuses.map((status, index) => (
+                <tr key={status.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 text-sm text-gray-900 border-r border-black">{index + 1}</td>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900 border-r border-black">{status.name}</td>
+                  <td className="px-6 py-4 text-center">
+                    {!isLocked(status) ? (
+                      <div className="flex items-center justify-center gap-3">
+                        <button onClick={() => { setSelected(status); setIsEditOpen(true); }} className="text-indigo-600 hover:text-indigo-800 transition-colors bg-indigo-50 p-1.5 rounded-md border border-indigo-100"><Edit2 size={16} /></button>
+                        <button onClick={() => { setSelected(status); setIsDeleteOpen(true); }} className="text-red-500 hover:text-red-700 transition-colors bg-red-50 p-1.5 rounded-md border border-red-100"><Trash2 size={16} /></button>
+                      </div>
+                    ) : (
+                      <span className="text-xs font-semibold text-gray-500">Locked</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {statuses.length === 0 && (<tr><td colSpan={3} className="px-6 py-8 text-center text-gray-500">No status found.</td></tr>)}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <AddStatusModal
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        statuses={statuses}
+        initialData={selected}
+        onSave={(payload) => {
+          if (selected) onEditStatus({ ...selected, ...payload });
+          else onAddStatus(payload);
+          setIsEditOpen(false);
+        }}
+      />
+
+      <ConfirmationModal
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        onConfirm={() => {
+          if (selected) onDeleteStatus(selected.id);
+          setIsDeleteOpen(false);
+        }}
+        title="Delete Status"
+        message={`Are you sure you want to delete status "${selected?.name}"?`}
+      />
+    </div>
+  );
+};
+

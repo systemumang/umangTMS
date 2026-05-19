@@ -10,6 +10,7 @@ interface CategoriesViewProps {
   onAddCategory: () => void;
   onDeleteCategory: (id: number) => void;
   onEditCategory: (category: Category) => void;
+  sidebarCollapsed?: boolean;
 }
 
 type SortConfig = {
@@ -17,7 +18,7 @@ type SortConfig = {
   direction: 'asc' | 'desc';
 } | null;
 
-export const CategoriesView: React.FC<CategoriesViewProps> = ({ categories, onAddCategory, onDeleteCategory, onEditCategory }) => {
+export const CategoriesView: React.FC<CategoriesViewProps> = ({ categories, onAddCategory, onDeleteCategory, onEditCategory, sidebarCollapsed = false }) => {
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   const [sortConfig, setSortConfig] = useState<SortConfig>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -73,8 +74,15 @@ export const CategoriesView: React.FC<CategoriesViewProps> = ({ categories, onAd
 
   return (
     <div className="space-y-6 pb-10">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div><h2 className="text-2xl font-bold text-indigo-600">Categories</h2></div>
+      <div className="flex items-center justify-between gap-3 md:gap-4">
+        <div className={sidebarCollapsed ? 'pl-14 md:pl-16' : ''}><h2 className="text-2xl font-bold text-indigo-600">Categories</h2></div>
+        <button
+          onClick={onAddCategory}
+          className="md:hidden inline-flex items-center justify-center w-10 h-10 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 shadow-sm"
+          title="Add Category"
+        >
+          <Plus size={18} />
+        </button>
       </div>
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-indigo-300 flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -84,7 +92,7 @@ export const CategoriesView: React.FC<CategoriesViewProps> = ({ categories, onAd
                 <button onClick={() => setViewMode('card')} className={`p-1.5 rounded-md transition-all ${viewMode === 'card' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}><LayoutGrid size={18} /></button>
                 <button onClick={() => setViewMode('table')} className={`p-1.5 rounded-md transition-all ${viewMode === 'table' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}><LayoutList size={18} /></button>
             </div>
-            <button onClick={onAddCategory} className="flex-1 md:flex-none flex items-center justify-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium shadow-sm transition-colors whitespace-nowrap"><Plus size={16} /><span>Add Category</span></button>
+            <button onClick={onAddCategory} className="hidden md:flex flex-1 md:flex-none items-center justify-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium shadow-sm transition-colors whitespace-nowrap"><Plus size={16} /><span>Add Category</span></button>
         </div>
       </div>
 

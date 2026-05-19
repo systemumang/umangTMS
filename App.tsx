@@ -7,6 +7,7 @@ import { TasksView } from './components/TasksView';
 import { UsersView } from './components/UsersView';
 import { DesignationsView } from './components/DesignationsView';
 import { CategoriesView } from './components/CategoriesView';
+import { StatusesView } from './components/StatusesView';
 import { VendorCategoriesView } from './components/VendorCategoriesView';
 import { ProjectsView } from './components/ProjectsView';
 import { ClientsView } from './components/ClientsView';
@@ -68,7 +69,7 @@ import {
   IndianRupee,
   Wallet
 } from 'lucide-react';
-import { NavItem, Task, User, Designation, Category, Project, Client, ActionLogEntry, Vendor, VendorCategory, RecurringTask, RecurringTaskAction, AppSettings, Firm } from './types';
+import { NavItem, Task, User, Designation, Category, Project, Client, ActionLogEntry, Vendor, VendorCategory, RecurringTask, RecurringTaskAction, AppSettings, Firm, StatusMaster } from './types';
 
 const AUTO_SYNC_INTERVAL = 120000;
 const VENDOR_MODULE_ENABLED = false;
@@ -108,6 +109,7 @@ const navItems: NavItem[] = [
   { id: 'users', label: 'Users', icon: <Users size={20} />, section: 'Master' },
   { id: 'firms', label: 'Firms', icon: <Building2 size={20} />, section: 'Master' },
   { id: 'categories', label: 'Categories', icon: <Tags size={20} />, section: 'Master' },
+  { id: 'statuses', label: 'Status', icon: <Tags size={20} />, section: 'Master' },
 	  ...(VENDOR_MODULE_ENABLED ? ([
 	    { id: 'vendor-categories', label: 'Vendor Categories', icon: <Tags size={20} />, section: 'Master' },
 	    { id: 'vendors', label: 'Vendors', icon: <Truck size={20} />, section: 'Master' },
@@ -232,7 +234,7 @@ export default function App() {
   const isAdmin = currentUser?.role === 'Admin';
 
   // Master item IDs for filtering
-  const masterIds = ['users', 'firms', 'categories', ...(VENDOR_MODULE_ENABLED ? ['vendor-categories', 'vendors'] : []), 'settings', 'telegram-setup'];
+  const masterIds = ['users', 'firms', 'categories', 'statuses', ...(VENDOR_MODULE_ENABLED ? ['vendor-categories', 'vendors'] : []), 'settings', 'telegram-setup'];
 
   // Navigation Logic based on Role
   const filteredNavItems = useMemo(() => {
@@ -258,6 +260,7 @@ export default function App() {
   const [users, setUsers] = useState<User[]>([]);
   const [designations, setDesignations] = useState<Designation[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [statuses, setStatuses] = useState<StatusMaster[]>([]);
   const [vendorCategories, setVendorCategories] = useState<VendorCategory[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -564,6 +567,7 @@ export default function App() {
         setFirms((data.firms || []).map((f: any) => ({ ...f, id: Number(f.id), name: String(f.name || ''), sortName: String(f.sortName || f.sortname || f.SortName || '') })));
         setVendors((data.vendors || []).map((v: any) => ({ ...v, id: Number(v.id), gstNumber: v.gstNumber || v.gSTNumber || v.GSTNumber || '' })));
         setCategories((data.categories || []).map((c: any) => ({ ...c, id: Number(c.id) })));
+        setStatuses((data.statuses || []).map((s: any) => ({ ...s, id: Number(s.id), name: String(s.name || ''), is_system: Number(s.is_system || 0) })));
         setVendorCategories((data.vendorCategories || []).map((vc: any) => ({ ...vc, id: Number(vc.id) })));
         setDesignations((data.designations || []).map((d: any) => ({ ...d, id: Number(d.id) })));
         const normalizedLogs = (data.actionLogs || []).map((l: any) => {
@@ -1075,11 +1079,12 @@ export default function App() {
       case 'due-recurring-tasks': return <RecurringTasksView title="Due Recurring Tasks" filterType="due" tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={(id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); apiPost('deleteRecord', { id }, 'RecurringTasks'); }} currentUser={currentUser} />;
       case 'recurring-tasks': return <RecurringTasksView title="Recurring Tasks" tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={(id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); apiPost('deleteRecord', { id }, 'RecurringTasks'); }} currentUser={currentUser} />;
       case 'recurring-actions': return <RecurringTaskActionsView actions={visibleRecurringActions} onDeleteAction={(logId, taskId) => { if (!confirmDelete('this recurring log')) return; apiPost('deleteRecord', { id: logId, taskId: taskId }, 'RecurringActions'); }} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
-      case 'users': if (!isAdmin) return null; return <UsersView users={users} designations={designations} onAddUser={(u) => { setUsers(p => [...p, { ...u, id: Date.now(), isActive: true } as any]); apiPost('addMaster', u, 'Users'); }} onEditUser={(u) => { setUsers(p => p.map(x => x.id === u.id ? u : x)); apiPost('updateMaster', u, 'Users'); }} onToggleStatus={(id) => { const user = users.find(u => u.id === id); if (!user) return; const newStatus = !user.isActive; setUsers(prev => prev.map(u => u.id === id ? { ...u, isActive: newStatus } : u)); apiPost('updateMaster', { id, isActive: newStatus ? 'TRUE' : 'FALSE' }, 'Users'); }} onDeleteUser={(id) => { if (!confirmDelete('this user')) return; setUsers(p => p.filter(u => u.id !== id)); apiPost('deleteRecord', { id }, 'Users'); }} onAddDesignation={() => setIsDesignationModalOpen(true)} />;
+      case 'users': if (!isAdmin) return null; return <UsersView users={users} designations={designations} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} onAddUser={(u) => { setUsers(p => [...p, { ...u, id: Date.now(), isActive: true } as any]); apiPost('addMaster', u, 'Users'); }} onEditUser={(u) => { setUsers(p => p.map(x => x.id === u.id ? u : x)); apiPost('updateMaster', u, 'Users'); }} onToggleStatus={(id) => { const user = users.find(u => u.id === id); if (!user) return; const newStatus = !user.isActive; setUsers(prev => prev.map(u => u.id === id ? { ...u, isActive: newStatus } : u)); apiPost('updateMaster', { id, isActive: newStatus ? 'TRUE' : 'FALSE' }, 'Users'); }} onDeleteUser={(id) => { if (!confirmDelete('this user')) return; setUsers(p => p.filter(u => u.id !== id)); apiPost('deleteRecord', { id }, 'Users'); }} onAddDesignation={() => setIsDesignationModalOpen(true)} />;
       case 'firms': if (!isAdmin) return null; return <FirmsView firms={firms} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} onAddFirm={() => setIsFirmModalOpen(true)} onDeleteFirm={(id) => { if (!confirmDelete('this firm')) return; setFirms(p => p.filter(f => f.id !== id)); apiPost('deleteRecord', { id }, 'Firms'); }} onEditFirm={(f) => { setFirms(p => p.map(x => x.id === f.id ? f : x)); apiPost('updateMaster', f, 'Firms'); }} />;
       case 'clients': if (!isAdmin) return null; return <ClientsView clients={clients} projects={projects} onAddClient={handleInstantAddClient} onDeleteClient={(id) => { if (!confirmDelete('this client')) return; setClients(p => p.filter(c => c.id !== id)); apiPost('deleteRecord', { id }, 'Clients'); }} onEditClient={(c) => { setClients(p => p.map(x => x.id === c.id ? c : x)); apiPost('updateMaster', c, 'Clients'); }} onNavigateToProjectTasks={handleDashboardFilterChange.bind(null, 'project')} />;
       case 'projects': if (!isAdmin) return null; return <ProjectsView projects={projects} clients={clients} onAddProject={handleInstantAddProject} onDeleteProject={(id) => { if (!confirmDelete('this project')) return; setProjects(p => p.filter(x => x.id !== id)); apiPost('deleteRecord', { id }, 'Projects'); }} onEditProject={(p) => { setProjects(prev => prev.map(x => x.id === p.id ? p : x)); apiPost('updateMaster', p, 'Projects'); }} onAddClient={() => setIsClientModalOpen(true)} onNavigateToProjectTasks={handleDashboardFilterChange.bind(null, 'project')} />;
-      case 'categories': if (!isAdmin) return null; return <CategoriesView categories={categories} onAddCategory={() => setIsCategoryModalOpen(true)} onDeleteCategory={(id) => { if (!confirmDelete('this category')) return; setCategories(p => p.filter(c => c.id !== id)); apiPost('deleteRecord', { id }, 'Categories'); }} onEditCategory={(c) => { setCategories(p => p.map(x => x.id === c.id ? c : x)); apiPost('updateMaster', c, 'Categories'); }} />;
+      case 'categories': if (!isAdmin) return null; return <CategoriesView categories={categories} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} onAddCategory={() => setIsCategoryModalOpen(true)} onDeleteCategory={(id) => { if (!confirmDelete('this category')) return; setCategories(p => p.filter(c => c.id !== id)); apiPost('deleteRecord', { id }, 'Categories'); }} onEditCategory={(c) => { setCategories(p => p.map(x => x.id === c.id ? c : x)); apiPost('updateMaster', c, 'Categories'); }} />;
+      case 'statuses': if (!isAdmin) return null; return <StatusesView statuses={statuses} onAddStatus={async (status) => { const tempId = Date.now(); const row = { ...status, id: tempId, is_system: 0 } as StatusMaster; setStatuses(prev => [...prev, row]); await apiPost('addMaster', status, 'Statuses'); }} onEditStatus={async (status) => { setStatuses(prev => prev.map(x => x.id === status.id ? status : x)); await apiPost('updateMaster', status, 'Statuses'); }} onDeleteStatus={async (id) => { if (!confirmDelete('this status')) return; setStatuses(prev => prev.filter(x => x.id !== id)); await apiPost('deleteRecord', { id }, 'Statuses'); }} />;
       case 'settings': if (!isAdmin) return null; return <SettingsView settings={settings} onUpdate={(s) => { setSettings(s); apiPost('updateMaster', s, 'AppSettings'); }} />;
       case 'telegram-setup': if (!isAdmin) return null; return <TelegramSetupView />;
       default: return null;
@@ -1108,10 +1113,10 @@ export default function App() {
         <LoginView onLogin={handleLogin} isAuthenticating={isLoading} />
       ) : (
         <>
-          {layoutMode === 'side' && !isSidebarCollapsed && (
-	            <Sidebar 
-	              items={navItemsWithCounts} 
-	              activeTab={activeTab} 
+          {layoutMode === 'side' && (!isSidebarCollapsed || isSidebarOpen) && (
+		            <Sidebar 
+		              items={navItemsWithCounts} 
+		              activeTab={activeTab} 
 	              onTabChange={setActiveTab} 
 	              onLayoutChange={setLayoutMode}
 	              layoutMode={layoutMode}

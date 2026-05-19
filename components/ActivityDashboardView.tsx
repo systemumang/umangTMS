@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ActionLogEntry, User } from '../types';
 import { parseToISO, formatToIndianDate } from '../App';
-import { X, LayoutGrid, LayoutList, Clock } from 'lucide-react';
+import { X, LayoutGrid, LayoutList, Clock, Filter } from 'lucide-react';
 
 interface ActivityDashboardViewProps {
   logs: ActionLogEntry[];
@@ -17,6 +17,7 @@ export const ActivityDashboardView: React.FC<ActivityDashboardViewProps> = ({ lo
   const [fromDate, setFromDate] = useState(firstDayOfMonth);
   const [toDate, setToDate] = useState(todayISO);
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+  const [showFilters, setShowFilters] = useState(false);
 
   const isAdmin = currentUser?.role === 'Admin';
 
@@ -105,11 +106,36 @@ export const ActivityDashboardView: React.FC<ActivityDashboardViewProps> = ({ lo
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Date Filters & Toggle */}
+      <div className="flex justify-end items-center gap-2">
+        <button
+          onClick={() => setShowFilters(prev => !prev)}
+          className={`flex items-center justify-center p-2.5 border rounded-md text-sm font-medium shadow-sm transition-all duration-200 ${showFilters ? 'bg-[#4a77d4] border-[#3f69be] text-white ring-2 ring-blue-200' : 'bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100'}`}
+          title="Toggle Filters"
+        >
+          <Filter size={16} />
+        </button>
+        <div className="flex bg-blue-50 p-1 rounded-lg md:hidden border border-blue-200">
+          <button
+            onClick={() => setViewMode('card')}
+            className={`p-1.5 rounded-md transition-all border ${viewMode === 'card' ? 'bg-white shadow text-blue-600 border-blue-600' : 'text-blue-400 border-transparent'}`}
+          >
+            <LayoutGrid size={18} />
+          </button>
+          <button
+            onClick={() => setViewMode('table')}
+            className={`p-1.5 rounded-md transition-all border ${viewMode === 'table' ? 'bg-white shadow text-blue-600 border-blue-600' : 'text-blue-400 border-transparent'}`}
+          >
+            <LayoutList size={18} />
+          </button>
+        </div>
+      </div>
+
+      {/* Date Filters */}
+      {showFilters && (
       <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-6">
         <div className="flex flex-row items-center justify-center gap-6 flex-wrap">
           <div className="flex flex-row items-center">
-            <label className={labelClass}>From Date</label>
+            <label className={labelClass}>From</label>
             <input 
               type="date" 
               value={fromDate}
@@ -118,7 +144,7 @@ export const ActivityDashboardView: React.FC<ActivityDashboardViewProps> = ({ lo
             />
           </div>
           <div className="flex flex-row items-center">
-            <label className={labelClass}>To Date</label>
+            <label className={labelClass}>To</label>
             <input 
               type="date" 
               value={toDate}
@@ -126,31 +152,16 @@ export const ActivityDashboardView: React.FC<ActivityDashboardViewProps> = ({ lo
               className="w-[170px] px-4 py-2 border-2 border-l-0 border-gray-200 rounded-r-lg focus:ring-4 focus:ring-blue-50 focus:border-[#4a77d4] outline-none transition-all font-bold text-gray-700 shadow-sm text-center h-[44px]"
             />
           </div>
-          <div className="flex gap-2">
-            <button 
-              onClick={() => { setFromDate(''); setToDate(''); }}
-              className="px-6 py-2.5 bg-gray-100 text-gray-600 font-black rounded-xl hover:bg-gray-200 transition-all uppercase text-xs border-2 border-gray-200 h-[44px] flex items-center gap-2 shadow-sm active:scale-95"
-            >
-              <X size={14} />
-              Clear
-            </button>
-            <div className="flex bg-blue-50 p-1 rounded-lg md:hidden border border-blue-200">
-                <button
-                  onClick={() => setViewMode('card')}
-                  className={`p-1.5 rounded-md transition-all border ${viewMode === 'card' ? 'bg-white shadow text-blue-600 border-blue-600' : 'text-blue-400 border-transparent'}`}
-                >
-                  <LayoutGrid size={18} />
-                </button>
-                <button
-                  onClick={() => setViewMode('table')}
-                  className={`p-1.5 rounded-md transition-all border ${viewMode === 'table' ? 'bg-white shadow text-blue-600 border-blue-600' : 'text-blue-400 border-transparent'}`}
-                >
-                  <LayoutList size={18} />
-                </button>
-            </div>
-          </div>
+          <button 
+            onClick={() => { setFromDate(''); setToDate(''); }}
+            className="px-3 py-2.5 bg-gray-100 text-gray-600 font-black rounded-xl hover:bg-gray-200 transition-all border-2 border-gray-200 h-[44px] flex items-center justify-center shadow-sm active:scale-95"
+            title="Clear"
+          >
+            <X size={14} />
+          </button>
         </div>
       </div>
+      )}
 
       {/* Mobile Card View */}
       <div className={`${viewMode === 'card' ? 'grid md:hidden' : 'hidden'} grid-cols-1 gap-4 px-2`}>

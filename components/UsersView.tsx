@@ -14,9 +14,10 @@ interface UsersViewProps {
   onToggleStatus: (id: number) => void;
   onDeleteUser: (id: number) => void;
   onAddDesignation: () => void;
+  sidebarCollapsed?: boolean;
 }
 
-export const UsersView: React.FC<UsersViewProps> = ({ users, designations, onAddUser, onEditUser, onToggleStatus, onDeleteUser, onAddDesignation }) => {
+export const UsersView: React.FC<UsersViewProps> = ({ users, designations, onAddUser, onEditUser, onToggleStatus, onDeleteUser, onAddDesignation, sidebarCollapsed = false }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -54,10 +55,17 @@ export const UsersView: React.FC<UsersViewProps> = ({ users, designations, onAdd
 
   return (
     <div className="space-y-6 pb-10">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
+      <div className="flex items-center justify-between gap-3 md:gap-4">
+        <div className={sidebarCollapsed ? 'pl-14 md:pl-16' : ''}>
           <h2 className="text-2xl font-bold text-indigo-600">Users</h2>
         </div>
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="md:hidden inline-flex items-center justify-center w-10 h-10 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 shadow-sm"
+          title="Add User"
+        >
+          <Plus size={18} />
+        </button>
       </div>
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-indigo-200 flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -90,7 +98,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ users, designations, onAdd
 
             <button 
             onClick={() => setIsAddModalOpen(true)}
-            className="flex-1 md:flex-none flex items-center justify-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium shadow-sm transition-colors whitespace-nowrap"
+            className="hidden md:flex flex-1 md:flex-none items-center justify-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium shadow-sm transition-colors whitespace-nowrap"
             >
             <Plus size={16} />
             <span>Add User</span>
