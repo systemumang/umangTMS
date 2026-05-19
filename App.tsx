@@ -281,10 +281,13 @@ export default function App() {
   const resolvedNavItems = useMemo<NavItem[]>(() => {
     const pendingGroupIndex = navItems.findIndex(item => item.id === 'pending-group');
     if (pendingGroupIndex < 0) return navItems;
+    const pendingTaskItem = navItems.find(item => item.id === 'pending');
+    const remainingItems = navItems.filter(item => item.id !== 'pending');
     return [
-      ...navItems.slice(0, pendingGroupIndex + 1),
+      ...remainingItems.slice(0, pendingGroupIndex + 1),
+      ...(pendingTaskItem ? [pendingTaskItem] : []),
       ...pendingStatusNavItems,
-      ...navItems.slice(pendingGroupIndex + 1),
+      ...remainingItems.slice(pendingGroupIndex + 1),
     ];
   }, [pendingStatusNavItems]);
 
@@ -1136,7 +1139,7 @@ export default function App() {
     isFirmModalOpen;
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden font-inter">
+	    <div className="flex min-h-screen bg-gray-50 overflow-hidden font-inter">
       {!currentUser ? (
         <LoginView onLogin={handleLogin} isAuthenticating={isLoading} />
       ) : (
@@ -1214,7 +1217,7 @@ export default function App() {
                     <p className="text-indigo-600 font-black uppercase tracking-widest text-sm animate-pulse">Loading...</p>
                 </div>
               ) : (
-	                <div className="max-w-[98%] mx-auto h-full flex flex-col">
+		                <div className="w-full mx-auto min-h-full flex flex-col">
 	                  <div className="flex-1">
 	                    {renderContent()}
 	                  </div>
