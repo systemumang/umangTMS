@@ -69,6 +69,7 @@ import {
 import { NavItem, Task, User, Designation, Category, Project, Client, ActionLogEntry, Vendor, VendorCategory, RecurringTask, RecurringTaskAction, AppSettings } from './types';
 
 const AUTO_SYNC_INTERVAL = 120000;
+const VENDOR_MODULE_ENABLED = false;
 
 const navItems: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
@@ -88,11 +89,13 @@ const navItems: NavItem[] = [
   { id: 'activity-dashboard', label: 'Activity Dashboard', icon: <BarChart3 size={20} />, section: 'Tasks' },
   { id: 'action-log', label: 'Action Log', icon: <History size={20} />, section: 'Tasks' },
   
-  // Vendor Section
-  { id: 'pending-vendor-tasks', label: 'Vendor Pending', icon: <Hammer size={20} />, section: 'Vendor' },
-  { id: 'vendor-tasks', label: 'Vendor All', icon: <Layers size={20} />, section: 'Vendor' },
-  { id: 'completed-vendor-tasks', label: 'Vendor History', icon: <CheckCircle size={20} />, section: 'Vendor' },
-  { id: 'vendor-action-log', label: 'Vendor Log', icon: <History size={20} />, section: 'Vendor' },
+	  // Vendor Section (hidden)
+	  ...(VENDOR_MODULE_ENABLED ? ([
+	    { id: 'pending-vendor-tasks', label: 'Vendor Pending', icon: <Hammer size={20} />, section: 'Vendor' },
+	    { id: 'vendor-tasks', label: 'Vendor All', icon: <Layers size={20} />, section: 'Vendor' },
+	    { id: 'completed-vendor-tasks', label: 'Vendor History', icon: <CheckCircle size={20} />, section: 'Vendor' },
+	    { id: 'vendor-action-log', label: 'Vendor Log', icon: <History size={20} />, section: 'Vendor' },
+	  ] as NavItem[]) : []),
   
   // Recurring Tasks Section
   { id: 'due-recurring-tasks', label: 'Due Recurring', icon: <AlertCircle size={20} />, section: 'Recurring Tasks' },
@@ -104,8 +107,10 @@ const navItems: NavItem[] = [
   { id: 'clients', label: 'Clients', icon: <Building2 size={20} />, section: 'Master' },
   { id: 'projects', label: 'Projects', icon: <Briefcase size={20} />, section: 'Master' },
   { id: 'categories', label: 'Categories', icon: <Tags size={20} />, section: 'Master' },
-  { id: 'vendor-categories', label: 'Vendor Categories', icon: <Tags size={20} />, section: 'Master' },
-  { id: 'vendors', label: 'Vendors', icon: <Truck size={20} />, section: 'Master' },
+	  ...(VENDOR_MODULE_ENABLED ? ([
+	    { id: 'vendor-categories', label: 'Vendor Categories', icon: <Tags size={20} />, section: 'Master' },
+	    { id: 'vendors', label: 'Vendors', icon: <Truck size={20} />, section: 'Master' },
+	  ] as NavItem[]) : []),
   { id: 'settings', label: 'Settings', icon: <Settings size={20} />, section: 'Master' },
   { id: 'telegram-setup', label: 'Telegram Setup', icon: <Send size={20} />, section: 'Master' },
 ];
@@ -226,7 +231,7 @@ export default function App() {
   const isAdmin = currentUser?.role === 'Admin';
 
   // Master item IDs for filtering
-  const masterIds = ['users', 'clients', 'projects', 'categories', 'vendor-categories', 'vendors', 'settings', 'telegram-setup'];
+  const masterIds = ['users', 'clients', 'projects', 'categories', ...(VENDOR_MODULE_ENABLED ? ['vendor-categories', 'vendors'] : []), 'settings', 'telegram-setup'];
 
   // Navigation Logic based on Role
   const filteredNavItems = useMemo(() => {
@@ -618,6 +623,20 @@ export default function App() {
     }
   }, [fetchData, apiUrl, currentUser]);
 
+  useEffect(() => {
+    if (VENDOR_MODULE_ENABLED) return;
+    if (
+      activeTab === 'vendors' ||
+      activeTab === 'vendor-categories' ||
+      activeTab === 'vendor-tasks' ||
+      activeTab === 'pending-vendor-tasks' ||
+      activeTab === 'completed-vendor-tasks' ||
+      activeTab === 'vendor-action-log'
+    ) {
+      setActiveTab('all-tasks');
+    }
+  }, [activeTab]);
+
   // Auto-hide left sidebar when opening "View" modals (History screens),
   // and restore it back when the modal closes.
   useEffect(() => {
@@ -755,14 +774,18 @@ export default function App() {
     }
   };
 
-  const handleDashboardFilterChange = (type: string, value: string) => {
-    isDashboardNavigation.current = true;
-    const today = new Date().toLocaleDateString('en-CA');
-    if (type === 'vendor') { setActiveTab('pending-vendor-tasks'); setFilterVendor([value]); }
-    else if (type === 'assignee') { setActiveTab('pending'); setFilterAssignee([value]); }
-    else if (type === 'project') { setActiveTab('pending'); setFilterProject([value]); }
-    else if (type === 'priority') { setActiveTab('pending'); setFilterPriority([value]); }
-    else if (type === 'category') { setActiveTab('pending'); setFilterCategory([value]); }
+	  const handleDashboardFilterChange = (type: string, value: string) => {
+	    isDashboardNavigation.current = true;
+	    const today = new Date().toLocaleDateString('en-CA');
+	    if (type === 'vendor') {
+	      if (!VENDOR_MODULE_ENABLED) return;
+	      setActiveTab('pending-vendor-tasks');
+	      setFilterVendor([value]);
+	    }
+	    else if (type === 'assignee') { setActiveTab('pending'); setFilterAssignee([value]); }
+	    else if (type === 'project') { setActiveTab('pending'); setFilterProject([value]); }
+	    else if (type === 'priority') { setActiveTab('pending'); setFilterPriority([value]); }
+	    else if (type === 'category') { setActiveTab('pending'); setFilterCategory([value]); }
     else if (type === 'status') { 
         if (value === 'Overdue') setActiveTab('pending');
         else if (value === 'Completed') setActiveTab('completed');
@@ -775,7 +798,11 @@ export default function App() {
         setFilterStatus([value]);
     }
     else if (type === 'employee-log') { setActiveTab('action-log'); setLogDashboardFilter({ type: 'assignee', value: value, dateFrom: today, dateTo: today }); }
-    else if (type === 'vendor-log') { setActiveTab('vendor-action-log'); setLogDashboardFilter({ type: 'vendor', value: value, dateFrom: today, dateTo: today }); }
+	    else if (type === 'vendor-log') {
+	      if (!VENDOR_MODULE_ENABLED) return;
+	      setActiveTab('vendor-action-log');
+	      setLogDashboardFilter({ type: 'vendor', value: value, dateFrom: today, dateTo: today });
+	    }
     else if (type === 'recurring-log') { setActiveTab('recurring-actions'); setLogDashboardFilter({ type: 'assignee', value: value, dateFrom: today, dateTo: today }); }
   };
 

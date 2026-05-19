@@ -6,6 +6,8 @@ import { PendingTable } from './PendingTable';
 import { Task, User, Project, ActionLogEntry, RecurringTaskAction, Category, TableRow } from '../types';
 import { parseToISO } from '../App';
 
+const VENDOR_MODULE_ENABLED = false;
+
 interface DashboardProps {
   isAdmin: boolean;
   onOpenNewTask: () => void;
@@ -213,18 +215,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div className="w-64 h-1 bg-blue-600 mt-2 rounded-full"></div>
       </div>
 
-      {isAdmin && (
-        <div className="bg-sky-50 p-6 rounded-2xl shadow-md border-2 border-blue-300">
-          <SectionHeader title="Quick Control" icon={<LayoutList size={20}/>} />
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <QuickAction label="New Task" icon={<Plus size={18} />} colorClass="bg-blue-600 hover:bg-blue-700 text-white" onClick={onOpenNewTask}/>
-            <QuickAction label="Add User" icon={<UserPlus size={18} />} colorClass="bg-indigo-500 hover:bg-indigo-600 text-white" onClick={onOpenAddUser}/>
-            <QuickAction label="Add Vendor" icon={<Truck size={18} />} colorClass="bg-orange-500 hover:bg-orange-600 text-white" onClick={onOpenAddVendor}/>
-            <QuickAction label="Add Client" icon={<Building2 size={18} />} colorClass="bg-pink-500 hover:bg-pink-600 text-white" onClick={onOpenAddClient}/>
-            <QuickAction label="Add Project" icon={<Folder size={18} />} colorClass="bg-emerald-500 hover:bg-emerald-600 text-white" onClick={onOpenAddProject}/>
-          </div>
-        </div>
-      )}
+	      {isAdmin && (
+	        <div className="bg-sky-50 p-6 rounded-2xl shadow-md border-2 border-blue-300">
+	          <SectionHeader title="Quick Control" icon={<LayoutList size={20}/>} />
+	          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+	            <QuickAction label="New Task" icon={<Plus size={18} />} colorClass="bg-blue-600 hover:bg-blue-700 text-white" onClick={onOpenNewTask}/>
+	            <QuickAction label="Add User" icon={<UserPlus size={18} />} colorClass="bg-indigo-500 hover:bg-indigo-600 text-white" onClick={onOpenAddUser}/>
+	            {VENDOR_MODULE_ENABLED && (
+	              <QuickAction label="Add Vendor" icon={<Truck size={18} />} colorClass="bg-orange-500 hover:bg-orange-600 text-white" onClick={onOpenAddVendor}/>
+	            )}
+	            <QuickAction label="Add Client" icon={<Building2 size={18} />} colorClass="bg-pink-500 hover:bg-pink-600 text-white" onClick={onOpenAddClient}/>
+	            <QuickAction label="Add Project" icon={<Folder size={18} />} colorClass="bg-emerald-500 hover:bg-emerald-600 text-white" onClick={onOpenAddProject}/>
+	          </div>
+	        </div>
+	      )}
 
       <div className="bg-blue-50/70 p-6 rounded-2xl border-2 border-blue-300 shadow-sm">
         <SectionHeader title="Live Statistics" icon={<Clock size={20}/>} />
@@ -242,13 +246,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-8">
-        <PendingTable title="Pending by Assignee" headerLabel="Assignee Name" data={assigneeData} onRowClick={(name) => onFilterChange('assignee', name)}/>
-        <PendingTable title="Pending by Priority" headerLabel="Priority Level" data={priorityData} onRowClick={(name) => onFilterChange('priority', name)} className="bg-indigo-50/30"/>
-        <PendingTable title="Pending by Project" headerLabel="Project Name" data={projectData} onRowClick={(name) => onFilterChange('project', name)}/>
-        <PendingTable title="Pending by Categorywise" headerLabel="Category Name" data={categoryData} onRowClick={(name) => onFilterChange('category', name)} className="bg-indigo-50/30"/>
-        <PendingTable title="Pending by Vendor" headerLabel="Vendor Name" data={vendorData} onRowClick={(name) => onFilterChange('vendor', name)} className="bg-orange-50/30"/>
-      </div>
+	      <div className="grid grid-cols-1 gap-8">
+	        <PendingTable title="Pending by Assignee" headerLabel="Assignee Name" data={assigneeData} onRowClick={(name) => onFilterChange('assignee', name)}/>
+	        <PendingTable title="Pending by Priority" headerLabel="Priority Level" data={priorityData} onRowClick={(name) => onFilterChange('priority', name)} className="bg-indigo-50/30"/>
+	        <PendingTable title="Pending by Project" headerLabel="Project Name" data={projectData} onRowClick={(name) => onFilterChange('project', name)}/>
+	        <PendingTable title="Pending by Categorywise" headerLabel="Category Name" data={categoryData} onRowClick={(name) => onFilterChange('category', name)} className="bg-indigo-50/30"/>
+	        {VENDOR_MODULE_ENABLED && (
+	          <PendingTable title="Pending by Vendor" headerLabel="Vendor Name" data={vendorData} onRowClick={(name) => onFilterChange('vendor', name)} className="bg-orange-50/30"/>
+	        )}
+	      </div>
 
       <div className="space-y-6">
         <SectionHeader title="Today's Activity Recap" icon={<History size={20}/>} />
@@ -274,26 +280,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
            </div>
 
-           <div className="bg-white p-5 rounded-2xl border-2 border-orange-200 shadow-sm flex flex-col">
-              <div className="flex items-center gap-2 mb-4 border-b border-orange-50 pb-2">
-                 <Truck size={18} className="text-orange-600" />
-                 <h4 className="text-sm font-black text-orange-900 uppercase">Vendor Updates</h4>
-              </div>
-              <div className="flex-1 space-y-2 max-h-[300px] overflow-y-auto pr-1">
-                 {vendorUpdates.map(u => (
-                    <div key={u.name} onClick={() => onFilterChange('vendor-log', u.name)} className="flex items-center justify-between p-2.5 hover:bg-orange-50 rounded-xl cursor-pointer transition-colors border border-orange-100 bg-orange-50/10 shadow-sm">
-                       <span className="text-xs font-bold text-orange-900">{u.name}</span>
-                       <span className="bg-orange-600 text-white text-[10px] px-2 py-0.5 rounded-full font-black shadow-sm">{u.count}</span>
-                    </div>
-                 ))}
-                 {vendorUpdates.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-8 opacity-40">
-                      <Clock size={32} className="text-gray-300 mb-2" />
-                      <p className="text-[10px] text-gray-500 italic text-center uppercase font-bold tracking-widest">No vendor activity today</p>
-                   </div>
-                 )}
-              </div>
-           </div>
+	           {VENDOR_MODULE_ENABLED && (
+	             <div className="bg-white p-5 rounded-2xl border-2 border-orange-200 shadow-sm flex flex-col">
+	                <div className="flex items-center gap-2 mb-4 border-b border-orange-50 pb-2">
+	                   <Truck size={18} className="text-orange-600" />
+	                   <h4 className="text-sm font-black text-orange-900 uppercase">Vendor Updates</h4>
+	                </div>
+	                <div className="flex-1 space-y-2 max-h-[300px] overflow-y-auto pr-1">
+	                   {vendorUpdates.map(u => (
+	                      <div key={u.name} onClick={() => onFilterChange('vendor-log', u.name)} className="flex items-center justify-between p-2.5 hover:bg-orange-50 rounded-xl cursor-pointer transition-colors border border-orange-100 bg-orange-50/10 shadow-sm">
+	                         <span className="text-xs font-bold text-orange-900">{u.name}</span>
+	                         <span className="bg-orange-600 text-white text-[10px] px-2 py-0.5 rounded-full font-black shadow-sm">{u.count}</span>
+	                      </div>
+	                   ))}
+	                   {vendorUpdates.length === 0 && (
+	                      <div className="flex flex-col items-center justify-center py-8 opacity-40">
+	                        <Clock size={32} className="text-gray-300 mb-2" />
+	                        <p className="text-[10px] text-gray-500 italic text-center uppercase font-bold tracking-widest">No vendor activity today</p>
+	                     </div>
+	                   )}
+	                </div>
+	             </div>
+	           )}
 
            <div className="bg-white p-5 rounded-2xl border-2 border-emerald-200 shadow-sm flex flex-col">
               <div className="flex items-center gap-2 mb-4 border-b border-emerald-50 pb-2">
