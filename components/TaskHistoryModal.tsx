@@ -13,8 +13,8 @@ interface TaskHistoryModalProps {
 }
 
 export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onClose, task, logs }) => {
-  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
-  const [photoViewer, setPhotoViewer] = useState<{ photos: string[]; index: number } | null>(null);
+	  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+	  const [photoViewer, setPhotoViewer] = useState<{ photos: string[]; index: number } | null>(null);
 
   if (!isOpen || !task) return null;
 
@@ -30,15 +30,28 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
   
   const isVendorTask = !!(task.vendor && task.vendor.trim() !== '');
 
-  const parsePhotos = (rawPhotos?: string): string[] => {
-    if (!rawPhotos) return [];
-    try {
-      const parsed = JSON.parse(rawPhotos);
-      return Array.isArray(parsed) ? parsed.filter(photo => typeof photo === 'string' && photo.trim() !== '') : [];
-    } catch {
-      return [];
-    }
-  };
+	  const parsePhotos = (rawPhotos?: string): string[] => {
+	    if (!rawPhotos) return [];
+	    try {
+	      const parsed = JSON.parse(rawPhotos);
+	      return Array.isArray(parsed) ? parsed.filter(photo => typeof photo === 'string' && photo.trim() !== '') : [];
+	    } catch {
+	      return [];
+	    }
+	  };
+
+	  const normalizePdfHref = (raw?: string): string => {
+	    if (!raw) return '';
+	    const s = String(raw).trim();
+	    if (!s) return '';
+	    if (s.startsWith('data:')) return s;
+	    if (/^https?:\/\//i.test(s)) return s;
+	    // If backend stored base64 only, add data URL prefix.
+	    if (/^[A-Za-z0-9+/=\r\n]+$/.test(s)) {
+	      return `data:application/pdf;base64,${s.replace(/\s+/g, '')}`;
+	    }
+	    return s;
+	  };
   
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
@@ -195,16 +208,16 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
                           <span className="font-bold text-black">-</span>
                         )}
                       </div>
-                      <div className="space-y-0.5">
-                        <span className="text-gray-400 font-bold uppercase block">PDF</span>
-                        {log.pdf ? (
-                          <a href={log.pdf} target="_blank" rel="noreferrer" className="font-bold text-indigo-600 underline">
-                            Open PDF
-                          </a>
-                        ) : (
-                          <span className="font-bold text-black">-</span>
-                        )}
-                      </div>
+	                      <div className="space-y-0.5">
+	                        <span className="text-gray-400 font-bold uppercase block">PDF</span>
+	                        {normalizePdfHref(log.pdf) ? (
+	                          <a href={normalizePdfHref(log.pdf)} target="_blank" rel="noreferrer" className="font-bold text-indigo-600 underline">
+	                            Open PDF
+	                          </a>
+	                        ) : (
+	                          <span className="font-bold text-black">-</span>
+	                        )}
+	                      </div>
 	                    <div className="space-y-0.5">
 	                      <span className="text-gray-400 font-bold uppercase block">Owner</span>
                       <span className="font-bold text-black uppercase flex items-center gap-1">
@@ -283,9 +296,9 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
                             </button>
                           ) : '-'}
                         </td>
-                        <td className="px-6 py-4 text-xs border-r border-black">
-                          {log.pdf ? <a href={log.pdf} target="_blank" rel="noreferrer" className="text-indigo-600 underline">Open PDF</a> : '-'}
-                        </td>
+	                        <td className="px-6 py-4 text-xs border-r border-black">
+	                          {normalizePdfHref(log.pdf) ? <a href={normalizePdfHref(log.pdf)} target="_blank" rel="noreferrer" className="text-indigo-600 underline">Open PDF</a> : '-'}
+	                        </td>
 	                      {isVendorTask ? (
 	                          <td className="px-6 py-4 text-xs text-black font-bold uppercase border-r border-black">{log.vendor || '-'}</td>
 	                      ) : (
@@ -314,18 +327,39 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
 	        </div>
 	      </div>
 
-        {photoViewer && (
-          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4" onClick={() => setPhotoViewer(null)}>
-            <div className="relative w-full max-w-4xl rounded-2xl bg-white p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <button type="button" onClick={() => setPhotoViewer(null)} className="absolute right-3 top-3 rounded-full bg-white/90 p-2 text-gray-700 shadow hover:text-black">
-                <X size={18} />
-              </button>
-              <div className="flex min-h-[280px] items-center justify-center overflow-hidden rounded-xl bg-gray-100">
-                <img src={photoViewer.photos[photoViewer.index]} alt={`Log photo ${photoViewer.index + 1}`} className="max-h-[70vh] w-auto max-w-full object-contain" />
-              </div>
-            </div>
-          </div>
-        )}
+	        {photoViewer && (
+	          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4" onClick={() => setPhotoViewer(null)}>
+	            <div className="relative w-full max-w-4xl rounded-2xl bg-white p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+	              <button type="button" onClick={() => setPhotoViewer(null)} className="absolute right-3 top-3 rounded-full bg-white/90 p-2 text-gray-700 shadow hover:text-black">
+	                <X size={18} />
+	              </button>
+	              <div className="flex items-center justify-between mb-3">
+	                <button
+	                  type="button"
+	                  onClick={() => setPhotoViewer(p => p ? ({ ...p, index: Math.max(0, p.index - 1) }) : p)}
+	                  disabled={photoViewer.index === 0}
+	                  className="px-3 py-1.5 text-sm font-semibold rounded bg-blue-600 text-white disabled:bg-gray-200 disabled:text-gray-500"
+	                >
+	                  Prev
+	                </button>
+	                <div className="text-sm text-gray-700 font-semibold">
+	                  {photoViewer.index + 1} / {photoViewer.photos.length}
+	                </div>
+	                <button
+	                  type="button"
+	                  onClick={() => setPhotoViewer(p => p ? ({ ...p, index: Math.min(p.photos.length - 1, p.index + 1) }) : p)}
+	                  disabled={photoViewer.index >= photoViewer.photos.length - 1}
+	                  className="px-3 py-1.5 text-sm font-semibold rounded bg-blue-600 text-white disabled:bg-gray-200 disabled:text-gray-500"
+	                >
+	                  Next
+	                </button>
+	              </div>
+	              <div className="flex min-h-[280px] items-center justify-center overflow-hidden rounded-xl bg-gray-100">
+	                <img src={photoViewer.photos[photoViewer.index]} alt={`Log photo ${photoViewer.index + 1}`} className="max-h-[70vh] w-auto max-w-full object-contain" />
+	              </div>
+	            </div>
+	          </div>
+	        )}
 	    </div>
 	  );
 	};

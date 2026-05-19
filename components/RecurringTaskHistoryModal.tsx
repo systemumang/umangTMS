@@ -92,9 +92,9 @@ export const RecurringTaskHistoryModal: React.FC<RecurringTaskHistoryModalProps>
     doc.save(`History_${task.id}_${new Date().getTime()}.pdf`);
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-opacity">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col animate-in fade-in zoom-in duration-200">
+	  return (
+	    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4 bg-black/40 backdrop-blur-sm transition-opacity">
+	      <div className="bg-white rounded-xl shadow-2xl w-[98vw] h-[96vh] max-w-none max-h-none flex flex-col animate-in fade-in zoom-in duration-200">
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <div>
             <h2 className="text-xl font-bold text-indigo-600">Update History</h2>
@@ -117,7 +117,7 @@ export const RecurringTaskHistoryModal: React.FC<RecurringTaskHistoryModalProps>
           </div>
         </div>
 
-	        <div className="flex-1 overflow-auto p-4 md:p-6">
+		        <div className="flex-1 overflow-auto p-4 md:p-6">
 	          {/* Desktop Table View */}
 	          <div className="hidden md:block border border-gray-200 rounded-lg overflow-hidden">
 	            <table className="w-full text-left border-collapse">
@@ -228,7 +228,7 @@ export const RecurringTaskHistoryModal: React.FC<RecurringTaskHistoryModalProps>
           </div>
         </div>
 
-	        <div className="p-6 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end">
+	        <div className="p-6 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end flex-shrink-0">
 	          <button 
 	            type="button"
 	            onClick={onClose}

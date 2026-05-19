@@ -19,19 +19,20 @@ type SortConfig = {
 } | null;
 
 export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> = ({ 
-    actions, 
-    onDeleteAction, 
-    dashboardFilter = null,
-    onClearDashboardFilter 
-}) => {
+	    actions, 
+	    onDeleteAction, 
+	    dashboardFilter = null,
+	    onClearDashboardFilter 
+	}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
   const [filterAssignee, setFilterAssignee] = useState('All');
   const [filterStatus, setFilterStatus] = useState('All');
-  const [filterDate, setFilterDate] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
-  const [sortConfig, setSortConfig] = useState<SortConfig>(null);
-  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+	  const [filterDate, setFilterDate] = useState('');
+	  const [showFilters, setShowFilters] = useState(false);
+	  const [sortConfig, setSortConfig] = useState<SortConfig>(null);
+	  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+	  const [photoViewer, setPhotoViewer] = useState<{ photos: string[]; index: number } | null>(null);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -124,13 +125,35 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
     return s;
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Complete': return 'bg-green-100 text-green-700';
-      case 'In Progress': return 'bg-blue-100 text-blue-700';
-      default: return 'bg-gray-100 text-gray-700';
-    }
-  };
+	  const getStatusColor = (status: string) => {
+	    switch (status) {
+	      case 'Complete': return 'bg-green-100 text-green-700';
+	      case 'In Progress': return 'bg-blue-100 text-blue-700';
+	      default: return 'bg-gray-100 text-gray-700';
+	    }
+	  };
+
+	  const parsePhotos = (rawPhotos?: string): string[] => {
+	    if (!rawPhotos) return [];
+	    try {
+	      const parsed = JSON.parse(rawPhotos);
+	      return Array.isArray(parsed) ? parsed.filter(p => typeof p === 'string' && p.trim() !== '') : [];
+	    } catch {
+	      return [];
+	    }
+	  };
+
+	  const normalizePdfHref = (raw?: string): string => {
+	    if (!raw) return '';
+	    const s = String(raw).trim();
+	    if (!s) return '';
+	    if (s.startsWith('data:')) return s;
+	    if (/^https?:\/\//i.test(s)) return s;
+	    if (/^[A-Za-z0-9+/=\r\n]+$/.test(s)) {
+	      return `data:application/pdf;base64,${s.replace(/\s+/g, '')}`;
+	    }
+	    return s;
+	  };
 
   const handleClearFilters = () => {
     setFilterCategory('All'); 
@@ -182,10 +205,10 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
         )}
       </div>
 
-      {/* Mobile Card View */}
-      <div className={`space-y-4 md:hidden ${viewMode === 'card' ? 'block' : 'hidden'}`}>
-        {paginatedActions.map((action) => (
-             <div key={action.id} className="bg-white border-2 border-blue-200 rounded-xl p-4 shadow-sm space-y-3 relative">
+	      {/* Mobile Card View */}
+	      <div className={`space-y-4 md:hidden ${viewMode === 'card' ? 'block' : 'hidden'}`}>
+	        {paginatedActions.map((action) => (
+	             <div key={action.id} className="bg-white border-2 border-blue-200 rounded-xl p-4 shadow-sm space-y-3 relative">
                 <div className="flex justify-between items-start">
                     <div className="space-y-1 max-w-[70%]">
                         <h4 className="text-sm font-black text-blue-900 leading-tight whitespace-normal break-words">{action.taskTitle}</h4>
@@ -214,9 +237,40 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
                     </div>
                 </div>
 
-                <div className="bg-blue-50/50 p-2 rounded-lg border border-blue-100">
-                    <p className="text-[11px] text-blue-800 italic leading-relaxed whitespace-normal break-words">"{action.remarks}"</p>
-                </div>
+	                <div className="bg-blue-50/50 p-2 rounded-lg border border-blue-100">
+	                    <p className="text-[11px] text-blue-800 italic leading-relaxed whitespace-normal break-words">"{action.remarks}"</p>
+	                </div>
+
+	                <div className="grid grid-cols-3 gap-2 text-[10px]">
+	                  <div className="space-y-0.5">
+	                    <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Goal</span>
+	                    <div className="text-blue-900 font-bold whitespace-normal break-words">{action.goal || '-'}</div>
+	                  </div>
+	                  <div className="space-y-0.5">
+	                    <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Photo</span>
+	                    {parsePhotos(action.photos).length > 0 ? (
+	                      <button
+	                        type="button"
+	                        onClick={() => setPhotoViewer({ photos: parsePhotos(action.photos), index: 0 })}
+	                        className="text-indigo-600 underline font-bold"
+	                      >
+	                        {parsePhotos(action.photos).length} photo(s)
+	                      </button>
+	                    ) : (
+	                      <div className="text-blue-900 font-bold">-</div>
+	                    )}
+	                  </div>
+	                  <div className="space-y-0.5">
+	                    <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">PDF</span>
+	                    {normalizePdfHref(action.pdf) ? (
+	                      <a href={normalizePdfHref(action.pdf)} target="_blank" rel="noreferrer" className="text-indigo-600 underline font-bold">
+	                        Open
+	                      </a>
+	                    ) : (
+	                      <div className="text-blue-900 font-bold">-</div>
+	                    )}
+	                  </div>
+	                </div>
 
                 <button onClick={() => onDeleteAction(action.id, action.taskId)} className="absolute bottom-4 right-4 p-2 text-red-500 hover:bg-red-50 rounded-lg">
                     <Trash2 size={16} />
@@ -226,42 +280,102 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
         {paginatedActions.length === 0 && <div className="text-center py-10 text-blue-300 font-bold uppercase text-xs">No activity history found.</div>}
       </div>
 
-      <div className={`bg-white rounded-lg border-2 border-black shadow-sm overflow-hidden ${viewMode === 'card' ? 'hidden md:block' : 'block'}`}>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-blue-600">
-                <th className="px-4 py-3 text-[10px] font-black text-white uppercase tracking-widest border-r border-black w-16 text-center whitespace-nowrap">S.No.</th>
-                <th className={thClass} onClick={() => requestSort('taskTitle')}><div className="flex items-center">Task {getSortIcon('taskTitle')}</div></th>
-                <th className={thClass} onClick={() => requestSort('category')}><div className="flex items-center">Category {getSortIcon('category')}</div></th>
-                <th className={thClass} onClick={() => requestSort('assignee')}><div className="flex items-center">Assignee {getSortIcon('assignee')}</div></th>
-                <th className={thClass} onClick={() => requestSort('status')}><div className="flex items-center">Status {getSortIcon('status')}</div></th>
-                <th className={thClass} onClick={() => requestSort('updatedOn')}><div className="flex items-center">Date {getSortIcon('updatedOn')}</div></th>
-                <th className={thClass} onClick={() => requestSort('remarks')}><div className="flex items-center">Remarks {getSortIcon('remarks')}</div></th>
-                <th className="px-4 py-3 text-[10px] font-black text-white uppercase tracking-widest text-center whitespace-normal">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-black">
-              {paginatedActions.map((action, idx) => (
-                <tr key={action.id} className="hover:bg-blue-50 transition-colors">
-                  <td className={`${tdClass} text-center font-bold text-blue-600 !whitespace-nowrap`}>{startEntry + idx}</td>
-                  <td className={`${tdClass} font-bold`}>{action.taskTitle}</td>
-                  <td className={tdClass}>{action.category}</td>
-                  <td className={tdClass}>{action.assignee}</td>
-                  <td className={tdClass}><span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tighter border border-blue-100 whitespace-normal break-words ${getStatusColor(action.status)}`}>{action.status}</span></td>
-                  <td className={`${tdClass} font-bold`}>{formatDate(action.updatedOn)}</td>
-                  <td className={`${tdClass} italic text-blue-900`}>"{action.remarks}"</td>
-                  <td className={`${tdClass} text-center`}>
-                    <button onClick={() => onDeleteAction(action.id, action.taskId)} className="p-1.5 text-red-500 hover:bg-red-50 border-2 border-transparent hover:border-red-600 rounded-md transition-all"><Trash2 size={16} /></button>
-                  </td>
-                </tr>
-              ))}
-              {paginatedActions.length === 0 && (<tr><td colSpan={8} className="px-6 py-10 text-center text-blue-300 font-black uppercase">No activity found.</td></tr>)}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-};
+	      <div className={`bg-white rounded-lg border-2 border-black shadow-sm overflow-hidden ${viewMode === 'card' ? 'hidden md:block' : 'block'}`}>
+	        <div className="overflow-x-auto">
+	          <table className="w-full text-left border-collapse">
+	            <thead>
+	              <tr className="bg-blue-600">
+	                <th className="px-4 py-3 text-[10px] font-black text-white uppercase tracking-widest border-r border-black w-16 text-center whitespace-nowrap">S.No.</th>
+	                <th className={thClass} onClick={() => requestSort('taskTitle')}><div className="flex items-center">Task {getSortIcon('taskTitle')}</div></th>
+	                <th className={thClass} onClick={() => requestSort('category')}><div className="flex items-center">Category {getSortIcon('category')}</div></th>
+	                <th className={thClass} onClick={() => requestSort('assignee')}><div className="flex items-center">Assignee {getSortIcon('assignee')}</div></th>
+	                <th className={thClass} onClick={() => requestSort('status')}><div className="flex items-center">Status {getSortIcon('status')}</div></th>
+	                <th className={thClass} onClick={() => requestSort('updatedOn')}><div className="flex items-center">Date {getSortIcon('updatedOn')}</div></th>
+	                <th className={thClass} onClick={() => requestSort('remarks')}><div className="flex items-center">Remarks {getSortIcon('remarks')}</div></th>
+	                <th className={thClass} onClick={() => requestSort('goal')}><div className="flex items-center">Goal {getSortIcon('goal')}</div></th>
+	                <th className={thClass}><div className="flex items-center">Photo</div></th>
+	                <th className={thClass}><div className="flex items-center">PDF</div></th>
+	                <th className="px-4 py-3 text-[10px] font-black text-white uppercase tracking-widest text-center whitespace-normal">Actions</th>
+	              </tr>
+	            </thead>
+	            <tbody className="divide-y divide-black">
+	              {paginatedActions.map((action, idx) => (
+	                <tr key={action.id} className="hover:bg-blue-50 transition-colors">
+	                  <td className={`${tdClass} text-center font-bold text-blue-600 !whitespace-nowrap`}>{startEntry + idx}</td>
+	                  <td className={`${tdClass} font-bold`}>{action.taskTitle}</td>
+	                  <td className={tdClass}>{action.category}</td>
+	                  <td className={tdClass}>{action.assignee}</td>
+	                  <td className={tdClass}><span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tighter border border-blue-100 whitespace-normal break-words ${getStatusColor(action.status)}`}>{action.status}</span></td>
+	                  <td className={`${tdClass} font-bold`}>{formatDate(action.updatedOn)}</td>
+	                  <td className={`${tdClass} italic text-blue-900`}>"{action.remarks}"</td>
+	                  <td className={`${tdClass} font-bold`}>{action.goal || '-'}</td>
+	                  <td className={tdClass}>
+	                    {parsePhotos(action.photos).length > 0 ? (
+	                      <button
+	                        type="button"
+	                        onClick={() => setPhotoViewer({ photos: parsePhotos(action.photos), index: 0 })}
+	                        className="text-indigo-600 underline font-bold"
+	                      >
+	                        {parsePhotos(action.photos).length} photo(s)
+	                      </button>
+	                    ) : (
+	                      '-'
+	                    )}
+	                  </td>
+	                  <td className={tdClass}>
+	                    {normalizePdfHref(action.pdf) ? (
+	                      <a href={normalizePdfHref(action.pdf)} target="_blank" rel="noreferrer" className="text-indigo-600 underline font-bold">
+	                        Open PDF
+	                      </a>
+	                    ) : (
+	                      '-'
+	                    )}
+	                  </td>
+	                  <td className={`${tdClass} text-center`}>
+	                    <button onClick={() => onDeleteAction(action.id, action.taskId)} className="p-1.5 text-red-500 hover:bg-red-50 border-2 border-transparent hover:border-red-600 rounded-md transition-all"><Trash2 size={16} /></button>
+	                  </td>
+	                </tr>
+	              ))}
+	              {paginatedActions.length === 0 && (<tr><td colSpan={11} className="px-6 py-10 text-center text-blue-300 font-black uppercase">No activity found.</td></tr>)}
+	            </tbody>
+	          </table>
+	        </div>
+	      </div>
+
+	      {photoViewer && (
+	        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4" onClick={() => setPhotoViewer(null)}>
+	          <div className="relative w-full max-w-4xl rounded-2xl bg-white p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+	            <button type="button" onClick={() => setPhotoViewer(null)} className="absolute right-3 top-3 rounded-full bg-white/90 p-2 text-gray-700 shadow hover:text-black">
+	              <X size={18} />
+	            </button>
+	            <div className="flex items-center justify-between mb-3">
+	              <button
+	                type="button"
+	                onClick={() => setPhotoViewer(p => p ? ({ ...p, index: Math.max(0, p.index - 1) }) : p)}
+	                disabled={photoViewer.index === 0}
+	                className="px-3 py-1.5 text-sm font-semibold rounded bg-blue-600 text-white disabled:bg-gray-200 disabled:text-gray-500"
+	              >
+	                Prev
+	              </button>
+	              <div className="text-sm text-gray-700 font-semibold">
+	                {photoViewer.index + 1} / {photoViewer.photos.length}
+	              </div>
+	              <button
+	                type="button"
+	                onClick={() => setPhotoViewer(p => p ? ({ ...p, index: Math.min(p.photos.length - 1, p.index + 1) }) : p)}
+	                disabled={photoViewer.index >= photoViewer.photos.length - 1}
+	                className="px-3 py-1.5 text-sm font-semibold rounded bg-blue-600 text-white disabled:bg-gray-200 disabled:text-gray-500"
+	              >
+	                Next
+	              </button>
+	            </div>
+	            <div className="flex min-h-[280px] items-center justify-center overflow-hidden rounded-xl bg-gray-100">
+	              <img src={photoViewer.photos[photoViewer.index]} alt={`Log photo ${photoViewer.index + 1}`} className="max-h-[70vh] w-auto max-w-full object-contain" />
+	            </div>
+	          </div>
+	        </div>
+	      )}
+	    </div>
+	  );
+	};
 
