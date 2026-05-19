@@ -12,10 +12,12 @@ interface AddFirmModalProps {
 
 export const AddFirmModal: React.FC<AddFirmModalProps> = ({ isOpen, onClose, onSave, initialData, firms }) => {
   const [name, setName] = useState('');
+  const [sortName, setSortName] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
     setName(initialData?.name || '');
+    setSortName(initialData?.sortName || '');
     setError('');
   }, [initialData, isOpen]);
 
@@ -32,7 +34,7 @@ export const AddFirmModal: React.FC<AddFirmModalProps> = ({ isOpen, onClose, onS
       return;
     }
 
-    onSave({ name: cleanName });
+    onSave({ name: cleanName, sortName: sortName.trim() });
     onClose();
   };
 
@@ -48,7 +50,7 @@ export const AddFirmModal: React.FC<AddFirmModalProps> = ({ isOpen, onClose, onS
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-4">
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Firm Name *</label>
+              <label className="text-sm font-medium text-gray-700">Firm Name <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 required
@@ -61,6 +63,16 @@ export const AddFirmModal: React.FC<AddFirmModalProps> = ({ isOpen, onClose, onS
                 placeholder="Enter firm name"
               />
               {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">Sort Name</label>
+              <input
+                type="text"
+                value={sortName}
+                onChange={(e) => setSortName(e.target.value)}
+                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none"
+                placeholder="Enter sort name"
+              />
             </div>
           </div>
           <div className="p-6 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end space-x-3">

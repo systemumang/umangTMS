@@ -267,6 +267,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </div>
         </div>
+
+        <div className="md:hidden p-4 bg-white/50 border-t-2 border-indigo-500">
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={onLogout} className="flex items-center justify-center gap-2 py-2 text-xs font-bold text-indigo-600 bg-white border border-indigo-200 rounded-lg hover:bg-indigo-50">
+              <LogOut size={14} />
+              Logout
+            </button>
+            <button onClick={onExitWorkspace} className="flex items-center justify-center gap-2 py-2 text-xs font-bold text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50">
+              <ExternalLink size={14} />
+              Exit
+            </button>
+          </div>
+        </div>
       </aside>
     </>
   );

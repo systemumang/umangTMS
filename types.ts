@@ -155,6 +155,7 @@ export interface Project {
 export interface Firm {
     id: number;
     name: string;
+    sortName?: string;
 }
 
 export interface ActionLogEntry {

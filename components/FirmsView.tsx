@@ -19,7 +19,10 @@ export const FirmsView: React.FC<FirmsViewProps> = ({ firms, onAddFirm, onDelete
   const filtered = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return firms;
-    return firms.filter(f => f.name.toLowerCase().includes(term));
+    return firms.filter(f =>
+      f.name.toLowerCase().includes(term) ||
+      String(f.sortName || '').toLowerCase().includes(term)
+    );
   }, [firms, searchTerm]);
 
   return (
@@ -55,6 +58,7 @@ export const FirmsView: React.FC<FirmsViewProps> = ({ firms, onAddFirm, onDelete
               <tr className="bg-indigo-600 border-b border-indigo-700">
                 <th className="px-6 py-4 text-xs font-semibold text-white uppercase tracking-wider border-r border-indigo-500">S.No.</th>
                 <th className="px-6 py-4 text-xs font-semibold text-white uppercase tracking-wider border-r border-indigo-500">Firm Name</th>
+                <th className="px-6 py-4 text-xs font-semibold text-white uppercase tracking-wider border-r border-indigo-500">Sort Name</th>
                 <th className="px-6 py-4 text-xs font-semibold text-white uppercase tracking-wider text-center">Actions</th>
               </tr>
             </thead>
@@ -63,6 +67,7 @@ export const FirmsView: React.FC<FirmsViewProps> = ({ firms, onAddFirm, onDelete
                 <tr key={firm.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 text-sm text-gray-900 border-r border-black">{index + 1}</td>
                   <td className="px-6 py-4 text-sm font-medium text-gray-900 border-r border-black">{firm.name}</td>
+                  <td className="px-6 py-4 text-sm text-gray-900 border-r border-black">{firm.sortName || '-'}</td>
                   <td className="px-6 py-4 text-center">
                     <div className="flex items-center justify-center gap-3">
                       <button
@@ -83,7 +88,7 @@ export const FirmsView: React.FC<FirmsViewProps> = ({ firms, onAddFirm, onDelete
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="px-6 py-8 text-center text-gray-500">No firms found.</td>
+                  <td colSpan={4} className="px-6 py-8 text-center text-gray-500">No firms found.</td>
                 </tr>
               )}
             </tbody>

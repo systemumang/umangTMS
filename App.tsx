@@ -558,7 +558,7 @@ export default function App() {
         setUsers((data.users || []).map((u: any) => ({ ...u, id: Number(u.id), isActive: String(u.isActive).toUpperCase() === 'TRUE' })));
         setProjects((data.projects || []).map((p: any) => ({ ...p, id: Number(p.id) })));
         setClients((data.clients || []).map((c: any) => ({ ...c, id: Number(c.id), gstNumber: c.gstNumber || c.gSTNumber || c.GSTNumber || '' })));
-        setFirms((data.firms || []).map((f: any) => ({ ...f, id: Number(f.id), name: String(f.name || '') })));
+        setFirms((data.firms || []).map((f: any) => ({ ...f, id: Number(f.id), name: String(f.name || ''), sortName: String(f.sortName || f.sortname || f.SortName || '') })));
         setVendors((data.vendors || []).map((v: any) => ({ ...v, id: Number(v.id), gstNumber: v.gstNumber || v.gSTNumber || v.GSTNumber || '' })));
         setCategories((data.categories || []).map((c: any) => ({ ...c, id: Number(c.id) })));
         setVendorCategories((data.vendorCategories || []).map((vc: any) => ({ ...vc, id: Number(vc.id) })));

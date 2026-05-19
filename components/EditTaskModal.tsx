@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Info, AlertTriangle } from 'lucide-react';
+import { X, Plus, Info, AlertTriangle, Clock3 } from 'lucide-react';
 import { Task, User, Category, Project, Vendor, VendorCategory, Firm } from '../types';
 import { SearchableSelect } from './SearchableSelect';
 
@@ -361,13 +361,16 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-black block mb-1">Time</label>
-                  <input
-                    name="time"
-                    type="time"
-                    value={formData.time}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none text-black font-medium"
-                  />
+                  <div className="relative">
+                    <input
+                      name="time"
+                      type="time"
+                      value={formData.time}
+                      onChange={handleChange}
+                      className="w-full px-4 pr-10 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none text-black font-medium [appearance:textfield] [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-10"
+                    />
+                    <Clock3 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-black pointer-events-none" />
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-black block mb-1">Goal</label>
