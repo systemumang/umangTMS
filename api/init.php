@@ -307,6 +307,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $title = trim((string)($data['title'] ?? ''));
         $firm = trim((string)($data['firm'] ?? ''));
+        $owner = trim((string)($data['owner'] ?? ''));
         $category = trim((string)($data['category'] ?? ''));
         $assignee = trim((string)($data['assignee'] ?? ''));
         $frequencyType = trim((string)($data['frequencyType'] ?? $data['periodicity'] ?? 'Fixed Days'));
@@ -318,10 +319,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($title === '') sendJson(['success' => false, 'error' => 'Recurring task title is required.'], 400);
 
-        $stmt = $conn->prepare("INSERT INTO recurring_tasks (id, title, firm, category, assignee, frequencyType, frequencyDays, startDate, time, goal, status, lastUpdatedOn, lastUpdateRemarks) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '')");
+        $stmt = $conn->prepare("INSERT INTO recurring_tasks (id, title, firm, owner, category, assignee, frequencyType, frequencyDays, startDate, time, goal, status, lastUpdatedOn, lastUpdateRemarks) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '')");
         if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare recurring task insert.'], 500);
         $idStr = (string)$id;
-        $stmt->bind_param('ssssssissss', $idStr, $title, $firm, $category, $assignee, $frequencyType, $frequencyDays, $startDate, $time, $goal, $status);
+        $stmt->bind_param('sssssssissss', $idStr, $title, $firm, $owner, $category, $assignee, $frequencyType, $frequencyDays, $startDate, $time, $goal, $status);
         $ok = $stmt->execute();
         $stmtError = $stmt->error;
         $stmt->close();
@@ -338,6 +339,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $taskId = (int)($data['taskId'] ?? $data['taskID'] ?? 0);
         $taskTitle = trim((string)($data['taskTitle'] ?? ''));
         $firm = trim((string)($data['firm'] ?? ''));
+        $owner = trim((string)($data['owner'] ?? ''));
         $category = trim((string)($data['category'] ?? ''));
         $assignee = trim((string)($data['assignee'] ?? ''));
         $status = trim((string)($data['status'] ?? ''));
@@ -350,11 +352,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($taskId <= 0) sendJson(['success' => false, 'error' => 'Invalid recurring task id.'], 400);
 
-        $stmt = $conn->prepare("INSERT INTO recurring_actions (id, taskId, taskTitle, firm, category, assignee, status, remarks, goal, photos, pdf, updatedOn, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO recurring_actions (id, taskId, taskTitle, firm, owner, category, assignee, status, remarks, goal, photos, pdf, updatedOn, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare recurring action insert.'], 500);
         $idStr = (string)$id;
         $taskIdStr = (string)$taskId;
-        $stmt->bind_param('sssssssssssss', $idStr, $taskIdStr, $taskTitle, $firm, $category, $assignee, $status, $remarks, $goal, $photos, $pdf, $updatedOn, $timestamp);
+        $stmt->bind_param('ssssssssssssss', $idStr, $taskIdStr, $taskTitle, $firm, $owner, $category, $assignee, $status, $remarks, $goal, $photos, $pdf, $updatedOn, $timestamp);
         $ok = $stmt->execute();
         $stmtError = $stmt->error;
         $stmt->close();
@@ -598,6 +600,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $title = array_key_exists('title', $data) ? trim((string)$data['title']) : (string)($row['title'] ?? '');
         $firm = array_key_exists('firm', $data) ? trim((string)$data['firm']) : (string)($row['firm'] ?? '');
+        $owner = array_key_exists('owner', $data) ? trim((string)$data['owner']) : (string)($row['owner'] ?? '');
         $category = array_key_exists('category', $data) ? trim((string)$data['category']) : (string)($row['category'] ?? '');
         $assignee = array_key_exists('assignee', $data) ? trim((string)$data['assignee']) : (string)($row['assignee'] ?? '');
         $frequencyType = array_key_exists('frequencyType', $data) || array_key_exists('periodicity', $data)
@@ -613,9 +616,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($title === '') sendJson(['success' => false, 'error' => 'Recurring task title is required.'], 400);
 
-        $stmt = $conn->prepare("UPDATE recurring_tasks SET title=?, firm=?, category=?, assignee=?, frequencyType=?, frequencyDays=?, startDate=?, time=?, goal=?, status=?, lastUpdatedOn=?, lastUpdateRemarks=? WHERE id=?");
+        $stmt = $conn->prepare("UPDATE recurring_tasks SET title=?, firm=?, owner=?, category=?, assignee=?, frequencyType=?, frequencyDays=?, startDate=?, time=?, goal=?, status=?, lastUpdatedOn=?, lastUpdateRemarks=? WHERE id=?");
         if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare recurring task update.'], 500);
-        $stmt->bind_param('sssssisssssss', $title, $firm, $category, $assignee, $frequencyType, $frequencyDays, $startDate, $time, $goal, $status, $lastUpdatedOn, $lastUpdateRemarks, $idStr);
+        $stmt->bind_param('ssssssisssssss', $title, $firm, $owner, $category, $assignee, $frequencyType, $frequencyDays, $startDate, $time, $goal, $status, $lastUpdatedOn, $lastUpdateRemarks, $idStr);
         $ok = $stmt->execute();
         $stmtError = $stmt->error;
         $stmt->close();

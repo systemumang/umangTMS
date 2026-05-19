@@ -141,7 +141,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <>
       <aside className={`
-        w-64 bg-blue-50 h-full shadow-lg flex flex-col flex-shrink-0 z-50 border-r border-blue-100
+        w-64 bg-blue-50 h-full shadow-lg flex flex-col flex-shrink-0 z-[80] border-r border-blue-100
         fixed md:relative inset-y-0 left-0 transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         ${className}

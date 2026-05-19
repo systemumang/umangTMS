@@ -243,6 +243,12 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
 
                 <div className="grid grid-cols-2 gap-2 py-2 border-y border-black">
                     <div className="space-y-0.5">
+                        <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Owner</span>
+                        <div className="flex items-center gap-1 text-[10px] text-blue-900 font-bold whitespace-normal break-words">
+                            <User size={10} /> {action.owner || '-'}
+                        </div>
+                    </div>
+                    <div className="space-y-0.5">
                         <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Assignee</span>
                         <div className="flex items-center gap-1 text-[10px] text-blue-900 font-bold whitespace-normal break-words">
                             <User size={10} /> {action.assignee}
@@ -307,7 +313,8 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
 	                <th className="px-4 py-3 text-[10px] font-black text-white uppercase tracking-widest border-r border-black w-16 text-center whitespace-nowrap">S.No.</th>
 	                <th className={thClass} onClick={() => requestSort('taskTitle')}><div className="flex items-center">Task {getSortIcon('taskTitle')}</div></th>
 		                <th className={thClass} onClick={() => requestSort('firm')}><div className="flex items-center">Firm {getSortIcon('firm')}</div></th>
-		                <th className={thClass} onClick={() => requestSort('category')}><div className="flex items-center">Category {getSortIcon('category')}</div></th>
+                <th className={thClass} onClick={() => requestSort('owner' as any)}><div className="flex items-center">Owner {getSortIcon('owner' as any)}</div></th>
+                <th className={thClass} onClick={() => requestSort('category')}><div className="flex items-center">Category {getSortIcon('category')}</div></th>
 	                <th className={thClass} onClick={() => requestSort('assignee')}><div className="flex items-center">Assignee {getSortIcon('assignee')}</div></th>
 	                <th className={thClass} onClick={() => requestSort('status')}><div className="flex items-center">Status {getSortIcon('status')}</div></th>
 	                <th className={thClass} onClick={() => requestSort('updatedOn')}><div className="flex items-center">Date {getSortIcon('updatedOn')}</div></th>
@@ -324,6 +331,7 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
 	                  <td className={`${tdClass} text-center font-bold text-blue-600 !whitespace-nowrap`}>{startEntry + idx}</td>
 	                  <td className={`${tdClass} font-bold`}>{action.taskTitle}</td>
 		                  <td className={tdClass}>{action.firm || '-'}</td>
+		                  <td className={tdClass}>{action.owner || '-'}</td>
 		                  <td className={tdClass}>{action.category}</td>
 	                  <td className={tdClass}>{action.assignee}</td>
 	                  <td className={tdClass}><span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tighter border border-blue-100 whitespace-normal break-words ${getStatusColor(action.status)}`}>{action.status}</span></td>
@@ -357,7 +365,7 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
 	                  </td>
 	                </tr>
 	              ))}
-	              {paginatedActions.length === 0 && (<tr><td colSpan={12} className="px-6 py-10 text-center text-blue-300 font-black uppercase">No activity found.</td></tr>)}
+	              {paginatedActions.length === 0 && (<tr><td colSpan={13} className="px-6 py-10 text-center text-blue-300 font-black uppercase">No activity found.</td></tr>)}
 	            </tbody>
 	          </table>
 	        </div>

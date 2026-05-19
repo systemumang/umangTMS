@@ -17,6 +17,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 			    title: string;
 			    goal: number | '';
           firm: string;
+          owner: string;
 			    category: string;
 		    assignee: string;
 		    frequencyDays: number | '';
@@ -29,6 +30,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 			    title: '',
 			    goal: '',
           firm: '',
+          owner: '',
 			    category: '',
 		    assignee: '',
 		    frequencyDays: '',
@@ -63,6 +65,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 			      title: formData.title,
 			      goal: formData.goal,
             firm: formData.firm,
+            owner: formData.owner,
 		      category: formData.category,
 		      assignee: formData.assignee,
 		      startDate: formData.startDate,
@@ -85,6 +88,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 			      title: '',
 			      goal: '',
             firm: '',
+            owner: '',
 		      category: '',
 		      assignee: '',
 		      frequencyDays: '',
@@ -99,7 +103,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 
 	  const isFormValid = () => {
 	    // Basic required fields validation
-			    if (!formData.title.trim() || !formData.firm || !formData.category || !formData.assignee || !formData.startDate || !formData.time) {
+			    if (!formData.title.trim() || !formData.firm || !formData.owner || !formData.category || !formData.assignee || !formData.startDate || !formData.time) {
 		      return false;
 		    }
     
@@ -194,7 +198,15 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
                 ))}
               </div>
             </div>
-	            <div className="grid grid-cols-2 gap-4">
+            <SearchableSelect 
+              label="Owner"
+              options={userOptions}
+              value={formData.owner}
+              onChange={(val) => setFormData(p => ({ ...p, owner: val }))}
+              required
+              placeholder="Select owner"
+            />
+	            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 	              <SearchableSelect 
 	                label="Category"
 	                options={categoryOptions}

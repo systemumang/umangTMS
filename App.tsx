@@ -598,11 +598,12 @@ export default function App() {
 		            periodicity: (t.periodicity || t.frequencyType || 'Fixed Days') as any,
 		            startDate: formatToIndianDate(t.startDate || ''),
 		            time: formatToHHMM(getCaseInsensitive(t, 'time') || ''),
-		            lastUpdatedOn: formatToIndianDate(t.lastUpdatedOn || ''),
-		            lastUpdateRemarks: String(t.lastUpdateRemarks || ''),
-			            goal: String(t.goal || ''),
+			            lastUpdatedOn: formatToIndianDate(t.lastUpdatedOn || ''),
+			            lastUpdateRemarks: String(t.lastUpdateRemarks || ''),
+				            goal: String(t.goal || ''),
                   firm: String(t.firm || ''),
-			            status: String(t.status || 'Not Yet Started') as any
+                  owner: String(t.owner || t.Owner || ''),
+				            status: String(t.status || 'Not Yet Started') as any
 			        })).sort((a: any, b: any) => Number(b.id || 0) - Number(a.id || 0)));
 		        setRecurringActions((data.recurringActions || []).map((a: any) => ({
 		          ...a,
@@ -613,9 +614,10 @@ export default function App() {
 		          assignee: String(a.assignee || a.Assignee || ''),
 		          status: String(a.status || a.Status || 'Not Yet Started') as any,
 			          remarks: String(a.remarks || a.Remarks || a.remark || ''),
-			          goal: String(a.goal || a.Goal || ''),
+				          goal: String(a.goal || a.Goal || ''),
                 firm: String(a.firm || a.Firm || ''),
-			          photos: String(a.photos || a.Photos || ''),
+                  owner: String(a.owner || a.Owner || ''),
+				          photos: String(a.photos || a.Photos || ''),
 		          pdf: String(a.pdf || a.PDF || ''),
 		          timestamp: formatToHHMM(getCaseInsensitive(a, 'timestamp') || ''),
 		          updatedOn: formatToIndianDate(getCaseInsensitive(a, 'updatedOn') || '')
@@ -1139,17 +1141,24 @@ export default function App() {
                 hasError={!!apiError}
               />
             ) : (
-              <header className="md:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between sticky top-0 z-30">
+	              <header className="md:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between sticky top-0 z-40">
                 <div className="flex items-center space-x-2">
                    <img src="https://i.ibb.co/YBSjM7Gg/Chat-GPT-Image-Dec-18-2025-10-23-18-AM.png" className="h-8 w-8" alt="Logo" />
                    <h1 className="text-xl font-bold text-indigo-600">TaskPro</h1>
                 </div>
                   {!isAnyFormModalOpen && (
-	                  <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-gray-500 hover:bg-gray-100 rounded-md">
+	                  <button onClick={() => setIsSidebarOpen(prev => !prev)} className="p-2 text-gray-500 hover:bg-gray-100 rounded-md">
 	                    <Menu size={24} />
 	                  </button>
                   )}
               </header>
+            )}
+
+            {layoutMode === 'side' && isSidebarOpen && (
+              <div
+                className="md:hidden fixed inset-0 z-30 bg-black/30"
+                onClick={() => setIsSidebarOpen(false)}
+              />
             )}
 
 		            <main className="flex-1 overflow-y-auto pt-2 md:pt-4 px-2 md:px-4 pb-0 custom-scrollbar relative">
@@ -1270,6 +1279,7 @@ export default function App() {
 		            id: t.id,
 		            status: t.status,
                 firm: t.firm || '',
+                owner: t.owner || '',
 		            goal: t.goal || '',
 		            lastUpdatedOn: updatedOn,
 		            lastUpdateRemarks: t.lastUpdateRemarks || ''
@@ -1279,6 +1289,7 @@ export default function App() {
 		            taskId: t.id,
 		            taskTitle: t.title,
                 firm: t.firm || '',
+                owner: t.owner || '',
 		            category: t.category,
 	            assignee: t.assignee,
 	            status: t.status,

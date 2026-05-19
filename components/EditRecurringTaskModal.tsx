@@ -30,6 +30,7 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
 			    title: string;
 			    goal: number | '';
 			    firm: string;
+          owner: string;
 			    category: string;
 			    assignee: string;
 			    frequencyDays: number | '';
@@ -43,6 +44,7 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
 			    title: '',
 			    goal: '',
 			    firm: '',
+          owner: '',
 			    category: '',
 			    assignee: '',
 			    frequencyDays: '',
@@ -59,6 +61,7 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
         title: task.title,
         goal: (task.goal as any) || '',
         firm: task.firm || '',
+        owner: task.owner || '',
         category: task.category,
         assignee: task.assignee,
         frequencyDays: task.frequencyDays,
@@ -157,7 +160,15 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
                 ))}
               </div>
             </div>
-	            <div className="grid grid-cols-2 gap-4">
+            <SearchableSelect 
+              label="Owner"
+              options={userOptions}
+              value={formData.owner}
+              onChange={(val) => setFormData(p => ({ ...p, owner: val }))}
+              required
+              placeholder="Select owner"
+            />
+	            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 	              <SearchableSelect 
 	                label="Category"
 	                options={categoryOptions}

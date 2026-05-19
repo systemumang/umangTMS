@@ -335,7 +335,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
           />
         </div>
         {showFilters && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
 	            <SearchableSelect label="Category" options={categories.map(c => ({ value: c, label: c }))} value={filterCategory} onChange={setFilterCategory} />
               <SearchableSelect label="Firm" options={firms.map(f => ({ value: f, label: f }))} value={filterFirm} onChange={setFilterFirm} />
 	            <SearchableSelect label="Assignee" options={assignees.map(a => ({ value: a, label: a }))} value={filterAssignee} onChange={setFilterAssignee} />
@@ -363,6 +363,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                 <th className="px-4 py-3 text-[10px] font-bold text-white uppercase tracking-wider border-r border-indigo-500 w-16 text-center whitespace-nowrap">S.No.</th>
 	                <th className={thClass} onClick={() => requestSort('title')}><div className="flex items-center">Task {getSortIcon('title')}</div></th>
                   <th className={thClass} onClick={() => requestSort('firm')}><div className="flex items-center">Firm {getSortIcon('firm')}</div></th>
+                  <th className={thClass} onClick={() => requestSort('owner')}><div className="flex items-center">Owner {getSortIcon('owner')}</div></th>
 	                <th className={thClass} onClick={() => requestSort('category')}><div className="flex items-center">Category {getSortIcon('category')}</div></th>
                 <th className={thClass} onClick={() => requestSort('assignee')}><div className="flex items-center">Assignee {getSortIcon('assignee')}</div></th>
 	                <th className={thClass} onClick={() => requestSort('status')}><div className="flex items-center">Status {getSortIcon('status')}</div></th>
@@ -400,6 +401,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                     <td className={`${tdClass} text-center font-bold text-indigo-600 !whitespace-nowrap`}>{startEntry + idx}</td>
 	                    <td className={`${tdClass} font-medium`}>{task.title}</td>
                       <td className={tdClass}>{task.firm || '-'}</td>
+                      <td className={tdClass}>{task.owner || '-'}</td>
 	                    <td className={tdClass}>{task.category}</td>
                     <td className={tdClass}>{task.assignee}</td>
                     <td className={tdClass}>
@@ -430,7 +432,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                   </tr>
                 );
               })}
-		              {paginatedTasks.length === 0 && (<tr><td colSpan={isAdmin ? 13 : 12} className="px-6 py-10 text-center text-gray-500">No recurring tasks found.</td></tr>)}
+		              {paginatedTasks.length === 0 && (<tr><td colSpan={isAdmin ? 14 : 13} className="px-6 py-10 text-center text-gray-500">No recurring tasks found.</td></tr>)}
 	            </tbody>
 	          </table>
 	        </div>
@@ -469,6 +471,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                     </div>
 		                    <div className="grid grid-cols-2 gap-y-2 text-xs text-gray-600 mb-4 bg-gray-50 p-2 rounded">
                     <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Firm</span><span className="whitespace-normal break-words">{task.firm || '-'}</span></div>
+                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Owner</span><span className="whitespace-normal break-words">{task.owner || '-'}</span></div>
 		                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Category</span><span className="whitespace-normal break-words">{task.category}</span></div>
 	                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Assignee</span><span className="whitespace-normal break-words">{task.assignee}</span></div>
 	                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Rule</span><span className="whitespace-normal break-words">{getFrequencyText(task)}</span></div>

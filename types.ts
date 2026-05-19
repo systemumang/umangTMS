@@ -65,6 +65,7 @@ export interface RecurringTask {
 			  id: number;
 			  title: string;
 			  firm?: string;
+        owner?: string;
 			  category: string;
 		  assignee: string;
 		  frequencyDays: number;
@@ -84,6 +85,7 @@ export interface RecurringTaskAction {
   taskId: number;
   taskTitle: string;
   firm?: string;
+  owner?: string;
   category: string;
   assignee: string;
   status: 'Not Yet Started' | 'In Progress' | 'Complete' | 'Pending for Client' | 'Pending for Owner';
