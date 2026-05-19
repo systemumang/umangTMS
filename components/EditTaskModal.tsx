@@ -172,6 +172,10 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const vendorOptions = vendors.map(v => ({ value: v.name, label: v.name }));
   const categoryOptions = categories.map(c => ({ value: c.name, label: c.name }));
   const vendorCategoryOptions = (vendorCategories || []).map(c => ({ value: c.name, label: c.name }));
+  const firmOptions = firms.map(f => ({
+    value: f.name,
+    label: (f.sortName && String(f.sortName).trim()) ? String(f.sortName).trim() : f.name
+  }));
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -291,7 +295,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                   <div className="space-y-1">
                     <SearchableSelect
                       label="Firm"
-                      options={firms.map(f => ({ value: f.name, label: f.name }))}
+                      options={firmOptions}
                       value={formData.firm}
                       onChange={(val) => setFormData(prev => ({ ...prev, firm: val }))}
                       placeholder="Select firm..."

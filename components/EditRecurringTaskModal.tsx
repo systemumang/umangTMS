@@ -76,7 +76,10 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
 
   const userOptions = users.map(u => ({ value: u.name, label: u.name }));
   const categoryOptions = categories.map(c => ({ value: c.name, label: c.name }));
-  const firmOptions = firms.map(f => ({ value: f.name, label: f.name }));
+  const firmOptions = firms.map(f => ({
+    value: f.name,
+    label: (f.sortName && String(f.sortName).trim()) ? String(f.sortName).trim() : f.name
+  }));
   const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
