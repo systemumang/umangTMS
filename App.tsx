@@ -311,25 +311,24 @@ export default function App() {
     const employeeLogs = visibleActionLogs.filter(l => !l.vendor || l.vendor === '');
     const vendorLogs = visibleActionLogs.filter(l => l.vendor && l.vendor !== '');
 
-    const counts: Record<string, number> = {
-      'all-tasks': employeeTasks.length,
-      'pending-group': employeeTasks.filter(t => t.status !== 'Completed').length,
-      'pending': employeeTasks.filter(t => t.status !== 'Completed').length,
-      'pending-client': employeeTasks.filter(t => t.status === 'Pending for Client').length,
-      'pending-owner': employeeTasks.filter(t => t.status === 'Pending for Owner').length,
-      'pending-training': employeeTasks.filter(t => t.status === 'Pending for Training').length,
-      'pending-billing': employeeTasks.filter(t => t.status === 'Pending for Billing').length,
-      'pending-payment': employeeTasks.filter(t => t.status === 'Pending for Payment').length,
-      'completed': employeeTasks.filter(t => t.status === 'Completed').length,
-      'activity-dashboard': employeeLogs.length,
-      'action-log': employeeLogs.length,
-      'vendor-tasks': vendorTasksOnly.length,
-      'pending-vendor-tasks': vendorTasksOnly.filter(t => t.status !== 'Completed').length,
-      'completed-vendor-tasks': vendorTasksOnly.filter(t => t.status === 'Completed').length,
-      'vendor-action-log': vendorLogs.length,
-      'recurring-tasks': visibleRecurringTasks.length,
-      'recurring-actions': visibleRecurringActions.length,
-    };
+	    const counts: Record<string, number> = {
+	      'all-tasks': employeeTasks.length,
+	      'pending-group': employeeTasks.filter(t => t.status !== 'Completed').length,
+	      'pending': employeeTasks.filter(t => t.status !== 'Completed').length,
+	      'pending-client': employeeTasks.filter(t => t.status === 'Pending for Client').length,
+	      'pending-owner': employeeTasks.filter(t => t.status === 'Pending for Owner').length,
+	      'pending-training': employeeTasks.filter(t => t.status === 'Pending for Training').length,
+	      'pending-billing': employeeTasks.filter(t => t.status === 'Pending for Billing').length,
+	      'pending-payment': employeeTasks.filter(t => t.status === 'Pending for Payment').length,
+	      'completed': employeeTasks.filter(t => t.status === 'Completed').length,
+	      'action-log': employeeLogs.length,
+	      'vendor-tasks': vendorTasksOnly.length,
+	      'pending-vendor-tasks': vendorTasksOnly.filter(t => t.status !== 'Completed').length,
+	      'completed-vendor-tasks': vendorTasksOnly.filter(t => t.status === 'Completed').length,
+	      'vendor-action-log': vendorLogs.length,
+	      'recurring-tasks': visibleRecurringTasks.length,
+	      'recurring-actions': visibleRecurringActions.length,
+	    };
 
     return filteredNavItems.map(item => (
       Object.prototype.hasOwnProperty.call(counts, item.id)
