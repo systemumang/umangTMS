@@ -578,18 +578,21 @@ export default function App() {
 		            goal: String(t.goal || ''),
 		            status: String(t.status || 'Not Yet Started') as any
 		        })));
-	        setRecurringActions((data.recurringActions || []).map((a: any) => ({
-	          ...a,
-	          id: Number(a.id || 0),
-	          taskId: Number(a.taskId || a.taskID || a.taskid || 0),
-	          taskTitle: String(a.taskTitle || a.task || a.title || a.TaskTitle || a['Task Title'] || ''),
-	          category: String(a.category || a.Category || ''),
-	          assignee: String(a.assignee || a.Assignee || ''),
-	          status: String(a.status || a.Status || 'Not Yet Started') as any,
-	          remarks: String(a.remarks || a.Remarks || a.remark || ''),
-	          timestamp: formatToHHMM(getCaseInsensitive(a, 'timestamp') || ''),
-	          updatedOn: formatToIndianDate(getCaseInsensitive(a, 'updatedOn') || '')
-	        })));
+		        setRecurringActions((data.recurringActions || []).map((a: any) => ({
+		          ...a,
+		          id: Number(a.id || 0),
+		          taskId: Number(a.taskId || a.taskID || a.taskid || 0),
+		          taskTitle: String(a.taskTitle || a.task || a.title || a.TaskTitle || a['Task Title'] || ''),
+		          category: String(a.category || a.Category || ''),
+		          assignee: String(a.assignee || a.Assignee || ''),
+		          status: String(a.status || a.Status || 'Not Yet Started') as any,
+		          remarks: String(a.remarks || a.Remarks || a.remark || ''),
+		          goal: String(a.goal || a.Goal || ''),
+		          photos: String(a.photos || a.Photos || ''),
+		          pdf: String(a.pdf || a.PDF || ''),
+		          timestamp: formatToHHMM(getCaseInsensitive(a, 'timestamp') || ''),
+		          updatedOn: formatToIndianDate(getCaseInsensitive(a, 'updatedOn') || '')
+		        })));
         if (data.settings) setSettings(data.settings);
         setLastSynced(new Date());
       }
@@ -1081,7 +1084,9 @@ export default function App() {
 	          const now = new Date();
 	          const updatedOn = now.toLocaleDateString('en-GB');
 	          const timestamp = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-	          const updatedTask = { ...t, lastUpdatedOn: updatedOn, lastUpdateRemarks: t.lastUpdateRemarks };
+	          const updatedTask = { ...t, lastUpdatedOn: updatedOn, lastUpdateRemarks: t.lastUpdateRemarks, goal: t.goal || '' };
+	          const photos = String((t as any).photos || '');
+	          const pdf = String((t as any).pdf || '');
 
 	          setRecurringTasks(prev => prev.map(x => x.id === t.id ? updatedTask : x));
 
@@ -1090,6 +1095,7 @@ export default function App() {
 	          apiPost('updateMaster', {
 	            id: t.id,
 	            status: t.status,
+	            goal: t.goal || '',
 	            lastUpdatedOn: updatedOn,
 	            lastUpdateRemarks: t.lastUpdateRemarks || ''
 	          }, 'RecurringTasks');
@@ -1102,7 +1108,10 @@ export default function App() {
 	            status: t.status,
 	            updatedOn,
 	            timestamp,
-	            remarks: t.lastUpdateRemarks
+	            remarks: t.lastUpdateRemarks,
+	            goal: t.goal || '',
+	            photos,
+	            pdf
 	          }, 'RecurringActions');
 	        }}
 	      />

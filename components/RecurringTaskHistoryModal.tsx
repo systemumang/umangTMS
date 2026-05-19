@@ -17,6 +17,16 @@ export const RecurringTaskHistoryModal: React.FC<RecurringTaskHistoryModalProps>
 
   // Use numeric comparison for safety
   const taskActions = actions.filter(a => Number(a.taskId) === Number(task.id));
+  const [photoViewer, setPhotoViewer] = React.useState<{ photos: string[]; index: number } | null>(null);
+
+  const parsePhotos = (rawPhotos?: string): string[] => {
+    if (!rawPhotos) return [];
+    try {
+      const parsed = JSON.parse(rawPhotos);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean).map(String);
+    } catch {}
+    return [];
+  };
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '-';
@@ -60,12 +70,15 @@ export const RecurringTaskHistoryModal: React.FC<RecurringTaskHistoryModalProps>
     doc.text(`Task: ${task.title}`, 14, 28);
     doc.text(`Assignee: ${task.assignee}`, 14, 34);
 
-    const tableColumn = ["Date", "Time", "Status", "Remarks"];
+    const tableColumn = ["Date", "Time", "Status", "Remarks", "Goal", "Photo", "PDF"];
     const tableRows = taskActions.map(a => [
       formatDate(a.updatedOn),
       formatTime(a.timestamp),
       a.status,
-      a.remarks
+      a.remarks,
+      String(a.goal || ''),
+      parsePhotos(a.photos).length > 0 ? `${parsePhotos(a.photos).length} photo(s)` : '-',
+      a.pdf ? 'Open PDF' : '-'
     ]);
 
     autoTable(doc, {
@@ -104,46 +117,71 @@ export const RecurringTaskHistoryModal: React.FC<RecurringTaskHistoryModalProps>
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto p-4 md:p-6">
-          {/* Desktop Table View */}
-          <div className="hidden md:block border border-gray-200 rounded-lg overflow-hidden">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-gray-50">
-                <tr className="border-b border-gray-200">
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Time</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Remarks</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {taskActions.map((action) => (
-                  <tr key={action.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 text-sm text-black font-medium">{formatDate(action.updatedOn)}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500 italic">{formatTime(action.timestamp)}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${getStatusColor(action.status)}`}>
-                        {action.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-black">{action.remarks}</td>
-                  </tr>
-                ))}
-                {taskActions.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
-                      No update history recorded for this task.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+	        <div className="flex-1 overflow-auto p-4 md:p-6">
+	          {/* Desktop Table View */}
+	          <div className="hidden md:block border border-gray-200 rounded-lg overflow-hidden">
+	            <table className="w-full text-left border-collapse">
+	              <thead className="bg-gray-50">
+	                <tr className="border-b border-gray-200">
+	                  <th className="px-6 py-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Date</th>
+	                  <th className="px-6 py-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Time</th>
+	                  <th className="px-6 py-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+	                  <th className="px-6 py-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Remarks</th>
+	                  <th className="px-6 py-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Goal</th>
+	                  <th className="px-6 py-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Photo</th>
+	                  <th className="px-6 py-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">PDF</th>
+	                </tr>
+	              </thead>
+	              <tbody className="divide-y divide-gray-100">
+	                {taskActions.map((action) => (
+	                  <tr key={action.id} className="hover:bg-gray-50 transition-colors">
+	                    <td className="px-6 py-4 text-sm text-black font-medium">{formatDate(action.updatedOn)}</td>
+	                    <td className="px-6 py-4 text-sm text-gray-500 italic">{formatTime(action.timestamp)}</td>
+	                    <td className="px-6 py-4 text-sm">
+	                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${getStatusColor(action.status)}`}>
+	                        {action.status}
+	                      </span>
+	                    </td>
+	                    <td className="px-6 py-4 text-sm text-black">{action.remarks}</td>
+	                    <td className="px-6 py-4 text-sm text-black">{action.goal || '-'}</td>
+	                    <td className="px-6 py-4 text-sm">
+	                      {parsePhotos(action.photos).length > 0 ? (
+	                        <button
+	                          onClick={() => setPhotoViewer({ photos: parsePhotos(action.photos), index: 0 })}
+	                          className="text-indigo-600 underline font-semibold"
+	                        >
+	                          {parsePhotos(action.photos).length} photo(s)
+	                        </button>
+	                      ) : (
+	                        <span className="text-gray-400">-</span>
+	                      )}
+	                    </td>
+	                    <td className="px-6 py-4 text-sm">
+	                      {action.pdf ? (
+	                        <a href={action.pdf} target="_blank" rel="noreferrer" className="text-indigo-600 underline font-semibold">
+	                          Open PDF
+	                        </a>
+	                      ) : (
+	                        <span className="text-gray-400">-</span>
+	                      )}
+	                    </td>
+	                  </tr>
+	                ))}
+	                {taskActions.length === 0 && (
+	                  <tr>
+	                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+	                      No update history recorded for this task.
+	                    </td>
+	                  </tr>
+	                )}
+	              </tbody>
+	            </table>
+	          </div>
 
-          {/* Mobile Card View */}
-          <div className="md:hidden space-y-4">
-             {taskActions.map((action) => (
-                <div key={action.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+	          {/* Mobile Card View */}
+	          <div className="md:hidden space-y-4">
+	             {taskActions.map((action) => (
+	                <div key={action.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                    <div className="flex justify-between items-start mb-3">
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${getStatusColor(action.status)}`}>{action.status}</span>
                       <div className="text-right">
@@ -151,29 +189,102 @@ export const RecurringTaskHistoryModal: React.FC<RecurringTaskHistoryModalProps>
                          <div className="text-[9px] text-gray-400 font-medium mt-0.5 italic">{formatTime(action.timestamp)}</div>
                       </div>
                    </div>
-                   <div className="bg-indigo-50/50 border border-indigo-100 p-2 rounded">
-                      <p className="text-xs text-gray-700 leading-relaxed">"{action.remarks || 'No remarks provided'}"</p>
-                   </div>
-                </div>
-             ))}
-             {taskActions.length === 0 && (
-                <div className="text-center py-12 text-gray-400 text-sm italic">
-                   No recurring history logs available.
+	                   <div className="bg-indigo-50/50 border border-indigo-100 p-2 rounded space-y-2">
+	                      <p className="text-xs text-gray-700 leading-relaxed">"{action.remarks || 'No remarks provided'}"</p>
+	                      {action.goal ? <p className="text-[11px] text-gray-700"><span className="font-semibold">Goal:</span> {action.goal}</p> : null}
+	                      <div className="flex items-center justify-between text-[11px]">
+	                        <div>
+	                          <span className="text-gray-500 font-semibold uppercase">Photo</span>{' '}
+	                          {parsePhotos(action.photos).length > 0 ? (
+	                            <button
+	                              onClick={() => setPhotoViewer({ photos: parsePhotos(action.photos), index: 0 })}
+	                              className="text-indigo-600 underline font-semibold"
+	                            >
+	                              {parsePhotos(action.photos).length} photo(s)
+	                            </button>
+	                          ) : (
+	                            <span className="text-gray-400">-</span>
+	                          )}
+	                        </div>
+	                        <div>
+	                          <span className="text-gray-500 font-semibold uppercase">PDF</span>{' '}
+	                          {action.pdf ? (
+	                            <a href={action.pdf} target="_blank" rel="noreferrer" className="text-indigo-600 underline font-semibold">
+	                              Open
+	                            </a>
+	                          ) : (
+	                            <span className="text-gray-400">-</span>
+	                          )}
+	                        </div>
+	                      </div>
+	                   </div>
+	                </div>
+	             ))}
+	             {taskActions.length === 0 && (
+	                <div className="text-center py-12 text-gray-400 text-sm italic">
+	                   No recurring history logs available.
                 </div>
              )}
           </div>
         </div>
 
-        <div className="p-6 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end">
-          <button 
-            type="button"
-            onClick={onClose}
-            className="px-6 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+	        <div className="p-6 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end">
+	          <button 
+	            type="button"
+	            onClick={onClose}
+	            className="px-6 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+	          >
+	            Close
+	          </button>
+	        </div>
+
+	        {photoViewer && (
+	          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70">
+	            <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full p-4 relative">
+	              <button
+	                onClick={() => setPhotoViewer(null)}
+	                className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700"
+	              >
+	                <X size={18} />
+	              </button>
+	              <div className="flex items-center justify-between mb-3">
+	                <button
+	                  onClick={() =>
+	                    setPhotoViewer(p =>
+	                      p ? { ...p, index: Math.max(0, p.index - 1) } : p
+	                    )
+	                  }
+	                  disabled={photoViewer.index === 0}
+	                  className="px-3 py-1.5 text-sm font-semibold rounded bg-indigo-600 text-white disabled:bg-gray-200 disabled:text-gray-500"
+	                >
+	                  Prev
+	                </button>
+	                <div className="text-sm text-gray-700 font-semibold">
+	                  {photoViewer.index + 1} / {photoViewer.photos.length}
+	                </div>
+	                <button
+	                  onClick={() =>
+	                    setPhotoViewer(p =>
+	                      p ? { ...p, index: Math.min(p.photos.length - 1, p.index + 1) } : p
+	                    )
+	                  }
+	                  disabled={photoViewer.index >= photoViewer.photos.length - 1}
+	                  className="px-3 py-1.5 text-sm font-semibold rounded bg-indigo-600 text-white disabled:bg-gray-200 disabled:text-gray-500"
+	                >
+	                  Next
+	                </button>
+	              </div>
+	              <div className="flex items-center justify-center">
+	                <img
+	                  src={photoViewer.photos[photoViewer.index]}
+	                  alt={`Log photo ${photoViewer.index + 1}`}
+	                  className="max-h-[70vh] w-auto max-w-full object-contain"
+	                />
+	              </div>
+	            </div>
+	          </div>
+	        )}
+	      </div>
+	    </div>
+	  );
 };

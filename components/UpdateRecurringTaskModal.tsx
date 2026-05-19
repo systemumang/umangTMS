@@ -7,12 +7,23 @@ interface UpdateRecurringTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   task: RecurringTask | null;
-  onSave: (updatedTask: RecurringTask & { lastUpdateRemarks: string }) => void;
+  onSave: (updatedTask: RecurringTask & { lastUpdateRemarks: string; goal?: string; photos?: string; pdf?: string }) => void;
 }
 
 export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> = ({ isOpen, onClose, task, onSave }) => {
+  const readFileAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
   const [remarks, setRemarks] = useState('');
   const [status, setStatus] = useState<'Not Yet Started' | 'In Progress' | 'Complete'>('Complete');
+  const [goal, setGoal] = useState('');
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [pdf, setPdf] = useState('');
 
   if (!isOpen || !task) return null;
 
@@ -25,6 +36,9 @@ export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> =
       ...task, 
       status, 
       lastUpdateRemarks: remarks,
+      goal,
+      photos: JSON.stringify(photos || []),
+      pdf: pdf || '',
       title: task.title,
       category: task.category,
       assignee: task.assignee
@@ -32,6 +46,9 @@ export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> =
     
     setRemarks('');
     setStatus('Complete');
+    setGoal('');
+    setPhotos([]);
+    setPdf('');
     onClose();
   };
 
@@ -72,6 +89,52 @@ export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> =
                 value={remarks}
                 onChange={(e) => setRemarks(e.target.value)}
               />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-black">Goal</label>
+              <input
+                type="text"
+                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+                placeholder="Optional goal / outcome"
+                value={goal}
+                onChange={(e) => setGoal(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-black block mb-1">Photo (Up to 5)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={async (e) => {
+                    const files = Array.from(e.target.files || []);
+                    if (files.length > 5) {
+                      alert('Please upload maximum 5 photos.');
+                      return;
+                    }
+                    const photoData = await Promise.all(files.map(readFileAsDataUrl));
+                    setPhotos(photoData);
+                  }}
+                  className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm"
+                />
+                <p className="text-xs text-gray-500">{photos.length} photo(s) selected</p>
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-black block mb-1">PDF</label>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const pdfData = await readFileAsDataUrl(file);
+                    setPdf(pdfData);
+                  }}
+                  className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm"
+                />
+                <p className="text-xs text-gray-500">{pdf ? 'PDF selected' : 'No PDF selected'}</p>
+              </div>
             </div>
             {status === 'Complete' && (
               <div className="bg-indigo-50 p-3 rounded-lg border border-indigo-100 text-xs text-indigo-800">

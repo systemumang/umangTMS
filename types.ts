@@ -87,6 +87,9 @@ export interface RecurringTaskAction {
   updatedOn: string; 
   timestamp: string; 
   remarks: string;
+  goal?: string;
+  photos?: string;
+  pdf?: string;
 }
 
 export interface User {

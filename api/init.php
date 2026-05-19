@@ -314,16 +314,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $assignee = trim((string)($data['assignee'] ?? ''));
         $status = trim((string)($data['status'] ?? ''));
         $remarks = trim((string)($data['remarks'] ?? ''));
+        $goal = trim((string)($data['goal'] ?? ''));
+        $photos = (string)($data['photos'] ?? '');
+        $pdf = (string)($data['pdf'] ?? '');
         $updatedOn = trim((string)($data['updatedOn'] ?? ''));
         $timestamp = trim((string)($data['timestamp'] ?? ''));
 
         if ($taskId <= 0) sendJson(['success' => false, 'error' => 'Invalid recurring task id.'], 400);
 
-        $stmt = $conn->prepare("INSERT INTO recurring_actions (id, taskId, taskTitle, category, assignee, status, remarks, updatedOn, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO recurring_actions (id, taskId, taskTitle, category, assignee, status, remarks, goal, photos, pdf, updatedOn, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare recurring action insert.'], 500);
         $idStr = (string)$id;
         $taskIdStr = (string)$taskId;
-        $stmt->bind_param('sssssssss', $idStr, $taskIdStr, $taskTitle, $category, $assignee, $status, $remarks, $updatedOn, $timestamp);
+        $stmt->bind_param('ssssssssssss', $idStr, $taskIdStr, $taskTitle, $category, $assignee, $status, $remarks, $goal, $photos, $pdf, $updatedOn, $timestamp);
         $ok = $stmt->execute();
         $stmtError = $stmt->error;
         $stmt->close();
