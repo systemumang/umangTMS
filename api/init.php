@@ -260,10 +260,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'addMaster' && $table === 'firms') {
         $name = trim((string)($data['name'] ?? ''));
+        $sortName = trim((string)($data['sortName'] ?? $data['sortname'] ?? ''));
         if ($name === '') sendJson(['success' => false, 'error' => 'Firm name is required.'], 400);
-        $stmt = $conn->prepare("INSERT INTO firms (name) VALUES (?)");
+        if ($sortName === '') sendJson(['success' => false, 'error' => 'Sort Name is required.'], 400);
+        $stmt = $conn->prepare("INSERT INTO firms (name, sortName) VALUES (?, ?)");
         if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare firm insert.'], 500);
-        $stmt->bind_param('s', $name);
+        $stmt->bind_param('ss', $name, $sortName);
         $ok = $stmt->execute();
         $insertId = (int)$stmt->insert_id;
         $stmt->close();
@@ -543,9 +545,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = (int)($data['id'] ?? 0);
         if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid firm id.'], 400);
         $name = trim((string)($data['name'] ?? ''));
-        $stmt = $conn->prepare("UPDATE firms SET name=? WHERE id=?");
+        $sortName = trim((string)($data['sortName'] ?? $data['sortname'] ?? ''));
+        if ($sortName === '') sendJson(['success' => false, 'error' => 'Sort Name is required.'], 400);
+        $stmt = $conn->prepare("UPDATE firms SET name=?, sortName=? WHERE id=?");
         if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare firm update.'], 500);
-        $stmt->bind_param('si', $name, $id);
+        $stmt->bind_param('ssi', $name, $sortName, $id);
         $ok = $stmt->execute();
         $stmt->close();
         if (!$ok) sendJson(['success' => false, 'error' => 'Failed to update firm.'], 400);

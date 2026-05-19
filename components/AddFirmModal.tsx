@@ -26,7 +26,12 @@ export const AddFirmModal: React.FC<AddFirmModalProps> = ({ isOpen, onClose, onS
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const cleanName = name.trim();
+    const cleanSortName = sortName.trim();
     if (!cleanName) return;
+    if (!cleanSortName) {
+      setError('Sort Name is required.');
+      return;
+    }
 
     const isDuplicate = firms.some(f => f.id !== initialData?.id && f.name.trim().toLowerCase() === cleanName.toLowerCase());
     if (isDuplicate) {
@@ -34,7 +39,7 @@ export const AddFirmModal: React.FC<AddFirmModalProps> = ({ isOpen, onClose, onS
       return;
     }
 
-    onSave({ name: cleanName, sortName: sortName.trim() });
+    onSave({ name: cleanName, sortName: cleanSortName });
     onClose();
   };
 
@@ -65,12 +70,16 @@ export const AddFirmModal: React.FC<AddFirmModalProps> = ({ isOpen, onClose, onS
               {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Sort Name</label>
+              <label className="text-sm font-medium text-gray-700">Sort Name <span className="text-red-500">*</span></label>
               <input
                 type="text"
+                required
                 value={sortName}
-                onChange={(e) => setSortName(e.target.value)}
-                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none"
+                onChange={(e) => {
+                  setSortName(e.target.value);
+                  if (error === 'Sort Name is required.') setError('');
+                }}
+                className={`w-full px-4 py-2.5 bg-white border rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none ${error === 'Sort Name is required.' ? 'border-red-500' : 'border-gray-200'}`}
                 placeholder="Enter sort name"
               />
             </div>
