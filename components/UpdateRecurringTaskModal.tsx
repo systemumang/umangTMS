@@ -65,7 +65,7 @@ export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> =
           </button>
         </div>
         <form onSubmit={handleSubmit}>
-          <div className="p-6 space-y-4">
+          <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
             <div className="space-y-1">
               <label className="text-sm font-medium text-black">Update Status *</label>
               <select 
