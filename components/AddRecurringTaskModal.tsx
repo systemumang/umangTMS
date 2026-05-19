@@ -12,27 +12,29 @@ interface AddRecurringTaskModalProps {
 }
 
 export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ isOpen, onClose, onSave, users, categories }) => {
-	  const [formData, setFormData] = useState<{
-	    title: string;
-	    category: string;
-	    assignee: string;
-	    frequencyDays: number | '';
-	    startDate: string;
-	    time: string;
-	    periodicity: 'Fixed Days' | 'Weekly' | 'Monthly' | 'Yearly';
-	    recurrenceDay: number;
-	    recurrenceMonth: string;
-	  }>({
-	    title: '',
-	    category: '',
-	    assignee: '',
-	    frequencyDays: '',
-	    startDate: new Date().toISOString().split('T')[0],
-	    time: '',
-	    periodicity: 'Fixed Days',
-	    recurrenceDay: 1,
-	    recurrenceMonth: 'January'
-	  });
+		  const [formData, setFormData] = useState<{
+		    title: string;
+		    goal: string;
+		    category: string;
+		    assignee: string;
+		    frequencyDays: number | '';
+		    startDate: string;
+		    time: string;
+		    periodicity: 'Fixed Days' | 'Weekly' | 'Monthly' | 'Yearly';
+		    recurrenceDay: number;
+		    recurrenceMonth: string;
+		  }>({
+		    title: '',
+		    goal: '',
+		    category: '',
+		    assignee: '',
+		    frequencyDays: '',
+		    startDate: new Date().toISOString().split('T')[0],
+		    time: '',
+		    periodicity: 'Fixed Days',
+		    recurrenceDay: 1,
+		    recurrenceMonth: 'January'
+		  });
 
   if (!isOpen) return null;
 
@@ -50,17 +52,18 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
     }
 
     // Prepare task data based on periodicity
-	    const taskData: any = {
-	      title: formData.title,
-	      category: formData.category,
-	      assignee: formData.assignee,
-	      startDate: formData.startDate,
-	      time: formData.time,
-	      periodicity: formData.periodicity,
-	      recurrenceDay: formData.recurrenceDay,
-	      // Only include frequencyDays for Fixed Days periodicity
-	      frequencyDays: formData.periodicity === 'Fixed Days' ? Number(formData.frequencyDays) : 0
-	    };
+		    const taskData: any = {
+		      title: formData.title,
+		      goal: formData.goal,
+		      category: formData.category,
+		      assignee: formData.assignee,
+		      startDate: formData.startDate,
+		      time: formData.time,
+		      periodicity: formData.periodicity,
+		      recurrenceDay: formData.recurrenceDay,
+		      // Only include frequencyDays for Fixed Days periodicity
+		      frequencyDays: formData.periodicity === 'Fixed Days' ? Number(formData.frequencyDays) : 0
+		    };
 
     // Only include recurrenceMonth for Yearly periodicity
     if (formData.periodicity === 'Yearly') {
@@ -70,25 +73,26 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
     onSave(taskData);
 
     // Reset form
-	    setFormData({
-	      title: '',
-	      category: '',
-	      assignee: '',
-	      frequencyDays: '',
-	      startDate: new Date().toISOString().split('T')[0],
-	      time: '',
-	      periodicity: 'Fixed Days',
-	      recurrenceDay: 1,
-	      recurrenceMonth: 'January'
-	    });
-	    onClose();
-	  };
+		    setFormData({
+		      title: '',
+		      goal: '',
+		      category: '',
+		      assignee: '',
+		      frequencyDays: '',
+		      startDate: new Date().toISOString().split('T')[0],
+		      time: '',
+		      periodicity: 'Fixed Days',
+		      recurrenceDay: 1,
+		      recurrenceMonth: 'January'
+		    });
+		    onClose();
+		  };
 
 	  const isFormValid = () => {
 	    // Basic required fields validation
-	    if (!formData.title.trim() || !formData.category || !formData.assignee || !formData.startDate || !formData.time) {
-	      return false;
-	    }
+		    if (!formData.title.trim() || !formData.category || !formData.assignee || !formData.startDate || !formData.time) {
+		      return false;
+		    }
     
     // Periodicity-specific validation
     switch (formData.periodicity) {
@@ -139,22 +143,32 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
         </div>
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-black">Task Title</label>
-              <input 
-                type="text"
-                required
-                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
-                value={formData.title}
-                onChange={(e) => setFormData(p => ({ ...p, title: e.target.value }))}
-                placeholder="Enter task title"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <SearchableSelect 
-                label="Category"
-                options={categoryOptions}
-                value={formData.category}
+	            <div className="space-y-1">
+	              <label className="text-sm font-medium text-black">Task Title</label>
+	              <input 
+	                type="text"
+	                required
+	                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+	                value={formData.title}
+	                onChange={(e) => setFormData(p => ({ ...p, title: e.target.value }))}
+	                placeholder="Enter task title"
+	              />
+	            </div>
+	            <div className="space-y-1">
+	              <label className="text-sm font-medium text-black">Goal</label>
+	              <input
+	                type="text"
+	                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+	                value={formData.goal}
+	                onChange={(e) => setFormData(p => ({ ...p, goal: e.target.value }))}
+	                placeholder="Optional goal / outcome"
+	              />
+	            </div>
+	            <div className="grid grid-cols-2 gap-4">
+	              <SearchableSelect 
+	                label="Category"
+	                options={categoryOptions}
+	                value={formData.category}
                 onChange={(val) => setFormData(p => ({ ...p, category: val }))}
                 required
                 placeholder="Select category"

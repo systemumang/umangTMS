@@ -465,25 +465,25 @@ export default function App() {
       user: currentUser?.name || 'Unknown'
     };
 
-    try {
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify(payload),
-        mode: 'cors',
-        redirect: 'follow'
-      });
-      const result = await safeJsonParse(response, action);
-      if (result.success) setTimeout(() => fetchData(false), 1500);
-      return result;
-    } catch (err: any) {
-      console.error(`API Error:`, err.message);
-      setTimeout(() => fetchData(false), 2000);
-      return { success: true }; 
-    } finally {
-      setIsSyncing(false);
-    }
-  };
+	    try {
+	      const response = await fetch(apiUrl, {
+	        method: 'POST',
+	        headers: { 'Content-Type': 'text/plain' },
+	        body: JSON.stringify(payload),
+	        mode: 'cors',
+	        redirect: 'follow'
+	      });
+	      const result = await safeJsonParse(response, action);
+	      if (result.success) setTimeout(() => fetchData(false), 1500);
+	      return result;
+	    } catch (err: any) {
+	      console.error(`API Error:`, err.message);
+	      setTimeout(() => fetchData(false), 2000);
+	      return { success: false, error: err?.message || 'Request failed' };
+	    } finally {
+	      setIsSyncing(false);
+	    }
+	  };
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -566,15 +566,18 @@ export default function App() {
             };
         });
         setActionLogs(normalizedLogs);
-	        setRecurringTasks((data.recurringTasks || []).map((t: any) => ({
-	            ...t,
-	            id: Number(t.id),
-	            frequencyDays: Number(t.frequencyDays || 30),
-	            startDate: formatToIndianDate(t.startDate || ''),
-	            time: formatToHHMM(getCaseInsensitive(t, 'time') || ''),
-	            lastUpdatedOn: formatToIndianDate(t.lastUpdatedOn || ''),
-	            status: String(t.status || 'Not Yet Started') as any
-	        })));
+		        setRecurringTasks((data.recurringTasks || []).map((t: any) => ({
+		            ...t,
+		            id: Number(t.id),
+		            frequencyDays: Number(t.frequencyDays || 30),
+		            periodicity: (t.periodicity || t.frequencyType || 'Fixed Days') as any,
+		            startDate: formatToIndianDate(t.startDate || ''),
+		            time: formatToHHMM(getCaseInsensitive(t, 'time') || ''),
+		            lastUpdatedOn: formatToIndianDate(t.lastUpdatedOn || ''),
+		            lastUpdateRemarks: String(t.lastUpdateRemarks || ''),
+		            goal: String(t.goal || ''),
+		            status: String(t.status || 'Not Yet Started') as any
+		        })));
 	        setRecurringActions((data.recurringActions || []).map((a: any) => ({
 	          ...a,
 	          id: Number(a.id || 0),
@@ -1057,15 +1060,19 @@ export default function App() {
       
       <AddRecurringTaskModal
         isOpen={isRecurringTaskModalOpen}
-        onClose={() => setIsRecurringTaskModalOpen(false)}
-        onSave={async (t) => {
-          const createResult = await apiPost('addMaster', t, 'RecurringTasks');
-          const createdId = Number(createResult?.data?.id || Date.now());
-          setRecurringTasks(prev => [...prev, { ...t, id: createdId, status: 'Not Yet Started' } as any]);
-        }}
-        users={users}
-        categories={categories}
-      />
+	        onClose={() => setIsRecurringTaskModalOpen(false)}
+	        onSave={async (t) => {
+	          const createResult = await apiPost('addMaster', t, 'RecurringTasks');
+	          if (!createResult?.success) {
+	            setApiError(createResult?.error || 'Failed to save recurring task.');
+	            return;
+	          }
+	          const createdId = Number(createResult?.data?.id || Date.now());
+	          setRecurringTasks(prev => [...prev, { ...t, id: createdId, status: 'Not Yet Started' } as any]);
+	        }}
+	        users={users}
+	        categories={categories}
+	      />
 	      <UpdateRecurringTaskModal
 	        isOpen={isRecurringTaskUpdateModalOpen}
 	        onClose={() => setIsRecurringTaskUpdateModalOpen(false)}

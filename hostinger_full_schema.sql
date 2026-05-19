@@ -148,6 +148,7 @@ CREATE TABLE IF NOT EXISTS recurring_tasks (
   frequencyDays INT DEFAULT 30,
   startDate VARCHAR(20) DEFAULT '',
   time VARCHAR(10) DEFAULT '',
+  goal VARCHAR(255) DEFAULT '',
   status VARCHAR(80) DEFAULT 'Not Yet Started',
   lastUpdatedOn VARCHAR(20) DEFAULT '',
   lastUpdateRemarks TEXT,

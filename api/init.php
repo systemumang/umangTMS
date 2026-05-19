@@ -91,7 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'maintasks' => 'main_tasks',
         'vendortasks' => 'vendor_tasks',
         'maintaskactionlog' => 'action_logs',
-        'vendortaskactionlog' => 'action_logs'
+        'vendortaskactionlog' => 'action_logs',
+        'recurringtasks' => 'recurring_tasks',
+        'recurringactions' => 'recurring_actions'
     ];
     $table = $targetTableMap[$target] ?? '';
 
@@ -269,6 +271,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->close();
         if (!$ok) sendJson(['success' => false, 'error' => 'Failed to add designation.'], 400);
         sendJson(['success' => true, 'data' => ['id' => $insertId]]);
+    }
+
+    if ($action === 'addMaster' && $table === 'recurring_tasks') {
+        $id = (int)($data['id'] ?? 0);
+        if ($id <= 0) {
+            $id = (int)round(microtime(true) * 1000);
+        }
+
+        $title = trim((string)($data['title'] ?? ''));
+        $category = trim((string)($data['category'] ?? ''));
+        $assignee = trim((string)($data['assignee'] ?? ''));
+        $frequencyType = trim((string)($data['frequencyType'] ?? $data['periodicity'] ?? 'Fixed Days'));
+        $frequencyDays = (int)($data['frequencyDays'] ?? 0);
+        $startDate = trim((string)($data['startDate'] ?? ''));
+        $time = trim((string)($data['time'] ?? ''));
+        $goal = trim((string)($data['goal'] ?? ''));
+        $status = trim((string)($data['status'] ?? 'Not Yet Started'));
+
+        if ($title === '') sendJson(['success' => false, 'error' => 'Recurring task title is required.'], 400);
+
+        $stmt = $conn->prepare("INSERT INTO recurring_tasks (id, title, category, assignee, frequencyType, frequencyDays, startDate, time, goal, status, lastUpdatedOn, lastUpdateRemarks) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '')");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare recurring task insert.'], 500);
+        $idStr = (string)$id;
+        $stmt->bind_param('sssssissss', $idStr, $title, $category, $assignee, $frequencyType, $frequencyDays, $startDate, $time, $goal, $status);
+        $ok = $stmt->execute();
+        $stmtError = $stmt->error;
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to add recurring task: ' . $stmtError], 400);
+        sendJson(['success' => true, 'data' => ['id' => $id]]);
+    }
+
+    if ($action === 'addMaster' && $table === 'recurring_actions') {
+        $id = (int)($data['id'] ?? 0);
+        if ($id <= 0) {
+            $id = (int)round(microtime(true) * 1000);
+        }
+
+        $taskId = (int)($data['taskId'] ?? $data['taskID'] ?? 0);
+        $taskTitle = trim((string)($data['taskTitle'] ?? ''));
+        $category = trim((string)($data['category'] ?? ''));
+        $assignee = trim((string)($data['assignee'] ?? ''));
+        $status = trim((string)($data['status'] ?? ''));
+        $remarks = trim((string)($data['remarks'] ?? ''));
+        $updatedOn = trim((string)($data['updatedOn'] ?? ''));
+        $timestamp = trim((string)($data['timestamp'] ?? ''));
+
+        if ($taskId <= 0) sendJson(['success' => false, 'error' => 'Invalid recurring task id.'], 400);
+
+        $stmt = $conn->prepare("INSERT INTO recurring_actions (id, taskId, taskTitle, category, assignee, status, remarks, updatedOn, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare recurring action insert.'], 500);
+        $idStr = (string)$id;
+        $taskIdStr = (string)$taskId;
+        $stmt->bind_param('sssssssss', $idStr, $taskIdStr, $taskTitle, $category, $assignee, $status, $remarks, $updatedOn, $timestamp);
+        $ok = $stmt->execute();
+        $stmtError = $stmt->error;
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to add recurring action: ' . $stmtError], 400);
+        sendJson(['success' => true, 'data' => ['id' => $id]]);
     }
 
     if ($action === 'updateMaster' && $table === 'users') {
@@ -461,6 +521,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         sendJson(['success' => true]);
     }
 
+    if ($action === 'updateMaster' && $table === 'recurring_tasks') {
+        $id = (int)($data['id'] ?? 0);
+        if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid recurring task id.'], 400);
+
+        $stmt = $conn->prepare("SELECT * FROM recurring_tasks WHERE id=? LIMIT 1");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare recurring task lookup.'], 500);
+        $idStr = (string)$id;
+        $stmt->bind_param('s', $idStr);
+        $stmt->execute();
+        $existing = $stmt->get_result();
+        $row = $existing ? $existing->fetch_assoc() : null;
+        $stmt->close();
+        if (!$row) sendJson(['success' => false, 'error' => 'Recurring task not found.'], 404);
+
+        $title = array_key_exists('title', $data) ? trim((string)$data['title']) : (string)($row['title'] ?? '');
+        $category = array_key_exists('category', $data) ? trim((string)$data['category']) : (string)($row['category'] ?? '');
+        $assignee = array_key_exists('assignee', $data) ? trim((string)$data['assignee']) : (string)($row['assignee'] ?? '');
+        $frequencyType = array_key_exists('frequencyType', $data) || array_key_exists('periodicity', $data)
+            ? trim((string)($data['frequencyType'] ?? $data['periodicity'] ?? 'Fixed Days'))
+            : (string)($row['frequencyType'] ?? 'Fixed Days');
+        $frequencyDays = array_key_exists('frequencyDays', $data) ? (int)$data['frequencyDays'] : (int)($row['frequencyDays'] ?? 0);
+        $startDate = array_key_exists('startDate', $data) ? trim((string)$data['startDate']) : (string)($row['startDate'] ?? '');
+        $time = array_key_exists('time', $data) ? trim((string)$data['time']) : (string)($row['time'] ?? '');
+        $goal = array_key_exists('goal', $data) ? trim((string)$data['goal']) : (string)($row['goal'] ?? '');
+        $status = array_key_exists('status', $data) ? trim((string)$data['status']) : (string)($row['status'] ?? 'Not Yet Started');
+        $lastUpdatedOn = array_key_exists('lastUpdatedOn', $data) ? trim((string)$data['lastUpdatedOn']) : (string)($row['lastUpdatedOn'] ?? '');
+        $lastUpdateRemarks = array_key_exists('lastUpdateRemarks', $data) ? (string)$data['lastUpdateRemarks'] : (string)($row['lastUpdateRemarks'] ?? '');
+
+        if ($title === '') sendJson(['success' => false, 'error' => 'Recurring task title is required.'], 400);
+
+        $stmt = $conn->prepare("UPDATE recurring_tasks SET title=?, category=?, assignee=?, frequencyType=?, frequencyDays=?, startDate=?, time=?, goal=?, status=?, lastUpdatedOn=?, lastUpdateRemarks=? WHERE id=?");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare recurring task update.'], 500);
+        $stmt->bind_param('ssssisssssss', $title, $category, $assignee, $frequencyType, $frequencyDays, $startDate, $time, $goal, $status, $lastUpdatedOn, $lastUpdateRemarks, $idStr);
+        $ok = $stmt->execute();
+        $stmtError = $stmt->error;
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to update recurring task: ' . $stmtError], 400);
+        sendJson(['success' => true]);
+    }
+
     if ($action === 'deleteRecord' && $table === 'users') {
         $id = (int)($data['id'] ?? 0);
         if ($id <= 0) {
@@ -498,6 +598,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ok = $stmt->execute();
         $stmt->close();
         if (!$ok) sendJson(['success' => false, 'error' => 'Failed to delete log.'], 400);
+        sendJson(['success' => true]);
+    }
+
+    if ($action === 'deleteRecord' && in_array($table, ['recurring_tasks', 'recurring_actions'], true)) {
+        $id = (int)($data['id'] ?? 0);
+        if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid id.'], 400);
+        $stmt = $conn->prepare("DELETE FROM `{$table}` WHERE id=?");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare delete query.'], 500);
+        $idStr = (string)$id;
+        $stmt->bind_param('s', $idStr);
+        $ok = $stmt->execute();
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to delete record.'], 400);
         sendJson(['success' => true]);
     }
 

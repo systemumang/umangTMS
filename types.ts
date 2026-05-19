@@ -61,20 +61,21 @@ export interface Task {
 }
 
 export interface RecurringTask {
-	  id: number;
-	  title: string;
-	  category: string;
-	  assignee: string;
-	  frequencyDays: number;
-	  startDate: string;
-	  time?: string;
-	  lastUpdatedOn?: string;
-	  lastUpdateRemarks?: string;
-	  status?: 'Not Yet Started' | 'In Progress' | 'Complete' | 'Pending for Client' | 'Pending for Owner';
-	  periodicity?: 'Fixed Days' | 'Weekly' | 'Monthly' | 'Yearly';
-	  recurrenceDay?: number; // 0-6 for Weekly, 1-31 for Monthly/Yearly
-	  recurrenceMonth?: string; // Month name for Yearly
-	}
+		  id: number;
+		  title: string;
+		  category: string;
+		  assignee: string;
+		  frequencyDays: number;
+		  startDate: string;
+		  time?: string;
+		  goal?: string;
+		  lastUpdatedOn?: string;
+		  lastUpdateRemarks?: string;
+		  status?: 'Not Yet Started' | 'In Progress' | 'Complete' | 'Pending for Client' | 'Pending for Owner';
+		  periodicity?: 'Fixed Days' | 'Weekly' | 'Monthly' | 'Yearly';
+		  recurrenceDay?: number; // 0-6 for Weekly, 1-31 for Monthly/Yearly
+		  recurrenceMonth?: string; // Month name for Yearly
+		}
 
 export interface RecurringTaskAction {
   id: number;
