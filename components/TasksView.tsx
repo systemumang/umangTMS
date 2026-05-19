@@ -12,10 +12,10 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 interface TasksViewProps {
-  title: string;
-  description: string;
-  onAddTask: (isVendor?: boolean) => void;
-  tasks: Task[];
+	  title: string;
+	  description: string;
+	  onAddTask: (isVendor?: boolean) => void;
+	  tasks: Task[];
   users: User[];
   projects: Project[];
   categories: Category[];
@@ -60,17 +60,18 @@ interface TasksViewProps {
   setDateTo: (val: string) => void;
   lastUpdateFrom: string;
   setLastUpdateFrom: (val: string) => void;
-  lastUpdateTo: string;
-  setLastUpdateTo: (val: string) => void;
-  searchTerm: string;
-  setSearchTerm: (val: string) => void;
-}
+	  lastUpdateTo: string;
+	  setLastUpdateTo: (val: string) => void;
+	  searchTerm: string;
+	  setSearchTerm: (val: string) => void;
+	  sidebarCollapsed?: boolean;
+	}
 
 export const TasksView: React.FC<TasksViewProps> = ({ 
-  title, 
-  description, 
-  onAddTask, 
-  tasks, 
+	  title, 
+	  description, 
+	  onAddTask, 
+	  tasks, 
   users,
   projects,
   categories,
@@ -102,11 +103,12 @@ export const TasksView: React.FC<TasksViewProps> = ({
   filterCategory, setFilterCategory,
   filterVendor = [], setFilterVendor,
   dateFrom, setDateFrom,
-  dateTo, setDateTo,
-  lastUpdateFrom, setLastUpdateFrom,
-  lastUpdateTo, setLastUpdateTo,
-  searchTerm, setSearchTerm
-}) => {
+	  dateTo, setDateTo,
+	  lastUpdateFrom, setLastUpdateFrom,
+	  lastUpdateTo, setLastUpdateTo,
+	  searchTerm, setSearchTerm,
+	  sidebarCollapsed = false
+	}) => {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isBulkUpdateModalOpen, setIsBulkUpdateModalOpen] = useState(false);
@@ -593,13 +595,13 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const startEntry = filteredTasks.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
   const endEntry = Math.min(currentPage * itemsPerPage, filteredTasks.length);
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-            <h2 className="text-2xl font-bold text-indigo-600">{title}</h2>
-            <p className="text-sm text-black mt-1">{description}</p>
-        </div>
+	  return (
+	    <div className="space-y-6">
+	      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+	        <div className={sidebarCollapsed ? 'pl-14 md:pl-16' : ''}>
+	            <h2 className="text-2xl font-bold text-indigo-600">{title}</h2>
+	            <p className="text-sm text-black mt-1">{description}</p>
+	        </div>
 
         <div className="flex flex-wrap gap-2 items-center">
           {selectedIds.length > 0 && isAdmin ? (

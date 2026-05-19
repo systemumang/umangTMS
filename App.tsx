@@ -945,13 +945,14 @@ export default function App() {
       link.click();
     };
 
-    const commonTaskProps = {
-      users, projects, vendors, categories, syncingIds, vendorCategories, currentUser,
-      filterStatus, setFilterStatus, filterPriority, setFilterPriority, 
-      filterProject, setFilterProject, filterClient, setFilterClient,
-      filterOwner, setFilterOwner, filterAssignee, setFilterAssignee, filterCategory, setFilterCategory,
-      dateFrom, setDateFrom, dateTo, setDateTo,
-      lastUpdateFrom, setLastUpdateFrom, lastUpdateTo, setLastUpdateTo, searchTerm, setSearchTerm, filterVendor, setFilterVendor,
+	    const commonTaskProps = {
+	      users, projects, vendors, categories, syncingIds, vendorCategories, currentUser,
+	      sidebarCollapsed: layoutMode === 'side' && isSidebarCollapsed,
+	      filterStatus, setFilterStatus, filterPriority, setFilterPriority, 
+	      filterProject, setFilterProject, filterClient, setFilterClient,
+	      filterOwner, setFilterOwner, filterAssignee, setFilterAssignee, filterCategory, setFilterCategory,
+	      dateFrom, setDateFrom, dateTo, setDateTo,
+	      lastUpdateFrom, setLastUpdateFrom, lastUpdateTo, setLastUpdateTo, searchTerm, setSearchTerm, filterVendor, setFilterVendor,
       lastAddedCategory, lastAddedProject, lastAddedVendorCategory, onClearLastAdded: () => { setLastAddedCategory(''); setLastAddedProject(''); setLastAddedVendorCategory(''); },
       onUpdateTask: handleUpdateTaskOptimistic, onEditTask: handleEditTaskOptimistic,
       onDeleteTask: (id: number, isVendor: boolean) => {
@@ -1125,12 +1126,12 @@ export default function App() {
                     </div>
                 </div>
               ) : (
-                <div className="max-w-[98%] mx-auto min-h-full flex flex-col">
-                  <div className="flex-1">
-                    {renderContent()}
-                  </div>
-                  <Footer />
-                </div>
+	                <div className="max-w-[98%] mx-auto h-full flex flex-col">
+	                  <div className="flex-1">
+	                    {renderContent()}
+	                  </div>
+	                  <Footer />
+	                </div>
               )}
             </main>
           </div>
