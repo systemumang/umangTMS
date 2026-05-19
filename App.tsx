@@ -972,6 +972,8 @@ export default function App() {
 
 	    const commonTaskProps = {
 	      users, projects, vendors, firms, categories, syncingIds, vendorCategories, currentUser,
+        showCollapsedMenuButton: layoutMode === 'side' && isSidebarCollapsed && !isAnyFormModalOpen,
+        onShowMenu: () => setIsSidebarCollapsed(false),
 	      sidebarCollapsed: layoutMode === 'side' && isSidebarCollapsed,
 	      filterStatus, setFilterStatus, filterPriority, setFilterPriority, 
 	      filterProject, setFilterProject, filterFirm, setFilterFirm, filterClient, setFilterClient,
@@ -1148,7 +1150,7 @@ export default function App() {
             )}
 
 		            <main className="flex-1 overflow-y-auto pt-2 md:pt-4 px-2 md:px-4 pb-0 custom-scrollbar relative">
-			              {layoutMode === 'side' && isSidebarCollapsed && !isAnyFormModalOpen && (
+			              {layoutMode === 'side' && isSidebarCollapsed && !isAnyFormModalOpen && activeTab !== 'all-tasks' && activeTab !== 'pending' && activeTab !== 'pending-client' && activeTab !== 'pending-owner' && activeTab !== 'pending-training' && activeTab !== 'pending-billing' && activeTab !== 'pending-payment' && activeTab !== 'completed' && (
 			                <button
 			                  type="button"
 			                  onClick={() => setIsSidebarCollapsed(false)}
@@ -1171,7 +1173,7 @@ export default function App() {
                 </div>
               ) : (
 	                <div className="max-w-[98%] mx-auto h-full flex flex-col">
-	                  <div className={`flex-1 ${layoutMode === 'side' && isSidebarCollapsed ? 'pl-14 md:pl-16' : ''}`}>
+	                  <div className="flex-1">
 	                    {renderContent()}
 	                  </div>
 	                  <Footer />

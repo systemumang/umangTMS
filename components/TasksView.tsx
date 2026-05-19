@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Download, FileText, Search, CheckSquare, LayoutGrid, LayoutList, Filter, X, Clock, AlertTriangle, Users, Trash2, AlertCircle, Tags } from 'lucide-react';
+import { Plus, Download, FileText, Search, CheckSquare, LayoutGrid, LayoutList, Filter, X, Clock, AlertTriangle, Users, Trash2, AlertCircle, Tags, Menu } from 'lucide-react';
 import { TaskTable } from './TaskTable';
 import { UpdateTaskModal } from './UpdateTaskModal';
 import { EditTaskModal } from './EditTaskModal';
@@ -68,7 +68,9 @@ interface TasksViewProps {
 	  searchTerm: string;
 	  setSearchTerm: (val: string) => void;
 	  sidebarCollapsed?: boolean;
-	}
+  showCollapsedMenuButton?: boolean;
+  onShowMenu?: () => void;
+		}
 
 export const TasksView: React.FC<TasksViewProps> = ({ 
 	  title, 
@@ -112,8 +114,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
 	  lastUpdateFrom, setLastUpdateFrom,
 	  lastUpdateTo, setLastUpdateTo,
 	  searchTerm, setSearchTerm,
-	  sidebarCollapsed = false
-	}) => {
+	  sidebarCollapsed = false,
+    showCollapsedMenuButton = false,
+    onShowMenu
+		}) => {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isBulkUpdateModalOpen, setIsBulkUpdateModalOpen] = useState(false);
@@ -614,11 +618,23 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
 	  return (
 	    <div className="space-y-6">
-	      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-	        <div>
-	            <h2 className="text-2xl font-bold text-indigo-600">{title}</h2>
-	            {description && <p className="text-sm text-black mt-1">{description}</p>}
-	        </div>
+		      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+		        <div className="flex items-start md:items-center gap-3">
+              {showCollapsedMenuButton && (
+                <button
+                  type="button"
+                  onClick={onShowMenu}
+                  className="hidden md:inline-flex items-center justify-center w-10 h-10 bg-white border-2 border-indigo-200 text-indigo-700 rounded-xl shadow-sm hover:bg-indigo-50"
+                  title="Show menu"
+                >
+                  <Menu size={18} />
+                </button>
+              )}
+              <div>
+		            <h2 className="text-2xl font-bold text-indigo-600">{title}</h2>
+		            {description && <p className="text-sm text-black mt-1">{description}</p>}
+              </div>
+		        </div>
 
         <div className="flex flex-wrap gap-2 items-center">
           {selectedIds.length > 0 && isAdmin ? (
