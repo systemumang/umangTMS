@@ -10,6 +10,7 @@ import { CategoriesView } from './components/CategoriesView';
 import { VendorCategoriesView } from './components/VendorCategoriesView';
 import { ProjectsView } from './components/ProjectsView';
 import { ClientsView } from './components/ClientsView';
+import { FirmsView } from './components/FirmsView';
 import { VendorsView } from './components/VendorsView';
 import { ActionLogView } from './components/ActionLogView';
 import { ActivityDashboardView } from './components/ActivityDashboardView';
@@ -27,6 +28,7 @@ import { AddUserModal } from './components/AddUserModal';
 import { AddClientModal } from './components/AddClientModal';
 import { AddVendorModal } from './components/AddVendorModal';
 import { AddDesignationModal } from './components/AddDesignationModal';
+import { AddFirmModal } from './components/AddFirmModal';
 import { EditProjectModal } from './components/EditProjectModal';
 import { EditClientModal } from './components/EditClientModal';
 import { EditVendorModal } from './components/EditVendorModal';
@@ -66,7 +68,7 @@ import {
   IndianRupee,
   Wallet
 } from 'lucide-react';
-import { NavItem, Task, User, Designation, Category, Project, Client, ActionLogEntry, Vendor, VendorCategory, RecurringTask, RecurringTaskAction, AppSettings } from './types';
+import { NavItem, Task, User, Designation, Category, Project, Client, ActionLogEntry, Vendor, VendorCategory, RecurringTask, RecurringTaskAction, AppSettings, Firm } from './types';
 
 const AUTO_SYNC_INTERVAL = 120000;
 const VENDOR_MODULE_ENABLED = false;
@@ -104,8 +106,7 @@ const navItems: NavItem[] = [
   
   // Master Section
   { id: 'users', label: 'Users', icon: <Users size={20} />, section: 'Master' },
-  { id: 'clients', label: 'Clients', icon: <Building2 size={20} />, section: 'Master' },
-  { id: 'projects', label: 'Projects', icon: <Briefcase size={20} />, section: 'Master' },
+  { id: 'firms', label: 'Firms', icon: <Building2 size={20} />, section: 'Master' },
   { id: 'categories', label: 'Categories', icon: <Tags size={20} />, section: 'Master' },
 	  ...(VENDOR_MODULE_ENABLED ? ([
 	    { id: 'vendor-categories', label: 'Vendor Categories', icon: <Tags size={20} />, section: 'Master' },
@@ -231,7 +232,7 @@ export default function App() {
   const isAdmin = currentUser?.role === 'Admin';
 
   // Master item IDs for filtering
-  const masterIds = ['users', 'clients', 'projects', 'categories', ...(VENDOR_MODULE_ENABLED ? ['vendor-categories', 'vendors'] : []), 'settings', 'telegram-setup'];
+  const masterIds = ['users', 'firms', 'categories', ...(VENDOR_MODULE_ENABLED ? ['vendor-categories', 'vendors'] : []), 'settings', 'telegram-setup'];
 
   // Navigation Logic based on Role
   const filteredNavItems = useMemo(() => {
@@ -260,6 +261,7 @@ export default function App() {
   const [vendorCategories, setVendorCategories] = useState<VendorCategory[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [firms, setFirms] = useState<Firm[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [actionLogs, setActionLogs] = useState<ActionLogEntry[]>([]);
   const [recurringTasks, setRecurringTasks] = useState<RecurringTask[]>([]);
@@ -346,6 +348,7 @@ export default function App() {
   const [filterStatus, setFilterStatus] = useState<string[]>([]);
   const [filterPriority, setFilterPriority] = useState<string[]>([]);
   const [filterProject, setFilterProject] = useState<string[]>([]);
+  const [filterFirm, setFilterFirm] = useState<string[]>([]);
   const [filterClient, setFilterClient] = useState<string[]>([]);
   const [filterOwner, setFilterOwner] = useState<string[]>([]);
   const [filterAssignee, setFilterAssignee] = useState<string[]>([]);
@@ -369,6 +372,7 @@ export default function App() {
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
   const [isVendorCategoryModalOpen, setIsVendorCategoryModalOpen] = useState(false);
   const [isDesignationModalOpen, setIsDesignationModalOpen] = useState(false);
+  const [isFirmModalOpen, setIsFirmModalOpen] = useState(false);
   const [isRecurringTaskModalOpen, setIsRecurringTaskModalOpen] = useState(false);
   const [isRecurringTaskUpdateModalOpen, setIsRecurringTaskUpdateModalOpen] = useState(false);
   const [isEditRecurringTaskModalOpen, setIsEditRecurringTaskModalOpen] = useState(false);
@@ -390,6 +394,7 @@ export default function App() {
     setFilterStatus([]);
     setFilterPriority([]);
     setFilterProject([]);
+    setFilterFirm([]);
     setFilterClient([]);
     setFilterOwner([]);
     setFilterAssignee([]);
@@ -540,6 +545,7 @@ export default function App() {
                 hours: Number(item.hours || 0), // Normalize hours
                 time: String(item.time || ''),
                 goal: String(item.goal || ''),
+                firm: String(item.firm || item.Firm || ''),
                 photos: String(item.photos || ''),
                 pdf: String(item.pdf || ''),
                 project: (rawProject && rawClient && !rawProject.includes('(')) 
@@ -552,6 +558,7 @@ export default function App() {
         setUsers((data.users || []).map((u: any) => ({ ...u, id: Number(u.id), isActive: String(u.isActive).toUpperCase() === 'TRUE' })));
         setProjects((data.projects || []).map((p: any) => ({ ...p, id: Number(p.id) })));
         setClients((data.clients || []).map((c: any) => ({ ...c, id: Number(c.id), gstNumber: c.gstNumber || c.gSTNumber || c.GSTNumber || '' })));
+        setFirms((data.firms || []).map((f: any) => ({ ...f, id: Number(f.id), name: String(f.name || '') })));
         setVendors((data.vendors || []).map((v: any) => ({ ...v, id: Number(v.id), gstNumber: v.gstNumber || v.gSTNumber || v.GSTNumber || '' })));
         setCategories((data.categories || []).map((c: any) => ({ ...c, id: Number(c.id) })));
         setVendorCategories((data.vendorCategories || []).map((vc: any) => ({ ...vc, id: Number(vc.id) })));
@@ -571,6 +578,7 @@ export default function App() {
                 hours: Number(l.hours || 0), // Normalize hours in log
                 time: String(l.time || l.Time || ''),
                 goal: String(l.goal || l.Goal || ''),
+                firm: String(l.firm || l.Firm || ''),
                 photos: String(l.photos || ''),
                 pdf: String(l.pdf || ''),
                 project: (rawProject && rawClient && !rawProject.includes('(')) 
@@ -589,8 +597,9 @@ export default function App() {
 		            time: formatToHHMM(getCaseInsensitive(t, 'time') || ''),
 		            lastUpdatedOn: formatToIndianDate(t.lastUpdatedOn || ''),
 		            lastUpdateRemarks: String(t.lastUpdateRemarks || ''),
-		            goal: String(t.goal || ''),
-		            status: String(t.status || 'Not Yet Started') as any
+			            goal: String(t.goal || ''),
+                  firm: String(t.firm || ''),
+			            status: String(t.status || 'Not Yet Started') as any
 		        })));
 		        setRecurringActions((data.recurringActions || []).map((a: any) => ({
 		          ...a,
@@ -600,9 +609,10 @@ export default function App() {
 		          category: String(a.category || a.Category || ''),
 		          assignee: String(a.assignee || a.Assignee || ''),
 		          status: String(a.status || a.Status || 'Not Yet Started') as any,
-		          remarks: String(a.remarks || a.Remarks || a.remark || ''),
-		          goal: String(a.goal || a.Goal || ''),
-		          photos: String(a.photos || a.Photos || ''),
+			          remarks: String(a.remarks || a.Remarks || a.remark || ''),
+			          goal: String(a.goal || a.Goal || ''),
+                firm: String(a.firm || a.Firm || ''),
+			          photos: String(a.photos || a.Photos || ''),
 		          pdf: String(a.pdf || a.PDF || ''),
 		          timestamp: formatToHHMM(getCaseInsensitive(a, 'timestamp') || ''),
 		          updatedOn: formatToIndianDate(getCaseInsensitive(a, 'updatedOn') || '')
@@ -644,6 +654,12 @@ export default function App() {
       activeTab === 'completed-vendor-tasks' ||
       activeTab === 'vendor-action-log'
     ) {
+      setActiveTab('all-tasks');
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'clients' || activeTab === 'projects') {
       setActiveTab('all-tasks');
     }
   }, [activeTab]);
@@ -893,12 +909,20 @@ export default function App() {
     await apiPost('addMaster', client, 'Clients');
   };
 
+  const handleInstantAddFirm = async (firm: Omit<Firm, 'id'>) => {
+    const tempId = Date.now();
+    const newFirm = { ...firm, id: tempId } as Firm;
+    setFirms(prev => [...prev, newFirm]);
+    await apiPost('addMaster', firm, 'Firms');
+  };
+
   const renderContent = () => {
     const handleExportExcel = (tasksToExport: Task[]) => {
       const activeFilters: string[] = [];
       if (filterStatus.length > 0) activeFilters.push(`Status: ${filterStatus.join(',')}`);
       if (filterPriority.length > 0) activeFilters.push(`Priority: ${filterPriority.join(',')}`);
       if (filterProject.length > 0) activeFilters.push(`Project: ${filterProject.length} selected`);
+      if (filterFirm.length > 0) activeFilters.push(`Firm: ${filterFirm.join(',')}`);
       if (filterCategory.length > 0) activeFilters.push(`Category: ${filterCategory.join(',')}`);
       if (filterAssignee.length > 0) activeFilters.push(`Assignee: ${filterAssignee.join(',')}`);
       if (filterVendor.length > 0) activeFilters.push(`Vendor: ${filterVendor.join(',')}`);
@@ -907,7 +931,7 @@ export default function App() {
       const filterRow = activeFilters.length > 0 ? `Filters Applied: ${activeFilters.join(' | ')}` : "No Filters Applied";
       const generatedRow = `Generated on: ${new Date().toLocaleString('en-GB')}`;
 
-      const headers = ['Date', 'Task', 'Notes', 'Assignees', 'Owner', 'Project', 'Client Name', 'Vendor', 'Vendor Category', 'Status', 'Last Update Date', 'Last Update Remark', 'Priority', 'Due Date', 'Hours'];
+	      const headers = ['Date', 'Task', 'Notes', 'Assignees', 'Owner', 'Project', 'Firm', 'Client Name', 'Vendor', 'Vendor Category', 'Status', 'Last Update Date', 'Last Update Remark', 'Priority', 'Due Date', 'Hours'];
       
       const csvContent = [
         `"${filterRow}"`,
@@ -922,10 +946,11 @@ export default function App() {
             `"${task.date}"`, 
             `"${(task.title || '').replace(/"/g, '""')}"`, 
             `"${(task.remarks || '').replace(/"/g, '""')}"`, 
-            `"${task.assignees}"`, 
-            `"${task.owner}"`, 
-            `"${task.project.split(' (')[0]}"`, 
-            `"${task.clientName || ''}"`, 
+	            `"${task.assignees}"`, 
+	            `"${task.owner}"`, 
+	            `"${task.project.split(' (')[0]}"`, 
+              `"${task.firm || ''}"`,
+	            `"${task.clientName || ''}"`, 
             `"${task.vendor || ''}"`, 
             `"${task.vendorCategory || ''}"`, 
             `"${task.status}"`, 
@@ -946,10 +971,10 @@ export default function App() {
     };
 
 	    const commonTaskProps = {
-	      users, projects, vendors, categories, syncingIds, vendorCategories, currentUser,
+	      users, projects, vendors, firms, categories, syncingIds, vendorCategories, currentUser,
 	      sidebarCollapsed: layoutMode === 'side' && isSidebarCollapsed,
 	      filterStatus, setFilterStatus, filterPriority, setFilterPriority, 
-	      filterProject, setFilterProject, filterClient, setFilterClient,
+	      filterProject, setFilterProject, filterFirm, setFilterFirm, filterClient, setFilterClient,
 	      filterOwner, setFilterOwner, filterAssignee, setFilterAssignee, filterCategory, setFilterCategory,
 	      dateFrom, setDateFrom, dateTo, setDateTo,
 	      lastUpdateFrom, setLastUpdateFrom, lastUpdateTo, setLastUpdateTo, searchTerm, setSearchTerm, filterVendor, setFilterVendor,
@@ -1003,7 +1028,7 @@ export default function App() {
           onNavigate={setActiveTab} onFilterChange={handleDashboardFilterChange} onOpenNewTask={() => { setIsTaskModalVendorMode(false); setIsTaskModalOpen(true); }} 
           onOpenAddUser={() => setIsUserModalOpen(true)} onOpenAddProject={() => setIsProjectModalOpen(true)} onOpenAddClient={() => setIsClientModalOpen(true)} onOpenAddVendor={() => setIsVendorModalOpen(true)} 
         />;
-      case 'all-tasks': return <TasksView title="All Tasks" description="View and manage all your tasks" tasks={visibleTasks.filter(t => !t.vendor || t.vendor === '')} {...commonTaskProps} filterType="all" />;
+      case 'all-tasks': return <TasksView title="All Tasks" tasks={visibleTasks.filter(t => !t.vendor || t.vendor === '')} {...commonTaskProps} filterType="all" />;
       case 'add-multiple': return (
         <AddMultipleTasksView
           projects={projects}
@@ -1024,26 +1049,27 @@ export default function App() {
           }}
         />
       );
-      case 'pending': return <TasksView title="Pending Tasks" description="Tasks requiring attention" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status !== 'Completed')} {...commonTaskProps} filterType="pending" />;
-      case 'pending-client': return <TasksView title="Pending for Client" description="Tasks waiting for client feedback or action" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Pending for Client')} {...commonTaskProps} filterType="all" />;
-      case 'pending-owner': return <TasksView title="Pending for Owner" description="Tasks waiting for owner review or action" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Pending for Owner')} {...commonTaskProps} filterType="all" />;
-      case 'pending-training': return <TasksView title="Pending for Training" description="Tasks waiting for training or onboarding completion" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Pending for Training')} {...commonTaskProps} filterType="all" />;
-      case 'pending-billing': return <TasksView title="Pending for Billing" description="Tasks waiting for billing preparation or billing confirmation" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Pending for Billing')} {...commonTaskProps} filterType="all" />;
-      case 'pending-payment': return <TasksView title="Pending for Payment" description="Tasks waiting for payment collection or payment confirmation" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Pending for Payment')} {...commonTaskProps} filterType="all" />;
-      case 'completed': return <TasksView title="Completed Tasks" description="History of finished tasks" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Completed')} {...commonTaskProps} filterType="completed" />;
+      case 'pending': return <TasksView title="Pending Tasks" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status !== 'Completed')} {...commonTaskProps} filterType="pending" />;
+      case 'pending-client': return <TasksView title="Pending for Client" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Pending for Client')} {...commonTaskProps} filterType="all" />;
+      case 'pending-owner': return <TasksView title="Pending for Owner" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Pending for Owner')} {...commonTaskProps} filterType="all" />;
+      case 'pending-training': return <TasksView title="Pending for Training" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Pending for Training')} {...commonTaskProps} filterType="all" />;
+      case 'pending-billing': return <TasksView title="Pending for Billing" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Pending for Billing')} {...commonTaskProps} filterType="all" />;
+      case 'pending-payment': return <TasksView title="Pending for Payment" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Pending for Payment')} {...commonTaskProps} filterType="all" />;
+      case 'completed': return <TasksView title="Completed Tasks" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Completed')} {...commonTaskProps} filterType="completed" />;
       case 'update-multiple': return <UpdateMultipleView projects={projects} tasks={visibleTasks.filter(t => t.status !== 'Completed')} onUpdateTasks={async (updates) => { for (const u of updates) await handleUpdateTaskOptimistic(u); setActiveTab('pending'); }} />;
       case 'activity-dashboard': return <ActivityDashboardView logs={visibleActionLogs.filter(l => !l.vendor || l.vendor === '')} users={users} currentUser={currentUser} />;
       case 'action-log': return <ActionLogView logs={visibleActionLogs.filter(l => !l.vendor || l.vendor === '')} projects={projects} onDeleteLog={(logId, taskId) => handleDeleteLog(logId, taskId, false)} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
       case 'vendors': if (!isAdmin) return null; return <VendorsView vendors={vendors} onAddVendor={(v) => { setVendors(p => [...p, { ...v, id: Date.now() } as any]); apiPost('addMaster', v, 'Vendors'); }} onDeleteVendor={(id) => { if (!confirmDelete('this vendor')) return; setVendors(p => p.filter(v => v.id !== id)); apiPost('deleteRecord', { id }, 'Vendors'); }} onEditVendor={(v) => { setVendors(p => p.map(x => x.id === v.id ? v : x)); apiPost('updateMaster', v, 'Vendors'); }} />;
       case 'vendor-categories': if (!isAdmin) return null; return <VendorCategoriesView categories={vendorCategories} onAddCategory={() => setIsVendorCategoryModalOpen(true)} onDeleteCategory={(id) => { if (!confirmDelete('this vendor category')) return; setVendorCategories(p => p.filter(c => c.id !== id)); apiPost('deleteRecord', { id }, 'VendorCategories'); }} onEditCategory={(vc) => { setVendorCategories(p => p.map(x => x.id === vc.id ? vc : x)); apiPost('updateMaster', vc, 'VendorCategories'); }} />;
-      case 'vendor-tasks': return <TasksView title="All Vendor Tasks" description="Manage external vendor activities" tasks={visibleTasks.filter(t => t.vendor && t.vendor !== '')} {...commonTaskProps} isVendorView={true} filterType="all" />;
-      case 'pending-vendor-tasks': return <TasksView title="Pending Vendor Tasks" description="Active vendor activities" tasks={visibleTasks.filter(t => t.vendor && t.vendor !== '')} {...commonTaskProps} isVendorView={true} filterType="pending" />;
-      case 'completed-vendor-tasks': return <TasksView title="Completed Vendor Tasks" description="Finished vendor activities" tasks={visibleTasks.filter(t => t.vendor && t.vendor !== '')} {...commonTaskProps} isVendorView={true} filterType="completed" />;
+      case 'vendor-tasks': return <TasksView title="All Vendor Tasks" tasks={visibleTasks.filter(t => t.vendor && t.vendor !== '')} {...commonTaskProps} isVendorView={true} filterType="all" />;
+      case 'pending-vendor-tasks': return <TasksView title="Pending Vendor Tasks" tasks={visibleTasks.filter(t => t.vendor && t.vendor !== '')} {...commonTaskProps} isVendorView={true} filterType="pending" />;
+      case 'completed-vendor-tasks': return <TasksView title="Completed Vendor Tasks" tasks={visibleTasks.filter(t => t.vendor && t.vendor !== '')} {...commonTaskProps} isVendorView={true} filterType="completed" />;
       case 'vendor-action-log': return <ActionLogView logs={visibleActionLogs.filter(l => l.vendor && l.vendor !== '')} projects={projects} isVendorView={true} onDeleteLog={(logId, taskId) => handleDeleteLog(logId, taskId, true)} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
       case 'due-recurring-tasks': return <RecurringTasksView title="Due Recurring Tasks" filterType="due" tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={(id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); apiPost('deleteRecord', { id }, 'RecurringTasks'); }} currentUser={currentUser} />;
       case 'recurring-tasks': return <RecurringTasksView title="Recurring Tasks" tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={(id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); apiPost('deleteRecord', { id }, 'RecurringTasks'); }} currentUser={currentUser} />;
       case 'recurring-actions': return <RecurringTaskActionsView actions={visibleRecurringActions} onDeleteAction={(logId, taskId) => { if (!confirmDelete('this recurring log')) return; apiPost('deleteRecord', { id: logId, taskId: taskId }, 'RecurringActions'); }} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
       case 'users': if (!isAdmin) return null; return <UsersView users={users} designations={designations} onAddUser={(u) => { setUsers(p => [...p, { ...u, id: Date.now(), isActive: true } as any]); apiPost('addMaster', u, 'Users'); }} onEditUser={(u) => { setUsers(p => p.map(x => x.id === u.id ? u : x)); apiPost('updateMaster', u, 'Users'); }} onToggleStatus={(id) => { const user = users.find(u => u.id === id); if (!user) return; const newStatus = !user.isActive; setUsers(prev => prev.map(u => u.id === id ? { ...u, isActive: newStatus } : u)); apiPost('updateMaster', { id, isActive: newStatus ? 'TRUE' : 'FALSE' }, 'Users'); }} onDeleteUser={(id) => { if (!confirmDelete('this user')) return; setUsers(p => p.filter(u => u.id !== id)); apiPost('deleteRecord', { id }, 'Users'); }} onAddDesignation={() => setIsDesignationModalOpen(true)} />;
+      case 'firms': if (!isAdmin) return null; return <FirmsView firms={firms} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} onAddFirm={() => setIsFirmModalOpen(true)} onDeleteFirm={(id) => { if (!confirmDelete('this firm')) return; setFirms(p => p.filter(f => f.id !== id)); apiPost('deleteRecord', { id }, 'Firms'); }} onEditFirm={(f) => { setFirms(p => p.map(x => x.id === f.id ? f : x)); apiPost('updateMaster', f, 'Firms'); }} />;
       case 'clients': if (!isAdmin) return null; return <ClientsView clients={clients} projects={projects} onAddClient={handleInstantAddClient} onDeleteClient={(id) => { if (!confirmDelete('this client')) return; setClients(p => p.filter(c => c.id !== id)); apiPost('deleteRecord', { id }, 'Clients'); }} onEditClient={(c) => { setClients(p => p.map(x => x.id === c.id ? c : x)); apiPost('updateMaster', c, 'Clients'); }} onNavigateToProjectTasks={handleDashboardFilterChange.bind(null, 'project')} />;
       case 'projects': if (!isAdmin) return null; return <ProjectsView projects={projects} clients={clients} onAddProject={handleInstantAddProject} onDeleteProject={(id) => { if (!confirmDelete('this project')) return; setProjects(p => p.filter(x => x.id !== id)); apiPost('deleteRecord', { id }, 'Projects'); }} onEditProject={(p) => { setProjects(prev => prev.map(x => x.id === p.id ? p : x)); apiPost('updateMaster', p, 'Projects'); }} onAddClient={() => setIsClientModalOpen(true)} onNavigateToProjectTasks={handleDashboardFilterChange.bind(null, 'project')} />;
       case 'categories': if (!isAdmin) return null; return <CategoriesView categories={categories} onAddCategory={() => setIsCategoryModalOpen(true)} onDeleteCategory={(id) => { if (!confirmDelete('this category')) return; setCategories(p => p.filter(c => c.id !== id)); apiPost('deleteRecord', { id }, 'Categories'); }} onEditCategory={(c) => { setCategories(p => p.map(x => x.id === c.id ? c : x)); apiPost('updateMaster', c, 'Categories'); }} />;
@@ -1127,7 +1153,7 @@ export default function App() {
                 </div>
               ) : (
 	                <div className="max-w-[98%] mx-auto h-full flex flex-col">
-	                  <div className="flex-1">
+	                  <div className={`flex-1 ${layoutMode === 'side' && isSidebarCollapsed ? 'pl-14 md:pl-16' : ''}`}>
 	                    {renderContent()}
 	                  </div>
 	                  <Footer />
@@ -1146,7 +1172,7 @@ export default function App() {
         onAddCategory={() => setIsCategoryModalOpen(true)}
         onAddProject={() => setIsProjectModalOpen(true)}
         onAddVendorCategory={() => setIsVendorCategoryModalOpen(true)}
-        users={users} categories={categories} projects={projects} vendors={vendors}
+        users={users} categories={categories} projects={projects} firms={firms} vendors={vendors}
         vendorCategories={vendorCategories} isVendorView={isTaskModalVendorMode}
         lastAddedCategory={lastAddedCategory} lastAddedProject={lastAddedProject} 
         lastAddedVendorCategory={lastAddedVendorCategory} onClearLastAdded={() => { setLastAddedCategory(''); setLastAddedProject(''); setLastAddedVendorCategory(''); }}
@@ -1184,12 +1210,13 @@ export default function App() {
       <AddUserModal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} onSave={(u) => { setUsers(p => [...p, { ...u, id: Date.now(), isActive: true } as any]); apiPost('addMaster', u, 'Users'); }} designations={designations} onAddDesignation={() => setIsDesignationModalOpen(true)} users={users} />
       <AddDesignationModal isOpen={isDesignationModalOpen} onClose={() => setIsDesignationModalOpen(false)} onSave={(d) => { setDesignations(p => [...p, { ...d, id: Date.now() } as any]); apiPost('addMaster', d, 'Designations'); }} designations={designations} />
       <AddVendorModal isOpen={isVendorModalOpen} onClose={() => setIsVendorModalOpen(false)} onSave={(v) => { setVendors(p => [...p, { ...v, id: Date.now() } as any]); apiPost('addMaster', v, 'Vendors'); }} vendors={vendors} />
+      <AddFirmModal isOpen={isFirmModalOpen} onClose={() => setIsFirmModalOpen(false)} onSave={handleInstantAddFirm} firms={firms} />
       
       <TaskHistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} task={selectedTaskForHistory} logs={actionLogs} />
       
-      <AddRecurringTaskModal
-        isOpen={isRecurringTaskModalOpen}
-	        onClose={() => setIsRecurringTaskModalOpen(false)}
+	      <AddRecurringTaskModal
+	        isOpen={isRecurringTaskModalOpen}
+		        onClose={() => setIsRecurringTaskModalOpen(false)}
 	        onSave={async (t) => {
 	          const createResult = await apiPost('addMaster', t, 'RecurringTasks');
 	          if (!createResult?.success) {
@@ -1199,9 +1226,10 @@ export default function App() {
 	          const createdId = Number(createResult?.data?.id || Date.now());
 	          setRecurringTasks(prev => [...prev, { ...t, id: createdId, status: 'Not Yet Started' } as any]);
 	        }}
-	        users={users}
-	        categories={categories}
-	      />
+		        users={users}
+		        categories={categories}
+            firms={firms}
+		      />
 	      <UpdateRecurringTaskModal
 	        isOpen={isRecurringTaskUpdateModalOpen}
 	        onClose={() => setIsRecurringTaskUpdateModalOpen(false)}
@@ -1218,18 +1246,20 @@ export default function App() {
 
 	          // Only patch fields that are actually updated here so we don't accidentally wipe columns
 	          // (e.g., keep StartDate in the backend sheet unchanged).
-	          apiPost('updateMaster', {
-	            id: t.id,
-	            status: t.status,
-	            goal: t.goal || '',
-	            lastUpdatedOn: updatedOn,
-	            lastUpdateRemarks: t.lastUpdateRemarks || ''
-	          }, 'RecurringTasks');
+		          apiPost('updateMaster', {
+		            id: t.id,
+		            status: t.status,
+                firm: t.firm || '',
+		            goal: t.goal || '',
+		            lastUpdatedOn: updatedOn,
+		            lastUpdateRemarks: t.lastUpdateRemarks || ''
+		          }, 'RecurringTasks');
 
 	          apiPost('addMaster', {
-	            taskId: t.id,
-	            taskTitle: t.title,
-	            category: t.category,
+		            taskId: t.id,
+		            taskTitle: t.title,
+                firm: t.firm || '',
+		            category: t.category,
 	            assignee: t.assignee,
 	            status: t.status,
 	            updatedOn,
@@ -1241,7 +1271,7 @@ export default function App() {
 	          }, 'RecurringActions');
 	        }}
 	      />
-      <EditRecurringTaskModal isOpen={isEditRecurringTaskModalOpen} onClose={() => setIsEditRecurringTaskModalOpen(false)} task={selectedRecurringTask} onSave={(t) => { setRecurringTasks(prev => prev.map(x => x.id === t.id ? t : x)); apiPost('updateMaster', t, 'RecurringTasks'); }} users={users} categories={categories} />
+      <EditRecurringTaskModal isOpen={isEditRecurringTaskModalOpen} onClose={() => setIsEditRecurringTaskModalOpen(false)} task={selectedRecurringTask} onSave={(t) => { setRecurringTasks(prev => prev.map(x => x.id === t.id ? t : x)); apiPost('updateMaster', t, 'RecurringTasks'); }} users={users} categories={categories} firms={firms} />
       <RecurringTaskHistoryModal isOpen={isRecurringHistoryModalOpen} onClose={() => setIsRecurringHistoryModalOpen(false)} task={selectedRecurringTask} actions={recurringActions} />
     </div>
   );

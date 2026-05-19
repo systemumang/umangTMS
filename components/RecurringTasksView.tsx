@@ -37,6 +37,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
+  const [filterFirm, setFilterFirm] = useState('All');
   const [filterAssignee, setFilterAssignee] = useState('All');
   const [filterStatus, setFilterStatus] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
@@ -54,9 +55,10 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
   useEffect(() => {
     setCurrentPage(1);
     setSelectedIds([]);
-  }, [searchTerm, filterCategory, filterAssignee, filterStatus, filterType]);
+  }, [searchTerm, filterCategory, filterFirm, filterAssignee, filterStatus, filterType]);
 
   const categories = useMemo(() => ['All', ...Array.from(new Set(tasks.map(t => t.category)))], [tasks]);
+  const firms = useMemo(() => ['All', ...Array.from(new Set(tasks.map(t => t.firm || '').filter(Boolean)))], [tasks]);
   const assignees = useMemo(() => ['All', ...Array.from(new Set(tasks.map(t => t.assignee)))], [tasks]);
   const statuses = ['All', 'Not Yet Started', 'In Progress', 'Complete'];
 
@@ -208,12 +210,13 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
       }
 
       const matchesCategory = filterCategory === 'All' || task.category === filterCategory;
+      const matchesFirm = filterFirm === 'All' || (task.firm || '') === filterFirm;
       const matchesAssignee = filterAssignee === 'All' || task.assignee === filterAssignee;
       const matchesStatus = filterStatus === 'All' || effectiveStatus === filterStatus;
       
-      return matchesCategory && matchesAssignee && matchesStatus;
+      return matchesCategory && matchesFirm && matchesAssignee && matchesStatus;
     });
-  }, [tasks, actions, searchTerm, filterCategory, filterAssignee, filterStatus, filterType]);
+  }, [tasks, actions, searchTerm, filterCategory, filterFirm, filterAssignee, filterStatus, filterType]);
 
   const sortedTasks = useMemo(() => {
     let sortableItems = [...filteredTasks];
@@ -301,9 +304,6 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                     {filterType === 'due' && <AlertCircle className="text-red-500" size={24} />}
                     {title}
                 </h2>
-                <p className="text-sm text-black mt-1">
-                    {filterType === 'due' ? 'Tasks past their calendar rule requiring attention' : 'Monitor and update tasks that repeat on calendar rules'}
-                </p>
             </div>
             <div className="flex bg-gray-100 p-1 rounded-lg md:hidden">
                 <button onClick={() => setViewMode('card')} className={`p-1.5 rounded-md transition-all ${viewMode === 'card' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}><LayoutGrid size={18} /></button>
@@ -334,10 +334,11 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
         </div>
         {showFilters && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
-            <SearchableSelect label="Category" options={categories.map(c => ({ value: c.label, label: c.label }))} value={filterCategory} onChange={setFilterCategory} />
-            <SearchableSelect label="Assignee" options={assignees.map(a => ({ value: a.label, label: a.label }))} value={filterAssignee} onChange={setFilterAssignee} />
-            <div><label className="text-[10px] font-bold text-indigo-600 uppercase mb-1 block">Status</label><select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full px-3 py-2 border border-indigo-300 rounded-md text-sm">{statuses.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
-            <div className="flex items-end"><button onClick={() => { setFilterCategory('All'); setFilterAssignee('All'); setFilterStatus('All'); setSearchTerm(''); }} className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-red-600 text-white border border-red-700 rounded-md hover:bg-red-700 text-sm font-medium h-[42px] transition-colors shadow-sm"><X size={16} />Clear</button></div>
+	            <SearchableSelect label="Category" options={categories.map(c => ({ value: c, label: c }))} value={filterCategory} onChange={setFilterCategory} />
+              <SearchableSelect label="Firm" options={firms.map(f => ({ value: f, label: f }))} value={filterFirm} onChange={setFilterFirm} />
+	            <SearchableSelect label="Assignee" options={assignees.map(a => ({ value: a, label: a }))} value={filterAssignee} onChange={setFilterAssignee} />
+	            <div><label className="text-[10px] font-bold text-indigo-600 uppercase mb-1 block">Status</label><select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full px-3 py-2 border border-indigo-300 rounded-md text-sm">{statuses.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
+	            <div className="flex items-end"><button onClick={() => { setFilterCategory('All'); setFilterFirm('All'); setFilterAssignee('All'); setFilterStatus('All'); setSearchTerm(''); }} className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-red-600 text-white border border-red-700 rounded-md hover:bg-red-700 text-sm font-medium h-[42px] transition-colors shadow-sm"><X size={16} />Clear</button></div>
           </div>
         )}
       </div>
@@ -358,8 +359,9 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                   </th>
                 )}
                 <th className="px-4 py-3 text-[10px] font-bold text-white uppercase tracking-wider border-r border-indigo-500 w-16 text-center whitespace-nowrap">S.No.</th>
-                <th className={thClass} onClick={() => requestSort('title')}><div className="flex items-center">Task {getSortIcon('title')}</div></th>
-                <th className={thClass} onClick={() => requestSort('category')}><div className="flex items-center">Category {getSortIcon('category')}</div></th>
+	                <th className={thClass} onClick={() => requestSort('title')}><div className="flex items-center">Task {getSortIcon('title')}</div></th>
+                  <th className={thClass} onClick={() => requestSort('firm')}><div className="flex items-center">Firm {getSortIcon('firm')}</div></th>
+	                <th className={thClass} onClick={() => requestSort('category')}><div className="flex items-center">Category {getSortIcon('category')}</div></th>
                 <th className={thClass} onClick={() => requestSort('assignee')}><div className="flex items-center">Assignee {getSortIcon('assignee')}</div></th>
 	                <th className={thClass} onClick={() => requestSort('status')}><div className="flex items-center">Status {getSortIcon('status')}</div></th>
 	                <th className={thClass} onClick={() => requestSort('frequencyDays')}><div className="flex items-center">Rule {getSortIcon('frequencyDays')}</div></th>
@@ -394,8 +396,9 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                       </td>
                     )}
                     <td className={`${tdClass} text-center font-bold text-indigo-600 !whitespace-nowrap`}>{startEntry + idx}</td>
-                    <td className={`${tdClass} font-medium`}>{task.title}</td>
-                    <td className={tdClass}>{task.category}</td>
+	                    <td className={`${tdClass} font-medium`}>{task.title}</td>
+                      <td className={tdClass}>{task.firm || '-'}</td>
+	                    <td className={tdClass}>{task.category}</td>
                     <td className={tdClass}>{task.assignee}</td>
                     <td className={tdClass}>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getStatusColor(effectiveStatus)} whitespace-normal break-words`}>
@@ -425,7 +428,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                   </tr>
                 );
               })}
-	              {paginatedTasks.length === 0 && (<tr><td colSpan={isAdmin ? 12 : 11} className="px-6 py-10 text-center text-gray-500">No recurring tasks found.</td></tr>)}
+		              {paginatedTasks.length === 0 && (<tr><td colSpan={isAdmin ? 13 : 12} className="px-6 py-10 text-center text-gray-500">No recurring tasks found.</td></tr>)}
 	            </tbody>
 	          </table>
 	        </div>
@@ -462,8 +465,9 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                     </div>
                     <h3 className="font-bold text-gray-900 leading-tight mt-2 whitespace-normal break-words">{task.title}</h3>
                     </div>
-	                    <div className="grid grid-cols-2 gap-y-2 text-xs text-gray-600 mb-4 bg-gray-50 p-2 rounded">
-	                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Category</span><span className="whitespace-normal break-words">{task.category}</span></div>
+		                    <div className="grid grid-cols-2 gap-y-2 text-xs text-gray-600 mb-4 bg-gray-50 p-2 rounded">
+                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Firm</span><span className="whitespace-normal break-words">{task.firm || '-'}</span></div>
+		                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Category</span><span className="whitespace-normal break-words">{task.category}</span></div>
 	                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Assignee</span><span className="whitespace-normal break-words">{task.assignee}</span></div>
 	                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Rule</span><span className="whitespace-normal break-words">{getFrequencyText(task)}</span></div>
 	                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Time</span><span className="whitespace-normal break-words">{task.time || '-'}</span></div>

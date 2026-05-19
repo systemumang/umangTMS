@@ -5,7 +5,7 @@ import { TaskTable } from './TaskTable';
 import { UpdateTaskModal } from './UpdateTaskModal';
 import { EditTaskModal } from './EditTaskModal';
 import { BulkUpdateModal } from './BulkUpdateModal';
-import { Task, User, Project, Category, Vendor, VendorCategory } from '../types';
+import { Task, User, Project, Category, Vendor, VendorCategory, Firm } from '../types';
 import { SearchableSelect } from './SearchableSelect';
 import { parseToISO, formatToIndianDate } from '../App';
 import { jsPDF } from 'jspdf';
@@ -20,6 +20,7 @@ interface TasksViewProps {
   projects: Project[];
   categories: Category[];
   vendors: Vendor[];
+  firms: Firm[];
   onUpdateTask: (task: Task) => void;
   onEditTask: (task: Task) => void;
   onBulkUpdateTask: (ids: number[], updates: Partial<Task>) => void;
@@ -52,6 +53,8 @@ interface TasksViewProps {
   setFilterAssignee: (val: string[]) => void;
   filterCategory: string[];
   setFilterCategory: (val: string[]) => void;
+  filterFirm: string[];
+  setFilterFirm: (val: string[]) => void;
   filterVendor?: string[];
   setFilterVendor?: (val: string[]) => void;
   dateFrom: string;
@@ -76,6 +79,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   projects,
   categories,
   vendors,
+  firms,
   onUpdateTask,
   onEditTask,
   onBulkUpdateTask,
@@ -101,6 +105,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   filterOwner, setFilterOwner,
   filterAssignee, setFilterAssignee,
   filterCategory, setFilterCategory,
+  filterFirm, setFilterFirm,
   filterVendor = [], setFilterVendor,
   dateFrom, setDateFrom,
 	  dateTo, setDateTo,
@@ -128,7 +133,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   useEffect(() => {
     setSelectedIds([]);
     setCurrentPage(1);
-  }, [filterType, filterStatus, filterPriority, filterProject, filterClient, filterOwner, filterAssignee, filterCategory, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, searchTerm]);
+  }, [filterType, filterStatus, filterPriority, filterProject, filterClient, filterOwner, filterAssignee, filterCategory, filterFirm, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, searchTerm]);
 
   // Helper for generating filter summary string for reports
   const getFilterSummary = () => {
@@ -138,6 +143,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
     if (filterProject.length > 0) active.push(`Projects: ${filterProject.length} items`);
     if (filterClient.length > 0) active.push(`Clients: ${filterClient.length} items`);
     if (filterCategory.length > 0) active.push(`Category: ${filterCategory.join(', ')}`);
+    if (filterFirm.length > 0) active.push(`Firm: ${filterFirm.join(', ')}`);
     if (filterAssignee.length > 0) active.push(`Assignee: ${filterAssignee.join(', ')}`);
     if (isVendorView && filterVendor.length > 0) active.push(`Vendor: ${filterVendor.join(', ')}`);
     if (dateFrom || dateTo) active.push(`Date: ${dateFrom || 'start'} to ${dateTo || 'end'}`);
@@ -219,6 +225,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
 	        case 'client': return values.includes(getClientFromTask(task));
 	        case 'owner': return values.some(v => String(task.owner || '').includes(v));
 	        case 'assignee': return values.some(v => String(task.assignees || '').includes(v));
+        case 'firm': return values.includes(task.firm || '');
 	        case 'vendor': return values.includes(task.vendor || '');
 	        default: return true;
 	    }
@@ -244,8 +251,9 @@ export const TasksView: React.FC<TasksViewProps> = ({
       if (!matchesFilter(task, 'status', filterStatus)) return false;
       if (!matchesFilter(task, 'priority', filterPriority)) return false;
       if (!matchesFilter(task, 'project', filterProject)) return false;
-      if (!matchesFilter(task, 'category', filterCategory)) return false;
-      if (!matchesFilter(task, 'client', filterClient)) return false;
+	      if (!matchesFilter(task, 'category', filterCategory)) return false;
+      if (!matchesFilter(task, 'firm', filterFirm)) return false;
+	      if (!matchesFilter(task, 'client', filterClient)) return false;
       if (!matchesFilter(task, 'owner', filterOwner)) return false;
       if (!matchesFilter(task, 'assignee', filterAssignee)) return false;
       if (isVendorView && filterVendor && !matchesFilter(task, 'vendor', filterVendor)) return false;
@@ -260,7 +268,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
       return true;
     });
-  }, [tasks, projects, filterType, searchTerm, filterStatus, filterPriority, filterProject, filterCategory, filterClient, filterOwner, filterAssignee, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, isVendorView]);
+	  }, [tasks, projects, filterType, searchTerm, filterStatus, filterPriority, filterProject, filterCategory, filterFirm, filterClient, filterOwner, filterAssignee, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, isVendorView]);
 
   const finalSortedTasks = useMemo(() => {
     return [...filteredTasks].sort((a, b) => {
@@ -481,7 +489,12 @@ export const TasksView: React.FC<TasksViewProps> = ({
 	    return vendors.map(v => ({ value: normalize(v.name), label: normalize(v.name) })).filter(o => o.value !== '');
 	  }, [vendors]);
 
-	  const tasksForStatusOptions = useMemo(() => tasks.filter(t => doesTaskMatchAllFilters(t, 'status')), [tasks, projects, filterType, searchTerm, filterPriority, filterProject, filterCategory, filterClient, filterOwner, filterAssignee, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, isVendorView]);
+  const baseFirmOptions = useMemo(() => {
+    const unique = Array.from(new Set(tasks.map(t => normalize(t.firm)).filter(Boolean)));
+    return unique.map(f => ({ value: f, label: f }));
+  }, [tasks]);
+
+	  const tasksForStatusOptions = useMemo(() => tasks.filter(t => doesTaskMatchAllFilters(t, 'status')), [tasks, projects, filterType, searchTerm, filterPriority, filterProject, filterCategory, filterFirm, filterClient, filterOwner, filterAssignee, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, isVendorView]);
 	  const statusOptions = useMemo(() => {
 	    if (tasksForStatusOptions.length === 0) return statusOptionsAll;
 	    const present = new Set(tasksForStatusOptions.map(t => t.status));
@@ -494,14 +507,14 @@ export const TasksView: React.FC<TasksViewProps> = ({
 	    return statusOptionsAll.filter(o => (o.value === 'Overdue' ? hasOverdue : present.has(o.value as any)));
 	  }, [tasksForStatusOptions]);
 
-	  const tasksForPriorityOptions = useMemo(() => tasks.filter(t => doesTaskMatchAllFilters(t, 'priority')), [tasks, projects, filterType, searchTerm, filterStatus, filterProject, filterCategory, filterClient, filterOwner, filterAssignee, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, isVendorView]);
+	  const tasksForPriorityOptions = useMemo(() => tasks.filter(t => doesTaskMatchAllFilters(t, 'priority')), [tasks, projects, filterType, searchTerm, filterStatus, filterProject, filterCategory, filterFirm, filterClient, filterOwner, filterAssignee, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, isVendorView]);
 	  const priorityOptions = useMemo(() => {
 	    if (tasksForPriorityOptions.length === 0) return priorityOptionsAll;
 	    const present = new Set(tasksForPriorityOptions.map(t => t.priority));
 	    return priorityOptionsAll.filter(o => present.has(o.value as any));
 	  }, [tasksForPriorityOptions]);
 
-	  const tasksForCategoryOptions = useMemo(() => tasks.filter(t => doesTaskMatchAllFilters(t, 'category')), [tasks, projects, filterType, searchTerm, filterStatus, filterPriority, filterProject, filterClient, filterOwner, filterAssignee, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, isVendorView]);
+	  const tasksForCategoryOptions = useMemo(() => tasks.filter(t => doesTaskMatchAllFilters(t, 'category')), [tasks, projects, filterType, searchTerm, filterStatus, filterPriority, filterProject, filterFirm, filterClient, filterOwner, filterAssignee, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, isVendorView]);
 	  const categoryOptions = useMemo(() => {
 	    if (tasksForCategoryOptions.length === 0) return baseCategoryOptions;
 	    const allowed = new Set(tasksForCategoryOptions.map(t => normalize(t.category)).filter(Boolean));
@@ -510,7 +523,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
 	    return [...fromBase, ...extras];
 	  }, [tasksForCategoryOptions, baseCategoryOptions]);
 
-	  const tasksForProjectOptions = useMemo(() => tasks.filter(t => doesTaskMatchAllFilters(t, 'project')), [tasks, projects, filterType, searchTerm, filterStatus, filterPriority, filterCategory, filterClient, filterOwner, filterAssignee, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, isVendorView]);
+	  const tasksForProjectOptions = useMemo(() => tasks.filter(t => doesTaskMatchAllFilters(t, 'project')), [tasks, projects, filterType, searchTerm, filterStatus, filterPriority, filterCategory, filterFirm, filterClient, filterOwner, filterAssignee, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, isVendorView]);
 	  const projectOptions = useMemo(() => {
 	    if (tasksForProjectOptions.length === 0) return baseProjectOptions;
 	    const allowed = new Set(tasksForProjectOptions.map(t => normalize(getProjectInfoFromValue(t.project).display)).filter(Boolean));
@@ -519,14 +532,14 @@ export const TasksView: React.FC<TasksViewProps> = ({
 	    return [...fromBase, ...extras];
 	  }, [tasksForProjectOptions, baseProjectOptions]);
 
-	  const tasksForClientOptions = useMemo(() => tasks.filter(t => doesTaskMatchAllFilters(t, 'client')), [tasks, projects, filterType, searchTerm, filterStatus, filterPriority, filterProject, filterCategory, filterOwner, filterAssignee, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, isVendorView]);
+	  const tasksForClientOptions = useMemo(() => tasks.filter(t => doesTaskMatchAllFilters(t, 'client')), [tasks, projects, filterType, searchTerm, filterStatus, filterPriority, filterProject, filterCategory, filterFirm, filterOwner, filterAssignee, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, isVendorView]);
 	  const clientOptions = useMemo(() => {
 	    if (tasksForClientOptions.length === 0) return baseClientOptions;
 	    const allowed = new Set(tasksForClientOptions.map(t => normalize(getClientFromTask(t))).filter(Boolean));
 	    return Array.from(allowed).map(c => ({ value: c, label: c }));
 	  }, [tasksForClientOptions, baseClientOptions]);
 
-	  const tasksForOwnerOptions = useMemo(() => tasks.filter(t => doesTaskMatchAllFilters(t, 'owner')), [tasks, projects, filterType, searchTerm, filterStatus, filterPriority, filterProject, filterCategory, filterClient, filterAssignee, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, isVendorView]);
+	  const tasksForOwnerOptions = useMemo(() => tasks.filter(t => doesTaskMatchAllFilters(t, 'owner')), [tasks, projects, filterType, searchTerm, filterStatus, filterPriority, filterProject, filterCategory, filterFirm, filterClient, filterAssignee, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, isVendorView]);
 	  const ownerOptions = useMemo(() => {
 	    if (tasksForOwnerOptions.length === 0) return baseActiveUsers;
 	    const allowed = new Set(tasksForOwnerOptions.flatMap(t => splitCommaValues(t.owner)).map(normalize).filter(Boolean));
@@ -535,7 +548,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
 	    return [...fromBase, ...extras];
 	  }, [tasksForOwnerOptions, baseActiveUsers]);
 
-	  const tasksForAssigneeOptions = useMemo(() => tasks.filter(t => doesTaskMatchAllFilters(t, 'assignee')), [tasks, projects, filterType, searchTerm, filterStatus, filterPriority, filterProject, filterCategory, filterClient, filterOwner, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, isVendorView]);
+	  const tasksForAssigneeOptions = useMemo(() => tasks.filter(t => doesTaskMatchAllFilters(t, 'assignee')), [tasks, projects, filterType, searchTerm, filterStatus, filterPriority, filterProject, filterCategory, filterFirm, filterClient, filterOwner, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, isVendorView]);
 	  const assigneeOptions = useMemo(() => {
 	    if (tasksForAssigneeOptions.length === 0) return baseActiveUsers;
 	    const allowed = new Set(tasksForAssigneeOptions.flatMap(t => splitCommaValues(t.assignees)).map(normalize).filter(Boolean));
@@ -544,7 +557,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
 	    return [...fromBase, ...extras];
 	  }, [tasksForAssigneeOptions, baseActiveUsers]);
 
-	  const tasksForVendorOptions = useMemo(() => tasks.filter(t => doesTaskMatchAllFilters(t, 'vendor')), [tasks, projects, filterType, searchTerm, filterStatus, filterPriority, filterProject, filterCategory, filterClient, filterOwner, filterAssignee, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, isVendorView]);
+	  const tasksForVendorOptions = useMemo(() => tasks.filter(t => doesTaskMatchAllFilters(t, 'vendor')), [tasks, projects, filterType, searchTerm, filterStatus, filterPriority, filterProject, filterCategory, filterFirm, filterClient, filterOwner, filterAssignee, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, isVendorView]);
 	  const vendorOptions = useMemo(() => {
 	    if (tasksForVendorOptions.length === 0) return baseVendorOptions;
 	    const allowed = new Set(tasksForVendorOptions.map(t => normalize(t.vendor)).filter(Boolean));
@@ -552,6 +565,15 @@ export const TasksView: React.FC<TasksViewProps> = ({
 	    const extras = Array.from(allowed).filter(v => !fromBase.some(o => o.value === v)).map(v => ({ value: v, label: v }));
 	    return [...fromBase, ...extras];
 	  }, [tasksForVendorOptions, baseVendorOptions]);
+
+  const tasksForFirmOptions = useMemo(() => tasks.filter(t => doesTaskMatchAllFilters(t, 'firm')), [tasks, projects, filterType, searchTerm, filterStatus, filterPriority, filterProject, filterCategory, filterClient, filterOwner, filterAssignee, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, isVendorView]);
+  const firmOptions = useMemo(() => {
+    if (tasksForFirmOptions.length === 0) return baseFirmOptions;
+    const allowed = new Set(tasksForFirmOptions.map(t => normalize(t.firm)).filter(Boolean));
+    const fromBase = baseFirmOptions.filter(o => allowed.has(o.value));
+    const extras = Array.from(allowed).filter(v => !fromBase.some(o => o.value === v)).map(v => ({ value: v, label: v }));
+    return [...fromBase, ...extras];
+  }, [tasksForFirmOptions, baseFirmOptions]);
 
   const totalPages = Math.ceil(filteredTasks.length / itemsPerPage);
   const handleUpdateTaskClick = (task: Task) => { setSelectedTask(task); setIsUpdateModalOpen(true); };
@@ -564,8 +586,9 @@ export const TasksView: React.FC<TasksViewProps> = ({
     setFilterStatus([]);
     setFilterPriority([]);
     setFilterProject([]);
-    setFilterCategory([]);
-    setFilterClient([]);
+	    setFilterCategory([]);
+    setFilterFirm([]);
+	    setFilterClient([]);
     setFilterOwner([]);
     setFilterAssignee([]);
     if (setFilterVendor) setFilterVendor([]);
@@ -580,14 +603,15 @@ export const TasksView: React.FC<TasksViewProps> = ({
       const badges: { label: string; clear: () => void }[] = [];
       if (filterStatus.length > 0) badges.push({ label: `Status: ${filterStatus.join(', ')}`, clear: () => setFilterStatus([]) });
       if (filterPriority.length > 0) badges.push({ label: `Priority: ${filterPriority.join(', ')}`, clear: () => setFilterPriority([]) });
-      if (filterCategory.length > 0) badges.push({ label: `Category: ${filterCategory.join(', ')}`, clear: () => setFilterCategory([]) });
+	      if (filterCategory.length > 0) badges.push({ label: `Category: ${filterCategory.join(', ')}`, clear: () => setFilterCategory([]) });
+      if (filterFirm.length > 0) badges.push({ label: `Firm: ${filterFirm.join(', ')}`, clear: () => setFilterFirm([]) });
       if (filterProject.length > 0) badges.push({ label: `Project: ${filterProject.length} selected`, clear: () => setFilterProject([]) });
       if (filterClient.length > 0) badges.push({ label: `Client: ${filterClient.length} selected`, clear: () => setFilterClient([]) });
       if (filterOwner.length > 0) badges.push({ label: `Owner: ${filterOwner.join(', ')}`, clear: () => setFilterOwner([]) });
       if (filterAssignee.length > 0) badges.push({ label: `Assignee: ${filterAssignee.join(', ')}`, clear: () => setFilterAssignee([]) });
       if (isVendorView && filterVendor.length > 0) badges.push({ label: `Vendor: ${filterVendor.join(', ')}`, clear: () => setFilterVendor?.([]) });
       return badges;
-  }, [filterStatus, filterPriority, filterCategory, filterProject, filterClient, filterOwner, filterAssignee, filterVendor, isVendorView]);
+	  }, [filterStatus, filterPriority, filterCategory, filterFirm, filterProject, filterClient, filterOwner, filterAssignee, filterVendor, isVendorView, setFilterFirm]);
 
   const getFilterClass = (isActive: boolean) => 
     `w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-colors ${isActive ? 'bg-indigo-50 border-indigo-500 text-indigo-700 font-medium' : 'bg-white border-indigo-300 text-black'}`;
@@ -598,9 +622,9 @@ export const TasksView: React.FC<TasksViewProps> = ({
 	  return (
 	    <div className="space-y-6">
 	      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-	        <div className={sidebarCollapsed ? 'pl-14 md:pl-16' : ''}>
+	        <div>
 	            <h2 className="text-2xl font-bold text-indigo-600">{title}</h2>
-	            <p className="text-sm text-black mt-1">{description}</p>
+	            {description && <p className="text-sm text-black mt-1">{description}</p>}
 	        </div>
 
         <div className="flex flex-wrap gap-2 items-center">
@@ -661,9 +685,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
         
         <div className={`${showFilters ? 'grid' : 'hidden'} grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end`}>
              <SearchableSelect label="Status" options={statusOptions} value={filterStatus} onChange={setFilterStatus} multiple={true} placeholder="All Statuses" className="text-sm"/>
-             <SearchableSelect label="Priority" options={priorityOptions} value={filterPriority} onChange={setFilterPriority} multiple={true} placeholder="All Priorities" className="text-sm"/>
-             <SearchableSelect label="Category" options={categoryOptions} value={filterCategory} onChange={setFilterCategory} multiple={true} placeholder="All Categories" className="text-sm"/>
-             {!isVendorView && <SearchableSelect label="Project" options={projectOptions} value={filterProject} onChange={setFilterProject} multiple={true} placeholder="All Projects" className="text-sm"/>}
+	             <SearchableSelect label="Priority" options={priorityOptions} value={filterPriority} onChange={setFilterPriority} multiple={true} placeholder="All Priorities" className="text-sm"/>
+	             <SearchableSelect label="Category" options={categoryOptions} value={filterCategory} onChange={setFilterCategory} multiple={true} placeholder="All Categories" className="text-sm"/>
+               <SearchableSelect label="Firm" options={firmOptions} value={filterFirm} onChange={setFilterFirm} multiple={true} placeholder="All Firms" className="text-sm"/>
+	             {!isVendorView && <SearchableSelect label="Project" options={projectOptions} value={filterProject} onChange={setFilterProject} multiple={true} placeholder="All Projects" className="text-sm"/>}
              {!isVendorView && <SearchableSelect label="Client" options={clientOptions} value={filterClient} onChange={setFilterClient} multiple={true} placeholder="All Clients" className="text-sm"/>}
              <SearchableSelect label="Owner" options={ownerOptions} value={filterOwner} onChange={setFilterOwner} multiple={true} placeholder="All Owners" className="text-sm"/>
              {!isVendorView && <SearchableSelect label="Assignee" options={assigneeOptions} value={filterAssignee} onChange={setFilterAssignee} multiple={true} placeholder="All Assignees" className="text-sm"/>}
@@ -693,7 +718,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
       </div>
 
       <UpdateTaskModal isOpen={isUpdateModalOpen} onClose={() => setIsUpdateModalOpen(false)} task={selectedTask} onUpdate={onUpdateTask} users={users} vendors={vendors}/>
-      <EditTaskModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} task={selectedTask} onSave={onEditTask} onAddCategory={onAddCategory} onAddProject={onAddProject} onAddVendorCategory={onAddVendorCategory!} users={users} categories={categories} projects={projects} vendors={vendors} vendorCategories={vendorCategories} isVendorView={isVendorView} lastAddedCategory={lastAddedCategory} lastAddedProject={lastAddedProject} lastAddedVendorCategory={lastAddedVendorCategory} onClearLastAdded={onClearLastAdded} />
+      <EditTaskModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} task={selectedTask} onSave={onEditTask} onAddCategory={onAddCategory} onAddProject={onAddProject} onAddVendorCategory={onAddVendorCategory!} users={users} categories={categories} projects={projects} firms={firms} vendors={vendors} vendorCategories={vendorCategories} isVendorView={isVendorView} lastAddedCategory={lastAddedCategory} lastAddedProject={lastAddedProject} lastAddedVendorCategory={lastAddedVendorCategory} onClearLastAdded={onClearLastAdded} />
       <BulkUpdateModal isOpen={isBulkUpdateModalOpen} onClose={() => setIsBulkUpdateModalOpen(false)} count={selectedIds.length} onUpdate={handleBulkUpdate} users={users} vendors={vendors} categories={categories} isVendorView={isVendorView} mode={bulkMode} />
 
       {showBulkDeleteConfirm && (

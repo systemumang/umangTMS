@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { User, Category, RecurringTask } from '../types';
+import { User, Category, RecurringTask, Firm } from '../types';
 import { SearchableSelect } from './SearchableSelect';
 
 interface EditRecurringTaskModalProps {
@@ -11,9 +11,10 @@ interface EditRecurringTaskModalProps {
   task: RecurringTask | null;
   users: User[];
   categories: Category[];
+  firms: Firm[];
 }
 
-export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ isOpen, onClose, onSave, task, users, categories }) => {
+export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ isOpen, onClose, onSave, task, users, categories, firms }) => {
   const parseToISO = (str: string) => {
     if (!str) return '';
     const trimmed = str.trim();
@@ -25,10 +26,11 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
   };
 
 	  // Fix: Explicitly define periodicity type to avoid 'Fixed Days' narrowing
-		  const [formData, setFormData] = useState<{
-		    title: string;
-		    goal: string;
-		    category: string;
+			  const [formData, setFormData] = useState<{
+			    title: string;
+			    goal: string;
+          firm: string;
+			    category: string;
 		    assignee: string;
 		    frequencyDays: number | '';
 		    startDate: string;
@@ -37,8 +39,9 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
 		    recurrenceDay: number;
 		    recurrenceMonth: string;
 		  }>({
-		    title: '',
-		    goal: '',
+			    title: '',
+			    goal: '',
+          firm: '',
 		    category: '',
 		    assignee: '',
 		    frequencyDays: '',
@@ -51,10 +54,11 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
 
   useEffect(() => {
 		    if (task) {
-		      setFormData({
-		        title: task.title,
-		        goal: task.goal || '',
-		        category: task.category,
+			      setFormData({
+			        title: task.title,
+			        goal: task.goal || '',
+              firm: task.firm || '',
+			        category: task.category,
 		        assignee: task.assignee,
 		        frequencyDays: task.frequencyDays,
 		        startDate: parseToISO(task.startDate),
@@ -70,6 +74,7 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
 
   const userOptions = users.map(u => ({ value: u.name, label: u.name }));
   const categoryOptions = categories.map(c => ({ value: c.name, label: c.name }));
+  const firmOptions = firms.map(f => ({ value: f.name, label: f.name }));
   const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -78,8 +83,8 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
     if (formData.frequencyDays === '') return;
 
     onSave({
-      ...task,
-      ...formData,
+		      ...task,
+		      ...formData,
       frequencyDays: Number(formData.frequencyDays)
     });
     onClose();
@@ -106,16 +111,24 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
 	                onChange={(e) => setFormData(p => ({ ...p, title: e.target.value }))}
 	              />
 	            </div>
-	            <div className="space-y-1">
-	              <label className="text-sm font-medium text-black">Goal</label>
+		            <div className="space-y-1">
+		              <label className="text-sm font-medium text-black">Goal</label>
 	              <input
 	                type="text"
 	                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
 	                value={formData.goal}
 	                onChange={(e) => setFormData(p => ({ ...p, goal: e.target.value }))}
-	                placeholder="Optional goal / outcome"
-	              />
-	            </div>
+		                placeholder="Optional goal / outcome"
+		              />
+		            </div>
+            <SearchableSelect
+              label="Firm"
+              options={firmOptions}
+              value={formData.firm}
+              onChange={(val) => setFormData(p => ({ ...p, firm: val }))}
+              required
+              placeholder="Select firm"
+            />
 	            <div className="grid grid-cols-2 gap-4">
 	              <SearchableSelect 
 	                label="Category"

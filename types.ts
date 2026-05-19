@@ -42,6 +42,7 @@ export interface Task {
   assignees: string;
   owner: string;
   project: string;
+  firm?: string;
   clientName?: string; 
   category?: string;
   vendor?: string; 
@@ -61,9 +62,10 @@ export interface Task {
 }
 
 export interface RecurringTask {
-		  id: number;
-		  title: string;
-		  category: string;
+			  id: number;
+			  title: string;
+			  firm?: string;
+			  category: string;
 		  assignee: string;
 		  frequencyDays: number;
 		  startDate: string;
@@ -81,6 +83,7 @@ export interface RecurringTaskAction {
   id: number;
   taskId: number;
   taskTitle: string;
+  firm?: string;
   category: string;
   assignee: string;
   status: 'Not Yet Started' | 'In Progress' | 'Complete' | 'Pending for Client' | 'Pending for Owner';
@@ -149,6 +152,11 @@ export interface Project {
     projectEmail?: string;
 }
 
+export interface Firm {
+    id: number;
+    name: string;
+}
+
 export interface ActionLogEntry {
     id: number;
     taskId: number;
@@ -160,6 +168,7 @@ export interface ActionLogEntry {
     owner: string;
     assignees: string;
     project: string;
+    firm?: string;
     clientName?: string; 
     vendor?: string;
     hours?: number;

@@ -59,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'vendorCategories' => fetchAllRows($conn, 'vendor_categories'),
             'projects' => fetchAllRows($conn, 'projects'),
             'clients' => fetchAllRows($conn, 'clients'),
+            'firms' => fetchAllRows($conn, 'firms'),
             'vendors' => fetchAllRows($conn, 'vendors'),
             'actionLogs' => fetchAllRows($conn, 'action_logs'),
             'recurringTasks' => fetchAllRows($conn, 'recurring_tasks'),
@@ -84,6 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'users' => 'users',
         'clients' => 'clients',
         'projects' => 'projects',
+        'firms' => 'firms',
         'vendors' => 'vendors',
         'categories' => 'categories',
         'vendorcategories' => 'vendor_categories',
@@ -142,6 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $title = trim((string)($data['title'] ?? $data['task'] ?? ''));
         $description = (string)($data['notes'] ?? $data['description'] ?? '');
         $project = (string)($data['project'] ?? '');
+        $firm = (string)($data['firm'] ?? '');
         $category = (string)($data['category'] ?? '');
         $owner = (string)($data['owner'] ?? '');
         $assignees = (string)($data['assignees'] ?? '');
@@ -164,13 +167,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($table === 'main_tasks') {
-            $stmt = $conn->prepare("INSERT INTO main_tasks (id, date, title, description, project, category, owner, assignees, client, priority, status, dueDate, lastUpdateDate, lastUpdateRemarks, hours, time, goal, photos, pdf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $conn->prepare("INSERT INTO main_tasks (id, date, title, description, project, firm, category, owner, assignees, client, priority, status, dueDate, lastUpdateDate, lastUpdateRemarks, hours, time, goal, photos, pdf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare main task insert.'], 500);
-            $stmt->bind_param('isssssssssssssdssss', $id, $date, $title, $description, $project, $category, $owner, $assignees, $client, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf);
+            $stmt->bind_param('isssssssssssssssdssss', $id, $date, $title, $description, $project, $firm, $category, $owner, $assignees, $client, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf);
         } else {
-            $stmt = $conn->prepare("INSERT INTO vendor_tasks (id, date, title, description, project, category, owner, assignees, vendor, vendorCategory, priority, status, dueDate, lastUpdateDate, lastUpdateRemarks, hours, time, goal, photos, pdf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $conn->prepare("INSERT INTO vendor_tasks (id, date, title, description, project, firm, category, owner, assignees, vendor, vendorCategory, priority, status, dueDate, lastUpdateDate, lastUpdateRemarks, hours, time, goal, photos, pdf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare vendor task insert.'], 500);
-            $stmt->bind_param('issssssssssssssdssss', $id, $date, $title, $description, $project, $category, $owner, $assignees, $vendor, $vendorCategory, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf);
+            $stmt->bind_param('issssssssssssssssdssss', $id, $date, $title, $description, $project, $firm, $category, $owner, $assignees, $vendor, $vendorCategory, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf);
         }
 
         $ok = $stmt->execute();
@@ -247,6 +250,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         sendJson(['success' => true, 'data' => ['id' => $insertId]]);
     }
 
+    if ($action === 'addMaster' && $table === 'firms') {
+        $name = trim((string)($data['name'] ?? ''));
+        if ($name === '') sendJson(['success' => false, 'error' => 'Firm name is required.'], 400);
+        $stmt = $conn->prepare("INSERT INTO firms (name) VALUES (?)");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare firm insert.'], 500);
+        $stmt->bind_param('s', $name);
+        $ok = $stmt->execute();
+        $insertId = (int)$stmt->insert_id;
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to add firm.'], 400);
+        sendJson(['success' => true, 'data' => ['id' => $insertId]]);
+    }
+
     if ($action === 'addMaster' && $table === 'vendor_categories') {
         $name = trim((string)($data['name'] ?? ''));
         if ($name === '') sendJson(['success' => false, 'error' => 'Vendor category name is required.'], 400);
@@ -280,6 +296,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $title = trim((string)($data['title'] ?? ''));
+        $firm = trim((string)($data['firm'] ?? ''));
         $category = trim((string)($data['category'] ?? ''));
         $assignee = trim((string)($data['assignee'] ?? ''));
         $frequencyType = trim((string)($data['frequencyType'] ?? $data['periodicity'] ?? 'Fixed Days'));
@@ -291,10 +308,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($title === '') sendJson(['success' => false, 'error' => 'Recurring task title is required.'], 400);
 
-        $stmt = $conn->prepare("INSERT INTO recurring_tasks (id, title, category, assignee, frequencyType, frequencyDays, startDate, time, goal, status, lastUpdatedOn, lastUpdateRemarks) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '')");
+        $stmt = $conn->prepare("INSERT INTO recurring_tasks (id, title, firm, category, assignee, frequencyType, frequencyDays, startDate, time, goal, status, lastUpdatedOn, lastUpdateRemarks) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '')");
         if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare recurring task insert.'], 500);
         $idStr = (string)$id;
-        $stmt->bind_param('sssssissss', $idStr, $title, $category, $assignee, $frequencyType, $frequencyDays, $startDate, $time, $goal, $status);
+        $stmt->bind_param('ssssssissss', $idStr, $title, $firm, $category, $assignee, $frequencyType, $frequencyDays, $startDate, $time, $goal, $status);
         $ok = $stmt->execute();
         $stmtError = $stmt->error;
         $stmt->close();
@@ -310,6 +327,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $taskId = (int)($data['taskId'] ?? $data['taskID'] ?? 0);
         $taskTitle = trim((string)($data['taskTitle'] ?? ''));
+        $firm = trim((string)($data['firm'] ?? ''));
         $category = trim((string)($data['category'] ?? ''));
         $assignee = trim((string)($data['assignee'] ?? ''));
         $status = trim((string)($data['status'] ?? ''));
@@ -322,11 +340,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($taskId <= 0) sendJson(['success' => false, 'error' => 'Invalid recurring task id.'], 400);
 
-        $stmt = $conn->prepare("INSERT INTO recurring_actions (id, taskId, taskTitle, category, assignee, status, remarks, goal, photos, pdf, updatedOn, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO recurring_actions (id, taskId, taskTitle, firm, category, assignee, status, remarks, goal, photos, pdf, updatedOn, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare recurring action insert.'], 500);
         $idStr = (string)$id;
         $taskIdStr = (string)$taskId;
-        $stmt->bind_param('ssssssssssss', $idStr, $taskIdStr, $taskTitle, $category, $assignee, $status, $remarks, $goal, $photos, $pdf, $updatedOn, $timestamp);
+        $stmt->bind_param('sssssssssssss', $idStr, $taskIdStr, $taskTitle, $firm, $category, $assignee, $status, $remarks, $goal, $photos, $pdf, $updatedOn, $timestamp);
         $ok = $stmt->execute();
         $stmtError = $stmt->error;
         $stmt->close();
@@ -388,8 +406,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 	        $title = trim((string)($data['title'] ?? $data['task'] ?? ''));
 	        $description = (string)($data['notes'] ?? $data['description'] ?? '');
-	        $project = (string)($data['project'] ?? '');
-	        $category = (string)($data['category'] ?? '');
+        $project = (string)($data['project'] ?? '');
+        $firm = (string)($data['firm'] ?? '');
+        $category = (string)($data['category'] ?? '');
 	        $owner = (string)($data['owner'] ?? '');
 	        $assignees = (string)($data['assignees'] ?? '');
 	        $priority = (string)($data['priority'] ?? 'Medium');
@@ -413,13 +432,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	        $skipLog = in_array($skipLogRaw, ['1', 'true', 'yes'], true);
 
         if ($table === 'main_tasks') {
-            $stmt = $conn->prepare("UPDATE main_tasks SET title=?, description=?, project=?, category=?, owner=?, assignees=?, client=?, priority=?, status=?, dueDate=?, lastUpdateDate=?, lastUpdateRemarks=?, hours=?, time=?, goal=?, photos=?, pdf=? WHERE id=?");
+            $stmt = $conn->prepare("UPDATE main_tasks SET title=?, description=?, project=?, firm=?, category=?, owner=?, assignees=?, client=?, priority=?, status=?, dueDate=?, lastUpdateDate=?, lastUpdateRemarks=?, hours=?, time=?, goal=?, photos=?, pdf=? WHERE id=?");
             if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare main task update.'], 500);
-            $stmt->bind_param('ssssssssssssdssssi', $title, $description, $project, $category, $owner, $assignees, $client, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf, $id);
+            $stmt->bind_param('ssssssssssssssdssssi', $title, $description, $project, $firm, $category, $owner, $assignees, $client, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf, $id);
         } else {
-            $stmt = $conn->prepare("UPDATE vendor_tasks SET title=?, description=?, project=?, category=?, owner=?, assignees=?, vendor=?, vendorCategory=?, priority=?, status=?, dueDate=?, lastUpdateDate=?, lastUpdateRemarks=?, hours=?, time=?, goal=?, photos=?, pdf=? WHERE id=?");
+            $stmt = $conn->prepare("UPDATE vendor_tasks SET title=?, description=?, project=?, firm=?, category=?, owner=?, assignees=?, vendor=?, vendorCategory=?, priority=?, status=?, dueDate=?, lastUpdateDate=?, lastUpdateRemarks=?, hours=?, time=?, goal=?, photos=?, pdf=? WHERE id=?");
             if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare vendor task update.'], 500);
-            $stmt->bind_param('sssssssssssssdssssi', $title, $description, $project, $category, $owner, $assignees, $vendor, $vendorCategory, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf, $id);
+            $stmt->bind_param('sssssssssssssssdssssi', $title, $description, $project, $firm, $category, $owner, $assignees, $vendor, $vendorCategory, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf, $id);
         }
 
         $ok = $stmt->execute();
@@ -436,9 +455,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	                $timestamp = $dateTime[1] ?? '';
 	            }
 
-	            $logStmt = $conn->prepare("INSERT INTO action_logs (id, taskId, taskTitle, taskDate, updateDate, project, client, category, owner, assignees, vendor, status, remarks, hours, time, goal, photos, pdf, updatedOn, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-	            if (!$logStmt) sendJson(['success' => false, 'error' => 'Failed to prepare action log insert.'], 500);
-	            $logStmt->bind_param('iisssssssssssdssssss', $logId, $id, $title, $taskDate, $lastUpdateDate, $project, $client, $category, $owner, $assignees, $vendor, $status, $lastUpdateRemarks, $hours, $time, $logGoal, $logPhotos, $logPdf, $updatedOn, $timestamp);
+            $logStmt = $conn->prepare("INSERT INTO action_logs (id, taskId, taskTitle, taskDate, updateDate, project, firm, client, category, owner, assignees, vendor, status, remarks, hours, time, goal, photos, pdf, updatedOn, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            if (!$logStmt) sendJson(['success' => false, 'error' => 'Failed to prepare action log insert.'], 500);
+            $logStmt->bind_param('iisssssssssssssdssssss', $logId, $id, $title, $taskDate, $lastUpdateDate, $project, $firm, $client, $category, $owner, $assignees, $vendor, $status, $lastUpdateRemarks, $hours, $time, $logGoal, $logPhotos, $logPdf, $updatedOn, $timestamp);
 	            $logOk = $logStmt->execute();
 	            $logError = $logStmt->error;
 	            $logStmt->close();
@@ -512,6 +531,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         sendJson(['success' => true]);
     }
 
+    if ($action === 'updateMaster' && $table === 'firms') {
+        $id = (int)($data['id'] ?? 0);
+        if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid firm id.'], 400);
+        $name = trim((string)($data['name'] ?? ''));
+        $stmt = $conn->prepare("UPDATE firms SET name=? WHERE id=?");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare firm update.'], 500);
+        $stmt->bind_param('si', $name, $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to update firm.'], 400);
+        sendJson(['success' => true]);
+    }
+
     if ($action === 'updateMaster' && $table === 'vendor_categories') {
         $id = (int)($data['id'] ?? 0);
         if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid vendor category id.'], 400);
@@ -553,6 +585,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$row) sendJson(['success' => false, 'error' => 'Recurring task not found.'], 404);
 
         $title = array_key_exists('title', $data) ? trim((string)$data['title']) : (string)($row['title'] ?? '');
+        $firm = array_key_exists('firm', $data) ? trim((string)$data['firm']) : (string)($row['firm'] ?? '');
         $category = array_key_exists('category', $data) ? trim((string)$data['category']) : (string)($row['category'] ?? '');
         $assignee = array_key_exists('assignee', $data) ? trim((string)$data['assignee']) : (string)($row['assignee'] ?? '');
         $frequencyType = array_key_exists('frequencyType', $data) || array_key_exists('periodicity', $data)
@@ -568,9 +601,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($title === '') sendJson(['success' => false, 'error' => 'Recurring task title is required.'], 400);
 
-        $stmt = $conn->prepare("UPDATE recurring_tasks SET title=?, category=?, assignee=?, frequencyType=?, frequencyDays=?, startDate=?, time=?, goal=?, status=?, lastUpdatedOn=?, lastUpdateRemarks=? WHERE id=?");
+        $stmt = $conn->prepare("UPDATE recurring_tasks SET title=?, firm=?, category=?, assignee=?, frequencyType=?, frequencyDays=?, startDate=?, time=?, goal=?, status=?, lastUpdatedOn=?, lastUpdateRemarks=? WHERE id=?");
         if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare recurring task update.'], 500);
-        $stmt->bind_param('ssssisssssss', $title, $category, $assignee, $frequencyType, $frequencyDays, $startDate, $time, $goal, $status, $lastUpdatedOn, $lastUpdateRemarks, $idStr);
+        $stmt->bind_param('sssssisssssss', $title, $firm, $category, $assignee, $frequencyType, $frequencyDays, $startDate, $time, $goal, $status, $lastUpdatedOn, $lastUpdateRemarks, $idStr);
         $ok = $stmt->execute();
         $stmtError = $stmt->error;
         $stmt->close();
@@ -631,7 +664,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         sendJson(['success' => true]);
     }
 
-    if ($action === 'deleteRecord' && in_array($table, ['clients', 'projects', 'vendors', 'categories', 'vendor_categories', 'designations'], true)) {
+    if ($action === 'deleteRecord' && in_array($table, ['clients', 'projects', 'firms', 'vendors', 'categories', 'vendor_categories', 'designations'], true)) {
         $id = (int)($data['id'] ?? 0);
         if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid id.'], 400);
         $stmt = $conn->prepare("DELETE FROM `{$table}` WHERE id=?");

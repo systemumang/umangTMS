@@ -47,6 +47,13 @@ CREATE TABLE IF NOT EXISTS clients (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS firms (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(190) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_firm_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS vendors (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(190) NOT NULL,
@@ -73,6 +80,7 @@ CREATE TABLE IF NOT EXISTS main_tasks (
   title VARCHAR(255) NOT NULL,
   description TEXT,
   project VARCHAR(190) DEFAULT '',
+  firm VARCHAR(190) DEFAULT '',
   category VARCHAR(190) DEFAULT '',
   owner VARCHAR(190) DEFAULT '',
   assignees TEXT,
@@ -96,6 +104,7 @@ CREATE TABLE IF NOT EXISTS vendor_tasks (
   title VARCHAR(255) NOT NULL,
   description TEXT,
   project VARCHAR(190) DEFAULT '',
+  firm VARCHAR(190) DEFAULT '',
   category VARCHAR(190) DEFAULT '',
   owner VARCHAR(190) DEFAULT '',
   assignees TEXT,
@@ -121,6 +130,7 @@ CREATE TABLE IF NOT EXISTS action_logs (
   taskDate VARCHAR(20) DEFAULT '',
   updateDate VARCHAR(30) DEFAULT '',
   project VARCHAR(190) DEFAULT '',
+  firm VARCHAR(190) DEFAULT '',
   client VARCHAR(190) DEFAULT '',
   category VARCHAR(190) DEFAULT '',
   owner VARCHAR(190) DEFAULT '',
@@ -142,6 +152,7 @@ CREATE TABLE IF NOT EXISTS action_logs (
 CREATE TABLE IF NOT EXISTS recurring_tasks (
   id BIGINT PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
+  firm VARCHAR(190) DEFAULT '',
   category VARCHAR(190) DEFAULT '',
   assignee VARCHAR(190) DEFAULT '',
   frequencyType VARCHAR(50) DEFAULT 'Monthly',
@@ -159,6 +170,7 @@ CREATE TABLE IF NOT EXISTS recurring_actions (
   id BIGINT PRIMARY KEY,
   taskId BIGINT NOT NULL,
   taskTitle VARCHAR(255) DEFAULT '',
+  firm VARCHAR(190) DEFAULT '',
   category VARCHAR(190) DEFAULT '',
   assignee VARCHAR(190) DEFAULT '',
   status VARCHAR(80) DEFAULT '',

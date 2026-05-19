@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Info, AlertTriangle } from 'lucide-react';
-import { Task, User, Category, Project, Vendor, VendorCategory } from '../types';
+import { Task, User, Category, Project, Vendor, VendorCategory, Firm } from '../types';
 import { SearchableSelect } from './SearchableSelect';
 
 interface EditTaskModalProps {
@@ -15,6 +15,7 @@ interface EditTaskModalProps {
   users: User[];
   categories: Category[];
   projects: Project[];
+  firms: Firm[];
   vendors: Vendor[];
   vendorCategories?: VendorCategory[];
   isVendorView?: boolean;
@@ -35,6 +36,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   users, 
   categories, 
   projects, 
+  firms,
   vendors,
   vendorCategories = [],
   isVendorView = false,
@@ -48,6 +50,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     assignees: string[]; 
     owner: string;
     project: string; // Combined 'Project Name (Client Name)'
+    firm: string;
     category: string;
     dueDate: string;
     vendor: string;
@@ -63,6 +66,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     assignees: [],
     owner: '',
     project: '',
+    firm: '',
     category: '',
     dueDate: '',
     vendor: '',
@@ -118,6 +122,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
             assignees: task.assignees ? task.assignees.split(',').map(s => s.trim()) : [],
             owner: task.owner,
             project: currentProjectValue, // Use the combined format for project selector
+            firm: task.firm || '',
             category: task.category || '',
             dueDate: formattedDate,
             vendor: task.vendor || '',
@@ -174,9 +179,10 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   };
 
   const isFormValid = () => {
-    const basicValid = formData.title.trim() !== '' && 
-                       formData.owner !== '' && 
-                       formData.project !== ''; // Project is now required for all tasks
+	    const basicValid = formData.title.trim() !== '' && 
+	                       formData.owner !== '' && 
+	                       formData.project !== '' &&
+                         formData.firm !== '';
 
     if (isVendorMode) return basicValid && formData.vendor !== '';
     
@@ -200,6 +206,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
       dueDate: formData.dueDate,
       priority: formData.priority as any,
       project: formData.project, // Project is always saved as the combined string
+      firm: formData.firm,
       time: formData.time,
       goal: formData.goal,
       photos: JSON.stringify(formData.photos || []),
@@ -270,16 +277,27 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                 </div>
               </div>
 
-              {/* Project Selector - always visible now */}
-              <div className="space-y-1">
-                  <label className="text-sm font-medium text-black block mb-1">Project <span className="text-red-500">*</span></label>
-                  <div className="flex gap-2">
-                      <div className="flex-1">
-                          <SearchableSelect options={projectOptions} value={formData.project} onChange={(val) => setFormData(prev => ({ ...prev, project: val }))} placeholder="Select Project..." required />
-                      </div>
-                      <button type="button" onClick={onAddProject} className="px-3 py-2 text-gray-500 hover:text-indigo-600 border border-gray-200 hover:bg-indigo-50 rounded-lg h-[42px]"><Plus size={18} /></button>
+	              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+	                  <label className="text-sm font-medium text-black block mb-1">Project <span className="text-red-500">*</span></label>
+	                  <div className="flex gap-2">
+	                      <div className="flex-1">
+	                          <SearchableSelect options={projectOptions} value={formData.project} onChange={(val) => setFormData(prev => ({ ...prev, project: val }))} placeholder="Select Project..." required />
+	                      </div>
+	                      <button type="button" onClick={onAddProject} className="px-3 py-2 text-gray-500 hover:text-indigo-600 border border-gray-200 hover:bg-indigo-50 rounded-lg h-[42px]"><Plus size={18} /></button>
+	                  </div>
                   </div>
-              </div>
+                  <div className="space-y-1">
+                    <SearchableSelect
+                      label="Firm"
+                      options={firms.map(f => ({ value: f.name, label: f.name }))}
+                      value={formData.firm}
+                      onChange={(val) => setFormData(prev => ({ ...prev, firm: val }))}
+                      placeholder="Select firm..."
+                      required
+                    />
+                  </div>
+	              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {isVendorMode ? (
