@@ -190,17 +190,17 @@ const getCaseInsensitive = (obj: any, key: string): any => {
 };
 
 export const parseToISO = (str: string) => {
-    if (!str) return '';
-    const trimmed = str.trim();
-    if (!trimmed) return '';
-    if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) return trimmed.split(/[ T]/)[0];
-    const datePart = trimmed.split(/[ T]/)[0];
-    const parts = datePart.split(/[/-]/);
-    if (parts.length !== 3) return trimmed;
-    if (parts[0].length === 4) {
-        return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-    }
-    return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+	    if (!str) return '';
+	    const trimmed = str.trim().replace(/,+/g, '');
+	    if (!trimmed) return '';
+	    if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) return trimmed.split(/[ T]/)[0];
+	    const datePart = trimmed.split(/[ T]/)[0].replace(/,+/g, '');
+	    const parts = datePart.split(/[/-]/);
+	    if (parts.length !== 3) return trimmed;
+	    if (parts[0].length === 4) {
+	        return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+	    }
+	    return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
 };
 
 async function safeJsonParse(response: Response, sourceName: string) {
@@ -215,7 +215,7 @@ async function safeJsonParse(response: Response, sourceName: string) {
   }
 }
 
-  export default function App() {
+export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('taskpro_user');
     return saved ? JSON.parse(saved) : null;
@@ -370,6 +370,8 @@ async function safeJsonParse(response: Response, sourceName: string) {
   const [isEditRecurringTaskModalOpen, setIsEditRecurringTaskModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isRecurringHistoryModalOpen, setIsRecurringHistoryModalOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const sidebarCollapsedBeforeViewRef = useRef<boolean | null>(null);
   const [selectedTaskForHistory, setSelectedTaskForHistory] = useState<Task | null>(null);
   const [selectedRecurringTask, setSelectedRecurringTask] = useState<RecurringTask | null>(null);
 
@@ -615,6 +617,27 @@ async function safeJsonParse(response: Response, sourceName: string) {
       return () => clearInterval(interval);
     }
   }, [fetchData, apiUrl, currentUser]);
+
+  // Auto-hide left sidebar when opening "View" modals (History screens),
+  // and restore it back when the modal closes.
+  useEffect(() => {
+    if (layoutMode !== 'side') return;
+
+    const isViewOpen = isHistoryModalOpen || isRecurringHistoryModalOpen;
+
+    if (isViewOpen) {
+      if (sidebarCollapsedBeforeViewRef.current === null) {
+        sidebarCollapsedBeforeViewRef.current = isSidebarCollapsed;
+      }
+      setIsSidebarCollapsed(true);
+      return;
+    }
+
+    if (sidebarCollapsedBeforeViewRef.current !== null) {
+      setIsSidebarCollapsed(sidebarCollapsedBeforeViewRef.current);
+      sidebarCollapsedBeforeViewRef.current = null;
+    }
+  }, [layoutMode, isHistoryModalOpen, isRecurringHistoryModalOpen, isSidebarCollapsed]);
 
   const handleLogin = async (email: string, pass: string) => {
     setIsLoading(true);
@@ -952,24 +975,24 @@ async function safeJsonParse(response: Response, sourceName: string) {
         <LoginView onLogin={handleLogin} isAuthenticating={isLoading} />
       ) : (
         <>
-          {layoutMode === 'side' && (
-            <Sidebar 
-              items={navItemsWithCounts} 
-              activeTab={activeTab} 
-              onTabChange={setActiveTab} 
-              onLayoutChange={setLayoutMode}
-              layoutMode={layoutMode}
-              isOpen={isSidebarOpen} 
-              onClose={() => setIsSidebarOpen(false)}
-              lastSynced={lastSynced}
-              isSyncing={isSyncing}
-              onSync={fetchData}
-              hasError={!!apiError}
-              onLogout={() => { setCurrentUser(null); localStorage.removeItem('taskpro_user'); }}
-              onExitWorkspace={() => { setCurrentUser(null); setWorkspaceId(''); setApiUrl(''); localStorage.clear(); }}
-              workspaceId={workspaceId}
-            />
-          )}
+          {layoutMode === 'side' && !isSidebarCollapsed && (
+	            <Sidebar 
+	              items={navItemsWithCounts} 
+	              activeTab={activeTab} 
+	              onTabChange={setActiveTab} 
+	              onLayoutChange={setLayoutMode}
+	              layoutMode={layoutMode}
+	              isOpen={isSidebarOpen} 
+	              onClose={() => setIsSidebarOpen(false)}
+	              lastSynced={lastSynced}
+	              isSyncing={isSyncing}
+	              onSync={fetchData}
+	              hasError={!!apiError}
+	              onLogout={() => { setCurrentUser(null); localStorage.removeItem('taskpro_user'); }}
+	              onExitWorkspace={() => { setCurrentUser(null); setWorkspaceId(''); setApiUrl(''); localStorage.clear(); }}
+	              workspaceId={workspaceId}
+	            />
+	          )}
 
           <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
             {layoutMode === 'top' ? (
@@ -996,8 +1019,19 @@ async function safeJsonParse(response: Response, sourceName: string) {
               </header>
             )}
 
-	            <main className="flex-1 overflow-y-auto pt-2 md:pt-4 px-2 md:px-4 pb-0 custom-scrollbar relative">
-              {isLoading ? (
+		            <main className="flex-1 overflow-y-auto pt-2 md:pt-4 px-2 md:px-4 pb-0 custom-scrollbar relative">
+		              {layoutMode === 'side' && isSidebarCollapsed && (
+		                <button
+		                  type="button"
+		                  onClick={() => setIsSidebarCollapsed(false)}
+		                  className="hidden md:inline-flex items-center gap-2 fixed top-4 left-4 z-40 px-3 py-2 bg-white border border-indigo-200 text-indigo-700 rounded-lg shadow hover:bg-indigo-50"
+		                  title="Show menu"
+		                >
+		                  <Menu size={18} />
+		                  <span className="text-xs font-bold uppercase tracking-wider">Menu</span>
+		                </button>
+		              )}
+	              {isLoading ? (
                 <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center space-y-4">
                     <div className="relative w-20 h-20">
                         <div className="absolute inset-0 border-4 border-indigo-100 rounded-full"></div>

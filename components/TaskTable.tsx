@@ -142,8 +142,8 @@ export const TaskTable: React.FC<TaskTableProps> = ({
     setPhotoViewer({ photos, index: Math.max(0, Math.min(index, photos.length - 1)) });
   };
 
-  const thClass = "px-4 py-3 text-xs font-black text-white uppercase tracking-widest border-r border-black last:border-r-0 cursor-pointer hover:bg-blue-800 transition-colors select-none whitespace-normal !bg-blue-700 sticky top-0 z-10";
-  const tdClass = "px-4 py-3 text-sm text-black border-r border-black last:border-r-0 align-top whitespace-normal break-words";
+	  const thClass = "px-4 py-3 text-xs font-black text-white uppercase tracking-widest border-r border-black last:border-r-0 cursor-pointer hover:bg-blue-800 transition-colors select-none whitespace-normal !bg-blue-700 sticky top-0 z-10";
+	  const tdClass = "px-4 py-3 text-sm text-black border-r border-black last:border-r-0 align-top whitespace-normal break-words";
 
   return (
     <>
@@ -264,12 +264,15 @@ export const TaskTable: React.FC<TaskTableProps> = ({
 	                        </div>
 	                    </td>
 	                    <td className={`${tdClass} text-center`}>
-  <div className="flex items-center justify-center gap-2 whitespace-nowrap" onDoubleClick={(e) => e.stopPropagation()}>
-    <button onClick={() => onUpdateTask(task)} disabled={isSyncing} className="px-3 py-1 bg-blue-600 rounded text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-30 uppercase whitespace-nowrap shrink-0">Update</button>
-    <button onClick={() => onEditTask(task)} disabled={isSyncing} className="p-1 text-blue-600 hover:text-blue-800 disabled:opacity-30 shrink-0"><Edit2 size={16} /></button>
-    <button onClick={() => onViewHistory(task)} disabled={isSyncing} className="p-1 text-red-500 hover:text-red-700 disabled:opacity-30 shrink-0"><Info size={16} /></button>
-    {canDelete && <button onClick={() => onDeleteTask(task.id, isVendorView)} disabled={isSyncing} className="p-1 text-red-600 hover:text-red-800 disabled:opacity-30 shrink-0"><Trash2 size={16} /></button>}
-  </div>
+	  <div className="flex items-center justify-center gap-2 whitespace-nowrap" onDoubleClick={(e) => e.stopPropagation()}>
+	    <button onClick={() => onUpdateTask(task)} disabled={isSyncing} className="px-3 py-1 bg-blue-600 rounded text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-30 uppercase whitespace-nowrap shrink-0 inline-flex items-center gap-1">
+	      {isSyncing && <Loader2 className="animate-spin" size={14} />}
+	      <span>{isSyncing ? 'Updating' : 'Update'}</span>
+	    </button>
+	    <button onClick={() => onEditTask(task)} disabled={isSyncing} className="p-1 text-blue-600 hover:text-blue-800 disabled:opacity-30 shrink-0"><Edit2 size={16} /></button>
+	    <button onClick={() => onViewHistory(task)} disabled={isSyncing} className="p-1 text-red-500 hover:text-red-700 disabled:opacity-30 shrink-0"><Info size={16} /></button>
+	    {canDelete && <button onClick={() => onDeleteTask(task.id, isVendorView)} disabled={isSyncing} className="p-1 text-red-600 hover:text-red-800 disabled:opacity-30 shrink-0"><Trash2 size={16} /></button>}
+	  </div>
 </td>
                   </tr>
                 );
@@ -431,12 +434,15 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                     {task.status}
                 </span>
                 <div className="flex items-center gap-2" onDoubleClick={(e) => e.stopPropagation()}>
-                    <button onClick={() => onViewHistory(task)} className="p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg transition-colors shadow-sm"><Info size={18} /></button>
-                    <button onClick={() => onEditTask(task)} className="p-2 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded-lg transition-colors shadow-sm"><Edit2 size={18} /></button>
-                    {canDelete && <button onClick={() => onDeleteTask(task.id, isVendorView)} className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-colors shadow-sm"><Trash2 size={18} /></button>}
-                    <button onClick={() => onUpdateTask(task)} className="ml-1 px-4 py-2 bg-white text-blue-600 border border-blue-600 text-[10px] font-black rounded-lg uppercase shadow-sm">Update</button>
-                </div>
-              </div>
+	                    <button onClick={() => onViewHistory(task)} disabled={isSyncing} className="p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg transition-colors shadow-sm disabled:opacity-40"><Info size={18} /></button>
+	                    <button onClick={() => onEditTask(task)} className="p-2 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded-lg transition-colors shadow-sm"><Edit2 size={18} /></button>
+	                    {canDelete && <button onClick={() => onDeleteTask(task.id, isVendorView)} className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-colors shadow-sm"><Trash2 size={18} /></button>}
+	                    <button onClick={() => onUpdateTask(task)} disabled={isSyncing} className="ml-1 px-4 py-2 bg-white text-blue-600 border border-blue-600 text-[10px] font-black rounded-lg uppercase shadow-sm inline-flex items-center gap-2 disabled:opacity-40">
+	                      {isSyncing && <Loader2 className="animate-spin" size={14} />}
+	                      {isSyncing ? 'Updating' : 'Update'}
+	                    </button>
+	                </div>
+	              </div>
             </div>
           );
         })}

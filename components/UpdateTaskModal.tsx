@@ -43,21 +43,23 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
     }
   };
 
-  useEffect(() => {
-    if (task) {
-      setFormData({
-        status: task.status,
-      });
-      setRemarksInput('');
-      setHoursInput('0');
-      setGoalInput(task.goal || '');
-      setPhotosInput(parsePhotos(task.photos));
-      setPdfInput(task.pdf || '');
-      setReassignSelection(isVendorTask ? '' : []);
-      setError('');
-      setIsConfirming(false);
-    }
-  }, [task, isOpen, isVendorTask]);
+	  useEffect(() => {
+	    if (task) {
+	      setFormData({
+	        status: task.status,
+	      });
+	      setRemarksInput('');
+	      setHoursInput('0');
+	      // Goal/Photo/PDF updates should be stored only in action_logs (not the task master row),
+	      // so start these fields empty for each update.
+	      setGoalInput('');
+	      setPhotosInput([]);
+	      setPdfInput('');
+	      setReassignSelection(isVendorTask ? '' : []);
+	      setError('');
+	      setIsConfirming(false);
+	    }
+	  }, [task, isOpen, isVendorTask]);
 
   if (!isOpen || !task) return null;
 
@@ -154,8 +156,8 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
             </div>
           </div>
         ) : (
-          <form onSubmit={handlePreSubmit}>
-            <div className="p-6 space-y-6">
+	          <form onSubmit={handlePreSubmit}>
+	            <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
               
               {error && (
                 <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 font-bold">

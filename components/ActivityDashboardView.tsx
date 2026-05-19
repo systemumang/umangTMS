@@ -28,8 +28,9 @@ export const ActivityDashboardView: React.FC<ActivityDashboardViewProps> = ({ lo
   };
 
   const pivotedData = useMemo(() => {
+    // Defensive: some logs may only have updatedOn (date) instead of updateDate (date+time).
     const filteredLogs = logs.filter(log => {
-      const logISO = parseToISO(log.updateDate);
+      const logISO = parseToISO(String(log.updateDate || log.updatedOn || '').trim());
       if (fromDate && logISO < fromDate) return false;
       if (toDate && logISO > toDate) return false;
       return true;
