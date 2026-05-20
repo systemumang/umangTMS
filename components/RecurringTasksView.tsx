@@ -526,9 +526,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                   const achievedDisplay = hasGoalValue(task.goal) ? achieved : '0';
                   const periodText = getFrequencyText(task);
                   const prevTask = idx > 0 ? paginatedTasks[idx - 1] : null;
-                  const prevPeriodText = prevTask ? getFrequencyText(prevTask) : '';
                   const showAssigneeHeader = !prevTask || String(prevTask.assignee || '') !== String(task.assignee || '');
-                  const showPeriodHeader = showAssigneeHeader || prevPeriodText !== periodText;
                   const assigneeKey = String(task.assignee || '').trim().toLowerCase();
                   const assigneeBgClass = (() => {
                     const palettes = [
@@ -549,13 +547,6 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                       <tr>
                         <td colSpan={isAdmin ? 17 : 16} className={`px-4 py-2 text-xs font-bold uppercase tracking-wider ${assigneeBgClass}`}>
                           {task.assignee || '-'}
-                        </td>
-                      </tr>
-                    )}
-                    {showPeriodHeader && (
-                      <tr>
-                        <td colSpan={isAdmin ? 17 : 16} className="px-4 py-2 bg-indigo-50 text-indigo-700 text-xs font-bold uppercase tracking-wider">
-                          {periodText}
                         </td>
                       </tr>
                     )}
