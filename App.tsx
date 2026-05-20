@@ -60,9 +60,7 @@ import {
   X,
   Hammer,
   Send,
-  ListChecks,
   BarChart3,
-  ListPlus,
   UserCheck,
   UserCog,
   GraduationCap,
@@ -79,11 +77,9 @@ const navItems: NavItem[] = [
   
   // Tasks Section
   { id: 'all-tasks', label: 'All Tasks', icon: <CheckSquare size={20} />, section: 'Tasks' },
-  { id: 'add-multiple', label: 'Add Multiple', icon: <ListPlus size={20} />, section: 'Tasks' },
   { id: 'pending-group', label: 'Pending', icon: <Clock size={20} />, section: 'Tasks' },
   { id: 'pending', label: 'Pending Tasks', icon: <Clock size={20} />, section: 'Tasks' },
   { id: 'completed', label: 'Completed Tasks', icon: <CheckCircle size={20} />, section: 'Tasks' },
-  { id: 'update-multiple', label: 'Update Multiple', icon: <ListChecks size={20} />, section: 'Tasks' },
   { id: 'activity-dashboard', label: 'Activity Dashboard', icon: <BarChart3 size={20} />, section: 'Tasks' },
   { id: 'action-log', label: 'Action Log', icon: <History size={20} />, section: 'Tasks' },
   
@@ -404,13 +400,23 @@ export default function App() {
   const [isEditRecurringTaskModalOpen, setIsEditRecurringTaskModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isRecurringHistoryModalOpen, setIsRecurringHistoryModalOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const sidebarCollapsedBeforeViewRef = useRef<boolean | null>(null);
-  const lastAutoCollapsedTabRef = useRef<string>('');
-  const [selectedTaskForHistory, setSelectedTaskForHistory] = useState<Task | null>(null);
-  const [selectedRecurringTask, setSelectedRecurringTask] = useState<RecurringTask | null>(null);
+	  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+	  const sidebarCollapsedBeforeViewRef = useRef<boolean | null>(null);
+	  const lastAutoCollapsedTabRef = useRef<string>('');
+	  const [selectedTaskForHistory, setSelectedTaskForHistory] = useState<Task | null>(null);
+	  const [selectedRecurringTask, setSelectedRecurringTask] = useState<RecurringTask | null>(null);
 
-  const isDashboardNavigation = useRef(false);
+	  useEffect(() => {
+	    if (!selectedTaskForHistory) return;
+	    const latest = tasks.find(t => Number(t.id) === Number(selectedTaskForHistory.id));
+	    if (!latest) return;
+	    setSelectedTaskForHistory(prev => {
+	      if (!prev) return prev;
+	      return Number(prev.id) === Number(latest.id) ? latest : prev;
+	    });
+	  }, [tasks, selectedTaskForHistory?.id]);
+
+	  const isDashboardNavigation = useRef(false);
 
   useEffect(() => {
     if (isDashboardNavigation.current) {
@@ -1197,37 +1203,54 @@ export default function App() {
               />
             )}
 
-		            <main className="flex-1 overflow-y-auto pt-2 md:pt-4 px-2 md:px-4 pb-0 custom-scrollbar relative">
-			              {layoutMode === 'side' && isSidebarCollapsed && !isAnyFormModalOpen && activeTab !== 'all-tasks' && activeTab !== 'pending' && !activeTab.startsWith('pending-status:') && activeTab !== 'completed' && (
-			                <button
-			                  type="button"
-			                  onClick={() => setIsSidebarCollapsed(false)}
-			                  className="hidden md:inline-flex items-center justify-center fixed top-6 left-4 z-[120] w-11 h-11 bg-white border-2 border-indigo-200 text-indigo-700 rounded-xl shadow-lg hover:bg-indigo-50"
-			                  title="Show menu"
+			            {(() => {
+			              const showCollapsedMenuButton =
+			                layoutMode === 'side' &&
+			                isSidebarCollapsed &&
+			                !isAnyFormModalOpen &&
+			                activeTab !== 'all-tasks' &&
+			                activeTab !== 'pending' &&
+			                !activeTab.startsWith('pending-status:') &&
+			                activeTab !== 'completed';
+
+			              return (
+			                <main
+			                  className={`flex-1 overflow-y-auto pt-2 md:pt-4 px-2 md:px-4 pb-0 custom-scrollbar relative ${
+			                    showCollapsedMenuButton ? 'md:pl-20' : ''
+			                  }`}
 			                >
-		                  <Menu size={18} />
-		                </button>
-		              )}
-	              {isLoading ? (
-                <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center space-y-4">
-                    <div className="relative w-20 h-20">
-                        <div className="absolute inset-0 border-4 border-indigo-100 rounded-full"></div>
-                        <div className="absolute inset-0 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
-                    </div>
-                    <p className="text-indigo-600 font-black uppercase tracking-widest text-sm animate-pulse">Loading...</p>
-                </div>
-              ) : (
-		                <div className="w-full mx-auto min-h-full flex flex-col">
-	                  <div className="flex-1">
-	                    {renderContent()}
-	                  </div>
-	                  <Footer />
+				              {showCollapsedMenuButton && (
+				                <button
+				                  type="button"
+				                  onClick={() => setIsSidebarCollapsed(false)}
+				                  className="hidden md:inline-flex items-center justify-center fixed top-6 left-4 z-[120] w-11 h-11 bg-white border-2 border-indigo-200 text-indigo-700 rounded-xl shadow-lg hover:bg-indigo-50"
+				                  title="Show menu"
+				                >
+			                  <Menu size={18} />
+			                </button>
+			              )}
+		              {isLoading ? (
+	                <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center space-y-4">
+	                    <div className="relative w-20 h-20">
+	                        <div className="absolute inset-0 border-4 border-indigo-100 rounded-full"></div>
+	                        <div className="absolute inset-0 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
+	                    </div>
+	                    <p className="text-indigo-600 font-black uppercase tracking-widest text-sm animate-pulse">Loading...</p>
 	                </div>
-              )}
-            </main>
-          </div>
-        </>
-      )}
+	              ) : (
+				                <div className="w-full mx-auto min-h-full flex flex-col">
+		                  <div className="flex-1">
+		                    {renderContent()}
+		                  </div>
+		                  <Footer />
+		                </div>
+	              )}
+			            </main>
+			              );
+			            })()}
+	          </div>
+	        </>
+	      )}
 
       {/* Modals */}
       <AddTaskModal 

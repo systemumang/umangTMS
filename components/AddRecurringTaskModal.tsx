@@ -103,7 +103,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 
 	  const isFormValid = () => {
 	    // Basic required fields validation
-			    if (!formData.title.trim() || !formData.firm || !formData.owner || !formData.category || !formData.assignee || !formData.startDate || !formData.time) {
+		    if (!formData.title.trim() || !formData.firm || !formData.owner || !formData.category || !formData.assignee || !formData.startDate) {
 		      return false;
 		    }
     
@@ -359,16 +359,15 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 	                />
 	              </div>
 
-	              <div className="space-y-1">
-	                <label className="text-sm font-medium text-black">Time <span className="text-red-500">*</span></label>
-	                <input
-	                  type="time"
-	                  required
-	                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
-	                  value={formData.time}
-	                  onChange={(e) => setFormData(p => ({ ...p, time: e.target.value }))}
-	                />
-	              </div>
+		              <div className="space-y-1">
+		                <label className="text-sm font-medium text-black">Time</label>
+		                <input
+		                  type="time"
+		                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+		                  value={formData.time}
+		                  onChange={(e) => setFormData(p => ({ ...p, time: e.target.value }))}
+		                />
+		              </div>
 	            </div>
 	          </div>
 	          <div className="p-6 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end space-x-3">
