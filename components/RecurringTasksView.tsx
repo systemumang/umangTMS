@@ -511,7 +511,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 	                const isOverdue = effectiveStatus !== 'Complete' && nextDueObj && (nextDueObj.getTime() < new Date().setHours(0,0,0,0));
                   const achieved = String(achievedSumByTaskId.get(Number(task.id || 0)) || 0);
                   const goalDisplay = hasGoalValue(task.goal) ? String(task.goal) : '1';
-                  const achievedDisplay = hasGoalValue(task.goal) ? achieved : '-';
+                  const achievedDisplay = hasGoalValue(task.goal) ? achieved : '0';
 	                
 	                return (
                   <tr 
@@ -580,7 +580,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 	             const isOverdue = effectiveStatus !== 'Complete' && nextDueObj && (nextDueObj.getTime() < new Date().setHours(0,0,0,0));
                const achieved = String(achievedSumByTaskId.get(Number(task.id || 0)) || 0);
                const goalDisplay = hasGoalValue(task.goal) ? String(task.goal) : '1';
-               const achievedDisplay = hasGoalValue(task.goal) ? achieved : '-';
+               const achievedDisplay = hasGoalValue(task.goal) ? achieved : '0';
 
              return (
                 <div 
