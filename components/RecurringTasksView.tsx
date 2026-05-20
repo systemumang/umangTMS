@@ -582,9 +582,9 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                             {effectiveStatus}
                         </span>
                     </td>
-			                    <td className={tdClass}>{goalDisplay}</td>
-		                    <td className={tdClass}>{achievedDisplay}</td>
-		                    <td className={tdClass}>{getAchievedPercent(goalDisplay, achievedDisplay)}</td>
+			                    <td className={`${tdClass} bg-yellow-700 text-white font-semibold`}>{goalDisplay}</td>
+			                    <td className={`${tdClass} bg-yellow-700 text-white font-semibold`}>{achievedDisplay}</td>
+			                    <td className={`${tdClass} bg-yellow-700 text-white font-semibold`}>{getAchievedPercent(goalDisplay, achievedDisplay)}</td>
 		                    <td className={tdClass}>{task.lastUpdatedOn || '-'}</td>
 	                    <td className={`${tdClass}`}>{task.lastUpdateRemarks || '-'}</td>
 	                    <td className={`${tdClass} font-bold ${isOverdue ? 'text-red-600 animate-pulse' : 'text-indigo-600'}`}>
