@@ -15,6 +15,7 @@ export const FirmsView: React.FC<FirmsViewProps> = ({ firms, onAddFirm, onDelete
   const [searchTerm, setSearchTerm] = useState('');
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedFirm, setSelectedFirm] = useState<Firm | null>(null);
+  const isLockedFirm = (firm: Firm) => String(firm.name || '').trim().toUpperCase() === 'GENERAL';
 
   const filtered = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -76,18 +77,24 @@ export const FirmsView: React.FC<FirmsViewProps> = ({ firms, onAddFirm, onDelete
                   <td className="px-6 py-4 text-sm text-gray-900 border-r border-black">{firm.sortName || '-'}</td>
                   <td className="px-6 py-4 text-center">
                     <div className="flex items-center justify-center gap-3">
-                      <button
-                        onClick={() => {
-                          setSelectedFirm(firm);
-                          setIsEditOpen(true);
-                        }}
-                        className="text-indigo-600 hover:text-indigo-800 transition-colors bg-indigo-50 p-1.5 rounded-md border border-indigo-100"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button onClick={() => onDeleteFirm(firm.id)} className="text-red-500 hover:text-red-700 transition-colors bg-red-50 p-1.5 rounded-md border border-red-100">
-                        <Trash2 size={16} />
-                      </button>
+                      {!isLockedFirm(firm) ? (
+                        <>
+                          <button
+                            onClick={() => {
+                              setSelectedFirm(firm);
+                              setIsEditOpen(true);
+                            }}
+                            className="text-indigo-600 hover:text-indigo-800 transition-colors bg-indigo-50 p-1.5 rounded-md border border-indigo-100"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button onClick={() => onDeleteFirm(firm.id)} className="text-red-500 hover:text-red-700 transition-colors bg-red-50 p-1.5 rounded-md border border-red-100">
+                            <Trash2 size={16} />
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-xs font-semibold text-gray-500 bg-gray-100 border border-gray-200 rounded px-2 py-1">Locked</span>
+                      )}
                     </div>
                   </td>
                 </tr>

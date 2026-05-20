@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { NavItem } from '../types';
-import { X, RefreshCw, AlertCircle, LogOut, ExternalLink, Layout, Monitor, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, RefreshCw, AlertCircle, LogOut, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface SidebarProps {
   items: NavItem[];
@@ -84,14 +84,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const NavButton = ({ item, isChild = false }: { item: NavItem; isChild?: boolean }) => {
     const isActive = activeTab === item.id;
-    const hideOnMobile = item.id === 'add-multiple' || item.id === 'update-multiple';
+    const hideEverywhere = item.id === 'add-multiple' || item.id === 'update-multiple';
     return (
       <button
         onClick={() => {
           onTabChange(item.id);
           if (window.innerWidth < 768 && onClose) onClose();
         }}
-        className={`group w-full ${hideOnMobile ? 'hidden md:flex' : 'flex'} items-center gap-3 ${isChild ? 'pl-12 pr-4 py-2' : 'px-4 py-2.5'} rounded-md text-sm font-medium ml-2 border-l-2 
+        className={`group w-full ${hideEverywhere ? 'hidden' : 'flex'} items-center gap-3 ${isChild ? 'pl-12 pr-4 py-2' : 'px-4 py-2.5'} rounded-md text-sm font-medium ml-2 border-l-2 
           ${isActive 
             ? 'bg-indigo-600 border-indigo-700 text-white shadow-sm' 
             : 'border-transparent text-indigo-600 hover:bg-indigo-600 hover:text-white'
@@ -153,7 +153,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <>
       <aside className={`
-        w-64 bg-blue-50 h-full shadow-lg flex flex-col flex-shrink-0 z-[80] border-r border-blue-100
+        w-64 bg-blue-50 h-screen shadow-lg flex flex-col flex-shrink-0 z-[80] border-r border-blue-100
         fixed md:relative inset-y-0 left-0 transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         ${className}
@@ -219,26 +219,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           })}
         </nav>
 
-        <div className="hidden md:block p-4 bg-white/50 border-t-2 border-indigo-500 space-y-3">
-          <div className="flex flex-col gap-2 p-1">
-            <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest px-1">Layout Mode</span>
-            <div className="flex bg-indigo-100/50 p-1 rounded-lg border border-indigo-200">
-              <button 
-                onClick={() => onLayoutChange('side')}
-                className={`flex-1 flex items-center justify-center gap-2 py-1.5 text-[10px] font-bold rounded-md ${layoutMode === 'side' ? 'bg-indigo-600 text-white shadow-sm' : 'text-indigo-400 hover:text-indigo-600'}`}
-              >
-                <Layout size={12} />
-                SIDE
-              </button>
-              <button 
-                onClick={() => onLayoutChange('top')}
-                className={`flex-1 flex items-center justify-center gap-2 py-1.5 text-[10px] font-bold rounded-md ${layoutMode === 'top' ? 'bg-indigo-600 text-white shadow-sm' : 'text-indigo-400 hover:text-indigo-600'}`}
-              >
-                <Monitor size={12} />
-                TOP
-              </button>
-            </div>
-          </div>
+        <div className="hidden md:block p-4 bg-white/50 border-t-2 border-indigo-500 space-y-3 mt-auto">
 
           <div className="flex items-center justify-between px-1">
             <div className="flex flex-col">
@@ -272,7 +253,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        <div className="md:hidden p-4 bg-white/50 border-t-2 border-indigo-500">
+        <div className="md:hidden p-4 bg-white/50 border-t-2 border-indigo-500 mt-auto">
           <div className="grid grid-cols-2 gap-2">
             <button onClick={onLogout} className="flex items-center justify-center gap-2 py-2 text-xs font-bold text-indigo-600 bg-white border border-indigo-200 rounded-lg hover:bg-indigo-50">
               <LogOut size={14} />
