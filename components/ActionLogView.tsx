@@ -44,7 +44,7 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
   const [filterClient, setFilterClient] = useState<string[]>([]);
   
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
   const [sortConfig, setSortConfig] = useState<SortConfig>(null);
 
   // Pagination
@@ -443,7 +443,6 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-blue-600 uppercase tracking-tight">{isVendorView ? 'Vendor Update Log' : 'Task Update Log'}</h2>
-          <p className="text-sm text-gray-600 mt-1">{isVendorView ? 'History of vendor task updates' : 'History of task updates'}</p>
         </div>
         <div className="flex gap-3 w-full md:auto items-center">
             <div className="flex bg-blue-50 p-1 rounded-lg md:hidden border border-blue-200">
