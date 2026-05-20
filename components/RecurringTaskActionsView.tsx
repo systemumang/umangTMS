@@ -185,6 +185,20 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
   const thClass = "px-4 py-3 text-[10px] font-black text-white uppercase tracking-widest border-r border-black last:border-r-0 cursor-pointer hover:bg-blue-700 transition-colors select-none whitespace-normal";
   const tdClass = "px-4 py-3 text-xs text-black border-r border-black last:border-r-0 align-top whitespace-normal break-words";
 
+  const getGoalAchievedDisplay = (action: RecurringTaskAction) => {
+    const rawGoal = String(action.taskGoal ?? '').trim();
+    const rawAchieved = String(action.goal ?? '').trim();
+    const isBlankGoal = !rawGoal || rawGoal === '-';
+    const isBlankAchieved = !rawAchieved || rawAchieved === '-';
+    if (action.status === 'Complete' && isBlankGoal && isBlankAchieved) {
+      return { goal: '1', achieved: '1' };
+    }
+    return {
+      goal: isBlankGoal ? '-' : rawGoal,
+      achieved: isBlankAchieved ? '-' : rawAchieved
+    };
+  };
+
   const startEntry = sortedActions.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
   const endEntry = Math.min(currentPage * itemsPerPage, sortedActions.length);
 
@@ -331,22 +345,25 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
 	              </tr>
 	            </thead>
 	            <tbody className="divide-y divide-black">
-	              {paginatedActions.map((action, idx) => (
-	                <tr key={action.id} className="hover:bg-blue-50 transition-colors">
-	                  <td className={`${tdClass} text-center font-bold text-blue-600 !whitespace-nowrap`}>{startEntry + idx}</td>
-	                  <td className={`${tdClass} font-bold`}>{action.taskTitle}</td>
-		                  <td className={tdClass}>{action.firm || '-'}</td>
-		                  <td className={tdClass}>{action.owner || '-'}</td>
-		                  <td className={tdClass}>{action.category}</td>
-	                  <td className={tdClass}>{action.assignee}</td>
-	                  <td className={tdClass}><span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tighter border border-blue-100 whitespace-normal break-words ${getStatusColor(action.status)}`}>{action.status}</span></td>
-	                  <td className={`${tdClass} font-bold`}>{formatDate(action.updatedOn)}</td>
-	                  <td className={`${tdClass} italic text-blue-900`}>"{action.remarks}"</td>
-		                  <td className={`${tdClass} font-bold`}>{action.taskGoal || '-'}</td>
-		                  <td className={`${tdClass} font-bold`}>{action.goal || '-'}</td>
-	                  <td className={tdClass}>
-	                    {parsePhotos(action.photos).length > 0 ? (
-	                      <button
+		              {paginatedActions.map((action, idx) => (
+                  (() => {
+                    const display = getGoalAchievedDisplay(action);
+                    return (
+		                <tr key={action.id} className="hover:bg-blue-50 transition-colors">
+		                  <td className={`${tdClass} text-center font-bold text-blue-600 !whitespace-nowrap`}>{startEntry + idx}</td>
+		                  <td className={`${tdClass} font-bold`}>{action.taskTitle}</td>
+			                  <td className={tdClass}>{action.firm || '-'}</td>
+			                  <td className={tdClass}>{action.owner || '-'}</td>
+			                  <td className={tdClass}>{action.category}</td>
+		                  <td className={tdClass}>{action.assignee}</td>
+		                  <td className={tdClass}><span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tighter border border-blue-100 whitespace-normal break-words ${getStatusColor(action.status)}`}>{action.status}</span></td>
+		                  <td className={`${tdClass} font-bold`}>{formatDate(action.updatedOn)}</td>
+		                  <td className={`${tdClass} italic text-blue-900`}>"{action.remarks}"</td>
+		                  <td className={`${tdClass} font-bold`}>{display.goal}</td>
+		                  <td className={`${tdClass} font-bold`}>{display.achieved}</td>
+		                  <td className={tdClass}>
+		                    {parsePhotos(action.photos).length > 0 ? (
+		                      <button
 	                        type="button"
 	                        onClick={() => setPhotoViewer({ photos: parsePhotos(action.photos), index: 0 })}
 	                        className="text-indigo-600 underline font-bold"
@@ -366,11 +383,13 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
 	                      '-'
 	                    )}
 	                  </td>
-	                  <td className={`${tdClass} text-center`}>
-	                    <button onClick={() => onDeleteAction(action.id, action.taskId)} className="p-1.5 text-red-500 hover:bg-red-50 border-2 border-transparent hover:border-red-600 rounded-md transition-all"><Trash2 size={16} /></button>
-	                  </td>
-	                </tr>
-	              ))}
+		                  <td className={`${tdClass} text-center`}>
+		                    <button onClick={() => onDeleteAction(action.id, action.taskId)} className="p-1.5 text-red-500 hover:bg-red-50 border-2 border-transparent hover:border-red-600 rounded-md transition-all"><Trash2 size={16} /></button>
+		                  </td>
+		                </tr>
+                    );
+                  })()
+		              ))}
 		              {paginatedActions.length === 0 && (<tr><td colSpan={14} className="px-6 py-10 text-center text-blue-300 font-black uppercase">No activity found.</td></tr>)}
 	            </tbody>
 	          </table>
