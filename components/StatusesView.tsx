@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, FileText, Download } from 'lucide-react';
 import { StatusMaster } from '../types';
 import { AddStatusModal } from './AddStatusModal';
 import { ConfirmationModal } from './ConfirmationModal';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface StatusesViewProps {
   statuses: StatusMaster[];
@@ -18,15 +20,36 @@ export const StatusesView: React.FC<StatusesViewProps> = ({ statuses, onAddStatu
   const [selected, setSelected] = useState<StatusMaster | null>(null);
 
   const isLocked = (status: StatusMaster) => Boolean(Number(status.is_system || 0)) || ['in progress', 'completed'].includes(String(status.name || '').trim().toLowerCase());
+  const handleExportExcel = () => {
+    const csv = [
+      'S.No.,Status Name',
+      ...statuses.map((item, idx) => `${idx + 1},"${String(item.name || '').replace(/"/g, '""')}"`)
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `Status_${new Date().toISOString().split('T')[0]}.csv`);
+    link.click();
+  };
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.text('Status', 14, 14);
+    autoTable(doc, { head: [['S.No.', 'Status Name']], body: statuses.map((s, i) => [i + 1, s.name || '-']), startY: 20 });
+    doc.save(`Status_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
 
   return (
     <div className="space-y-6 pb-10">
-      <div className={sidebarCollapsed ? 'pl-14 md:pl-16' : ''}><h2 className="text-2xl font-bold text-indigo-600">Status</h2></div>
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-indigo-300 flex justify-end">
-        <button onClick={() => { setSelected(null); setIsEditOpen(true); }} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium shadow-sm">
-          <Plus size={16} />
-          <span>Add Status</span>
-        </button>
+      <div className={`flex items-center justify-between gap-3 md:gap-4 ${sidebarCollapsed ? 'pl-14 md:pl-16' : ''}`}>
+        <h2 className="text-2xl font-bold text-indigo-600">Status</h2>
+        <div className="flex items-center gap-2">
+          <button onClick={handleExportPDF} title="Export PDF" className="flex items-center justify-center p-2.5 bg-indigo-500 text-white border border-indigo-600 rounded-md hover:bg-indigo-600"><Download size={16} /></button>
+          <button onClick={handleExportExcel} title="Export Excel" className="flex items-center justify-center p-2.5 bg-indigo-600 text-white border border-indigo-700 rounded-md hover:bg-indigo-700"><FileText size={16} /></button>
+          <button onClick={() => { setSelected(null); setIsEditOpen(true); }} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium shadow-sm">
+            <Plus size={16} />
+            <span>Add Status</span>
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg border border-black shadow-sm overflow-hidden">

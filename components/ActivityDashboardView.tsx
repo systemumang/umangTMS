@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { ActionLogEntry, User } from '../types';
 import { parseToISO, formatToIndianDate } from '../App';
-import { X, LayoutGrid, LayoutList, Clock, Filter } from 'lucide-react';
+import { X, LayoutGrid, LayoutList, Clock, Filter, FileText, Download } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface ActivityDashboardViewProps {
   logs: ActionLogEntry[];
@@ -104,9 +106,57 @@ export const ActivityDashboardView: React.FC<ActivityDashboardViewProps> = ({ lo
   const tdClass = "px-6 py-4 border border-black text-center text-sm font-black text-gray-800 h-14";
   const labelClass = "text-[10px] font-black bg-[#4a77d4] text-white px-4 py-2 rounded-l-md uppercase tracking-widest border border-[#4a77d4] flex items-center h-[44px] whitespace-nowrap";
 
+  const handleExportExcel = () => {
+    const headers = ['Date', ...pivotedData.employees];
+    const rows = [...pivotedData.dates].reverse().map(date => ([
+      date,
+      ...pivotedData.employees.map(emp => formatMinutesToHHMM(pivotedData.data.get(date)?.get(emp) || 0))
+    ]));
+    const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `Activity_Dashboard_${new Date().toISOString().split('T')[0]}.csv`);
+    link.click();
+  };
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF('l', 'mm', 'a4');
+    doc.setFontSize(16);
+    doc.text('Activity Dashboard', 14, 14);
+    autoTable(doc, {
+      head: [['Date', ...pivotedData.employees]],
+      body: [...pivotedData.dates].reverse().map(date => ([
+        date,
+        ...pivotedData.employees.map(emp => formatMinutesToHHMM(pivotedData.data.get(date)?.get(emp) || 0))
+      ])),
+      startY: 20,
+      theme: 'grid',
+      headStyles: { fillColor: [74, 119, 212], textColor: [255, 255, 255] },
+      styles: { fontSize: 8 }
+    });
+    doc.save(`Activity_Dashboard_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
   return (
     <div className="space-y-6 pb-12">
-      <div className="flex justify-end items-center gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-2xl font-black text-blue-600 uppercase tracking-tight">Activity Dashboard</h2>
+        <div className="flex items-center gap-2">
+        <button
+          onClick={handleExportPDF}
+          className="flex items-center justify-center p-2.5 bg-blue-500 text-white border border-blue-600 rounded-md hover:bg-blue-600"
+          title="Export PDF"
+        >
+          <Download size={16} />
+        </button>
+        <button
+          onClick={handleExportExcel}
+          className="flex items-center justify-center p-2.5 bg-blue-600 text-white border border-blue-700 rounded-md hover:bg-blue-700"
+          title="Export Excel"
+        >
+          <FileText size={16} />
+        </button>
         <button
           onClick={() => setShowFilters(prev => !prev)}
           className={`flex items-center justify-center p-2.5 border rounded-md text-sm font-medium shadow-sm transition-all duration-200 ${showFilters ? 'bg-[#4a77d4] border-[#3f69be] text-white ring-2 ring-blue-200' : 'bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100'}`}
@@ -114,6 +164,7 @@ export const ActivityDashboardView: React.FC<ActivityDashboardViewProps> = ({ lo
         >
           <Filter size={16} />
         </button>
+        </div>
         <div className="flex bg-blue-50 p-1 rounded-lg md:hidden border border-blue-200">
           <button
             onClick={() => setViewMode('card')}

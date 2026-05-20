@@ -1106,7 +1106,7 @@ export default function App() {
 	    switch (activeTab) {
       case 'dashboard': 
 		        return <Dashboard 
-		          isAdmin={isAdmin} tasks={visibleTasks} users={users} projects={projects} categories={categories} statuses={statuses} actionLogs={visibleActionLogs} recurringActions={visibleRecurringActions}
+		          isAdmin={isAdmin} tasks={visibleTasks} users={users} projects={projects} categories={categories} statuses={statuses} actionLogs={visibleActionLogs} recurringActions={visibleRecurringActions} recurringTasks={visibleRecurringTasks}
 	          onNavigate={(tab) => {
               if (tab === 'pending-client') setActiveTab(makePendingStatusId('Pending for Client'));
               else if (tab === 'pending-owner') setActiveTab(makePendingStatusId('Pending for Owner'));

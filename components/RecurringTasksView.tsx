@@ -492,7 +492,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 	                <th className={thClass} onClick={() => requestSort('category')}><div className="flex items-center">Category {getSortIcon('category')}</div></th>
                 <th className={thClass} onClick={() => requestSort('assignee')}><div className="flex items-center">Assignee {getSortIcon('assignee')}</div></th>
 	                <th className={thClass} onClick={() => requestSort('status')}><div className="flex items-center">Status {getSortIcon('status')}</div></th>
-	                <th className={thClass} onClick={() => requestSort('frequencyDays')}><div className="flex items-center">Rule {getSortIcon('frequencyDays')}</div></th>
+	                <th className={thClass} onClick={() => requestSort('frequencyDays')}><div className="flex items-center">Period {getSortIcon('frequencyDays')}</div></th>
 		                <th className={thClass} onClick={() => requestSort('time')}><div className="flex items-center">Time {getSortIcon('time')}</div></th>
 		                <th className={thClass} onClick={() => requestSort('goal')}><div className="flex items-center">Goal {getSortIcon('goal')}</div></th>
 		                <th className={thClass}><div className="flex items-center">Achieved</div></th>
@@ -611,7 +611,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                     <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Owner</span><span className="whitespace-normal break-words">{task.owner || '-'}</span></div>
 		                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Category</span><span className="whitespace-normal break-words">{task.category}</span></div>
 	                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Assignee</span><span className="whitespace-normal break-words">{task.assignee}</span></div>
-		                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Rule</span><span className="whitespace-normal break-words">{getFrequencyText(task)}</span></div>
+		                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Period</span><span className="whitespace-normal break-words">{getFrequencyText(task)}</span></div>
 		                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Time</span><span className="whitespace-normal break-words">{task.time || '-'}</span></div>
                         <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Goal</span><span className="whitespace-normal break-words">{goalDisplay}</span></div>
                         <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Achieved</span><span className="whitespace-normal break-words">{achievedDisplay}</span></div>

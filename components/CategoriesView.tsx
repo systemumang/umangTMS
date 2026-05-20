@@ -1,9 +1,11 @@
 
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Edit2, Trash2, LayoutGrid, LayoutList, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, LayoutGrid, LayoutList, ArrowUpDown, ArrowUp, ArrowDown, FileText, Download } from 'lucide-react';
 import { Category } from '../types';
 import { AddCategoryModal } from './AddCategoryModal';
 import { ConfirmationModal } from './ConfirmationModal';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface CategoriesViewProps {
   categories: Category[];
@@ -71,6 +73,20 @@ export const CategoriesView: React.FC<CategoriesViewProps> = ({ categories, onAd
 
   const thClass = "px-6 py-4 text-xs font-semibold text-white uppercase tracking-wider border-r border-indigo-500 last:border-r-0 cursor-pointer hover:bg-indigo-700 transition-colors select-none";
   const tdClass = "px-6 py-4 text-sm text-gray-900 border-r border-black last:border-r-0";
+  const handleExportExcel = () => {
+    const csv = ['S.No.,Name', ...sortedCategories.map((c, i) => `${i + 1},"${String(c.name || '').replace(/"/g, '""')}"`)].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `Categories_${new Date().toISOString().split('T')[0]}.csv`);
+    link.click();
+  };
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.text('Categories', 14, 14);
+    autoTable(doc, { head: [['S.No.', 'Name']], body: sortedCategories.map((c, i) => [i + 1, c.name || '-']), startY: 20 });
+    doc.save(`Categories_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
 
   return (
     <div className="space-y-6 pb-10">
@@ -92,6 +108,8 @@ export const CategoriesView: React.FC<CategoriesViewProps> = ({ categories, onAd
                 <button onClick={() => setViewMode('card')} className={`p-1.5 rounded-md transition-all ${viewMode === 'card' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}><LayoutGrid size={18} /></button>
                 <button onClick={() => setViewMode('table')} className={`p-1.5 rounded-md transition-all ${viewMode === 'table' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}><LayoutList size={18} /></button>
             </div>
+            <button onClick={handleExportPDF} title="Export PDF" className="hidden md:flex items-center justify-center p-2.5 bg-indigo-500 text-white border border-indigo-600 rounded-md hover:bg-indigo-600"><Download size={16} /></button>
+            <button onClick={handleExportExcel} title="Export Excel" className="hidden md:flex items-center justify-center p-2.5 bg-indigo-600 text-white border border-indigo-700 rounded-md hover:bg-indigo-700"><FileText size={16} /></button>
             <button onClick={onAddCategory} className="hidden md:flex flex-1 md:flex-none items-center justify-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium shadow-sm transition-colors whitespace-nowrap"><Plus size={16} /><span>Add Category</span></button>
         </div>
       </div>

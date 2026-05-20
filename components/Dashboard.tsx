@@ -3,7 +3,7 @@ import { Plus, UserPlus, Folder, CheckSquare, Clock, AlertTriangle, CheckCircle,
 import { StatCard } from './StatCard';
 import { QuickAction } from './QuickAction';
 import { PendingTable } from './PendingTable';
-import { Task, User, Project, ActionLogEntry, RecurringTaskAction, Category, TableRow, StatusMaster } from '../types';
+import { Task, User, Project, ActionLogEntry, RecurringTaskAction, RecurringTask, Category, TableRow, StatusMaster } from '../types';
 import { parseToISO } from '../App';
 
 const VENDOR_MODULE_ENABLED = false;
@@ -25,6 +25,7 @@ interface DashboardProps {
   statuses: StatusMaster[];
   actionLogs?: ActionLogEntry[];
   recurringActions?: RecurringTaskAction[];
+  recurringTasks?: RecurringTask[];
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
@@ -43,7 +44,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   categories,
   statuses,
   actionLogs = [],
-  recurringActions = []
+  recurringActions = [],
+  recurringTasks = []
 }) => {
   
   const stats = useMemo(() => {
@@ -244,6 +246,45 @@ export const Dashboard: React.FC<DashboardProps> = ({
       .sort((a, b) => b.count - a.count);
   }, [recurringActions, isoToday]);
 
+  const dailyKraRows = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const toDate = (v?: string) => {
+      if (!v) return null;
+      const parts = String(v).split('/');
+      if (parts.length === 3) {
+        const d = Number(parts[0]), m = Number(parts[1]), y = Number(parts[2]);
+        const dt = new Date(y, m - 1, d);
+        return isNaN(dt.getTime()) ? null : dt;
+      }
+      const dt = new Date(v);
+      return isNaN(dt.getTime()) ? null : dt;
+    };
+    const dueToday = recurringTasks.filter(task => {
+      const start = toDate(task.startDate);
+      if (!start) return false;
+      start.setHours(0, 0, 0, 0);
+      const freq = Number(task.frequencyDays || 1);
+      if (freq <= 0) return false;
+      const diffDays = Math.floor((today.getTime() - start.getTime()) / 86400000);
+      return diffDays >= 0 && diffDays % freq === 0;
+    });
+
+    return dueToday.map(task => {
+      const goal = Number(task.goal || 0);
+      const achieved = recurringActions
+        .filter(a => Number(a.taskId) === Number(task.id) && parseToISO(a.updatedOn) === isoToday)
+        .reduce((sum, a) => sum + Number(a.goal || 0), 0);
+      const achievedPercent = goal > 0 ? ((achieved / goal) * 100).toFixed(2) + '%' : '0%';
+      return {
+        employeeName: task.assignee || '-',
+        goal: goal || 0,
+        achieved: achieved || 0,
+        achievedPercent
+      };
+    });
+  }, [recurringTasks, recurringActions, isoToday]);
+
   const SectionHeader = ({ title, icon }: { title: string; icon: React.ReactNode }) => (
     <div className="flex items-center gap-2 mb-4">
         <span className="p-1.5 bg-blue-100 text-blue-700 rounded-lg">{icon}</span>
@@ -362,6 +403,39 @@ export const Dashboard: React.FC<DashboardProps> = ({
                  )}
               </div>
            </div>
+        </div>
+        <div className="bg-white p-5 rounded-2xl border-2 border-sky-200 shadow-sm">
+          <div className="flex items-center gap-2 mb-4 border-b border-sky-50 pb-2">
+            <History size={18} className="text-sky-600" />
+            <h4 className="text-sm font-black text-sky-900 uppercase">Daily KRA Tracker</h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-sky-600">
+                  <th className="px-4 py-2 text-xs font-bold text-white uppercase">Employee Name</th>
+                  <th className="px-4 py-2 text-xs font-bold text-white uppercase">Goal</th>
+                  <th className="px-4 py-2 text-xs font-bold text-white uppercase">Achived</th>
+                  <th className="px-4 py-2 text-xs font-bold text-white uppercase">Achived%</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dailyKraRows.map((row, idx) => (
+                  <tr key={`${row.employeeName}-${idx}`} className="border-b border-sky-100">
+                    <td className="px-4 py-2 text-sm">{row.employeeName}</td>
+                    <td className="px-4 py-2 text-sm">{row.goal}</td>
+                    <td className="px-4 py-2 text-sm">{row.achieved}</td>
+                    <td className="px-4 py-2 text-sm">{row.achievedPercent}</td>
+                  </tr>
+                ))}
+                {dailyKraRows.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500">No recurring tasks due today.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 

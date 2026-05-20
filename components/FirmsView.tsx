@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { Plus, Search, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, FileText, Download } from 'lucide-react';
 import { Firm } from '../types';
 import { AddFirmModal } from './AddFirmModal';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface FirmsViewProps {
   firms: Firm[];
@@ -25,6 +27,20 @@ export const FirmsView: React.FC<FirmsViewProps> = ({ firms, onAddFirm, onDelete
       String(f.sortName || '').toLowerCase().includes(term)
     );
   }, [firms, searchTerm]);
+  const handleExportExcel = () => {
+    const csv = ['S.No.,Firm Name,Sort Name', ...filtered.map((f, i) => `${i + 1},"${String(f.name || '').replace(/"/g, '""')}","${String(f.sortName || '').replace(/"/g, '""')}"`)].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `Firms_${new Date().toISOString().split('T')[0]}.csv`);
+    link.click();
+  };
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.text('Firms', 14, 14);
+    autoTable(doc, { head: [['S.No.', 'Firm Name', 'Sort Name']], body: filtered.map((f, i) => [i + 1, f.name || '-', f.sortName || '-']), startY: 20 });
+    doc.save(`Firms_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
 
   return (
     <div className="space-y-6 pb-10">
@@ -52,10 +68,14 @@ export const FirmsView: React.FC<FirmsViewProps> = ({ firms, onAddFirm, onDelete
             className="w-full pl-10 pr-4 py-2 border border-indigo-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 text-sm"
           />
         </div>
-        <button onClick={onAddFirm} className="hidden md:flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium shadow-sm">
+        <div className="hidden md:flex items-center gap-2">
+        <button onClick={handleExportPDF} title="Export PDF" className="flex items-center justify-center p-2.5 bg-indigo-500 text-white border border-indigo-600 rounded-md hover:bg-indigo-600"><Download size={16} /></button>
+        <button onClick={handleExportExcel} title="Export Excel" className="flex items-center justify-center p-2.5 bg-indigo-600 text-white border border-indigo-700 rounded-md hover:bg-indigo-700"><FileText size={16} /></button>
+        <button onClick={onAddFirm} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium shadow-sm">
           <Plus size={16} />
           <span>Add Firm</span>
         </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg border border-black shadow-sm overflow-hidden">

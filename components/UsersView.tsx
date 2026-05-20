@@ -1,10 +1,12 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Search, LayoutGrid, LayoutList } from 'lucide-react';
+import { Plus, Search, LayoutGrid, LayoutList, FileText, Download } from 'lucide-react';
 import { UserTable } from './UserTable';
 import { AddUserModal } from './AddUserModal';
 import { UpdateUserModal } from './UpdateUserModal';
 import { User, Designation } from '../types';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface UsersViewProps {
   users: User[];
@@ -52,6 +54,27 @@ export const UsersView: React.FC<UsersViewProps> = ({ users, designations, onAdd
 
   const startEntry = filteredUsers.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
   const endEntry = Math.min(currentPage * itemsPerPage, filteredUsers.length);
+  const handleExportExcel = () => {
+    const csv = [
+      'S.No.,Name,Email,Mobile,Designation,Role,Status',
+      ...filteredUsers.map((u, i) => `${i + 1},"${String(u.name || '').replace(/"/g, '""')}","${String(u.email || '').replace(/"/g, '""')}","${String(u.mobile || '').replace(/"/g, '""')}","${String(u.designation || '').replace(/"/g, '""')}","${String(u.role || '').replace(/"/g, '""')}","${u.isActive ? 'Active' : 'Inactive'}"`)
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `Users_${new Date().toISOString().split('T')[0]}.csv`);
+    link.click();
+  };
+  const handleExportPDF = () => {
+    const doc = new jsPDF('l', 'mm', 'a4');
+    doc.text('Users', 14, 14);
+    autoTable(doc, {
+      head: [['S.No.', 'Name', 'Email', 'Mobile', 'Designation', 'Role', 'Status']],
+      body: filteredUsers.map((u, i) => [i + 1, u.name || '-', u.email || '-', u.mobile || '-', u.designation || '-', u.role || '-', u.isActive ? 'Active' : 'Inactive']),
+      startY: 20
+    });
+    doc.save(`Users_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
 
   return (
     <div className="space-y-6 pb-10">
@@ -103,6 +126,8 @@ export const UsersView: React.FC<UsersViewProps> = ({ users, designations, onAdd
             <Plus size={16} />
             <span>Add User</span>
             </button>
+            <button onClick={handleExportPDF} title="Export PDF" className="hidden md:flex items-center justify-center p-2.5 bg-indigo-500 text-white border border-indigo-600 rounded-md hover:bg-indigo-600"><Download size={16} /></button>
+            <button onClick={handleExportExcel} title="Export Excel" className="hidden md:flex items-center justify-center p-2.5 bg-indigo-600 text-white border border-indigo-700 rounded-md hover:bg-indigo-700"><FileText size={16} /></button>
         </div>
       </div>
 

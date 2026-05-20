@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Edit2, Trash2, LayoutGrid, LayoutList, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, LayoutGrid, LayoutList, ArrowUpDown, ArrowUp, ArrowDown, FileText, Download } from 'lucide-react';
 import { Designation } from '../types';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface DesignationsViewProps {
   designations: Designation[];
@@ -48,10 +50,38 @@ export const DesignationsView: React.FC<DesignationsViewProps> = ({ designations
   const thClass = "px-6 py-4 text-xs font-semibold text-white uppercase tracking-wider border-r border-indigo-500 last:border-r-0 cursor-pointer hover:bg-indigo-700 transition-colors select-none";
   const tdClass = "px-6 py-4 text-sm text-gray-900 border-r border-black last:border-r-0";
 
+  const handleExportExcel = () => {
+    const csv = [
+      'S.No.,Title',
+      ...sortedDesignations.map((item, idx) => `${idx + 1},"${String(item.title || '').replace(/"/g, '""')}"`)
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `Designations_${new Date().toISOString().split('T')[0]}.csv`);
+    link.click();
+  };
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.text('Designations', 14, 14);
+    autoTable(doc, {
+      head: [['S.No.', 'Title']],
+      body: sortedDesignations.map((item, idx) => [idx + 1, item.title || '-']),
+      startY: 20
+    });
+    doc.save(`Designations_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
   return (
     <div className="space-y-6 pb-10">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div><h2 className="text-2xl font-bold text-indigo-600">Designations</h2><p className="text-sm text-gray-500 mt-1">Manage employee designations</p></div>
+        <div><h2 className="text-2xl font-bold text-indigo-600">Designations</h2></div>
+        <div className="flex items-center gap-2">
+          <button onClick={handleExportPDF} title="Export PDF" className="flex items-center justify-center p-2.5 bg-indigo-500 text-white border border-indigo-600 rounded-md hover:bg-indigo-600"><Download size={16} /></button>
+          <button onClick={handleExportExcel} title="Export Excel" className="flex items-center justify-center p-2.5 bg-indigo-600 text-white border border-indigo-700 rounded-md hover:bg-indigo-700"><FileText size={16} /></button>
+          <button onClick={onAddDesignation} className="flex items-center justify-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium shadow-sm transition-colors whitespace-nowrap"><Plus size={16} /><span>Add Designation</span></button>
+        </div>
       </div>
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-indigo-300 flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -61,7 +91,6 @@ export const DesignationsView: React.FC<DesignationsViewProps> = ({ designations
                 <button onClick={() => setViewMode('card')} className={`p-1.5 rounded-md transition-all ${viewMode === 'card' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}><LayoutGrid size={18} /></button>
                 <button onClick={() => setViewMode('table')} className={`p-1.5 rounded-md transition-all ${viewMode === 'table' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}><LayoutList size={18} /></button>
             </div>
-            <button onClick={onAddDesignation} className="flex-1 md:flex-none flex items-center justify-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium shadow-sm transition-colors whitespace-nowrap"><Plus size={16} /><span>Add Designation</span></button>
         </div>
       </div>
 
