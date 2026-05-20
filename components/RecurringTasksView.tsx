@@ -549,7 +549,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 		                    <td className={tdClass}>{task.time || '-'}</td>
 		                    <td className={tdClass}>{goalDisplay}</td>
 		                    <td className={tdClass}>{achievedDisplay}</td>
-		                    <td className={tdClass}>{getAchievedPercent(task.goal, achievedDisplay)}</td>
+		                    <td className={tdClass}>{getAchievedPercent(goalDisplay, achievedDisplay)}</td>
 		                    <td className={tdClass}>{task.lastUpdatedOn || '-'}</td>
 	                    <td className={`${tdClass}`}>{task.lastUpdateRemarks || '-'}</td>
 	                    <td className={`${tdClass} font-bold ${isOverdue ? 'text-red-600 animate-pulse' : 'text-indigo-600'}`}>
@@ -615,7 +615,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 		                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Time</span><span className="whitespace-normal break-words">{task.time || '-'}</span></div>
                         <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Goal</span><span className="whitespace-normal break-words">{goalDisplay}</span></div>
                         <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Achieved</span><span className="whitespace-normal break-words">{achievedDisplay}</span></div>
-                        <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Achieved %</span><span className="whitespace-normal break-words">{getAchievedPercent(task.goal, achievedDisplay)}</span></div>
+                        <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Achieved %</span><span className="whitespace-normal break-words">{getAchievedPercent(goalDisplay, achievedDisplay)}</span></div>
 		                    <div>
 		                        <span className="text-indigo-500 font-bold uppercase text-[9px] block">Next Due</span>
 	                        <span className={`font-bold ${isOverdue ? 'text-red-600' : 'text-indigo-600'} whitespace-normal break-words`}>{nextDueStr}</span>
