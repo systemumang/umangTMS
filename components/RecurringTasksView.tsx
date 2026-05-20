@@ -497,15 +497,15 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                     />
                   </th>
                 )}
-                <th className="px-4 py-3 text-[10px] font-bold text-white uppercase tracking-wider border-r border-indigo-500 w-16 text-center whitespace-nowrap">S.No.</th>
-	                <th className={thClass} onClick={() => requestSort('title')}><div className="flex items-center">Task {getSortIcon('title')}</div></th>
-                  <th className={thClass} onClick={() => requestSort('firm')}><div className="flex items-center">Firm {getSortIcon('firm')}</div></th>
-                  <th className={thClass} onClick={() => requestSort('owner')}><div className="flex items-center">Owner {getSortIcon('owner')}</div></th>
-	                <th className={thClass} onClick={() => requestSort('category')}><div className="flex items-center">Category {getSortIcon('category')}</div></th>
-                <th className={thClass} onClick={() => requestSort('assignee')}><div className="flex items-center">Assignee {getSortIcon('assignee')}</div></th>
+	                <th className="px-4 py-3 text-[10px] font-bold text-white uppercase tracking-wider border-r border-indigo-500 w-16 text-center whitespace-nowrap">S.No.</th>
+		                <th className={thClass} onClick={() => requestSort('frequencyDays')}><div className="flex items-center">Period {getSortIcon('frequencyDays')}</div></th>
+			                <th className={thClass} onClick={() => requestSort('time')}><div className="flex items-center">Time {getSortIcon('time')}</div></th>
+		                <th className={thClass} onClick={() => requestSort('title')}><div className="flex items-center">Task {getSortIcon('title')}</div></th>
+	                  <th className={thClass} onClick={() => requestSort('firm')}><div className="flex items-center">Firm {getSortIcon('firm')}</div></th>
+	                  <th className={thClass} onClick={() => requestSort('owner')}><div className="flex items-center">Owner {getSortIcon('owner')}</div></th>
+		                <th className={thClass} onClick={() => requestSort('category')}><div className="flex items-center">Category {getSortIcon('category')}</div></th>
+	                <th className={thClass} onClick={() => requestSort('assignee')}><div className="flex items-center">Assignee {getSortIcon('assignee')}</div></th>
 	                <th className={thClass} onClick={() => requestSort('status')}><div className="flex items-center">Status {getSortIcon('status')}</div></th>
-	                <th className={thClass} onClick={() => requestSort('frequencyDays')}><div className="flex items-center">Period {getSortIcon('frequencyDays')}</div></th>
-		                <th className={thClass} onClick={() => requestSort('time')}><div className="flex items-center">Time {getSortIcon('time')}</div></th>
 		                <th className={thClass} onClick={() => requestSort('goal')}><div className="flex items-center">Goal {getSortIcon('goal')}</div></th>
 		                <th className={thClass}><div className="flex items-center">Achieved</div></th>
 		                <th className={thClass}><div className="flex items-center">Achieved %</div></th>
@@ -564,25 +564,25 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                         />
                       </td>
                     )}
-                    <td className={`${tdClass} text-center font-bold text-indigo-600 !whitespace-nowrap`}>{startEntry + idx}</td>
-	                    <td className={`${tdClass} font-medium`}>{task.title}</td>
-                      <td className={tdClass}>{task.firm || '-'}</td>
-                      <td className={tdClass}>{task.owner || '-'}</td>
-	                    <td className={tdClass}>{task.category}</td>
-                    <td className={tdClass}>{task.assignee}</td>
+	                    <td className={`${tdClass} text-center font-bold text-indigo-600 !whitespace-nowrap`}>{startEntry + idx}</td>
+	                    <td className={`${tdClass}`}>
+	                      <div className="flex items-center gap-1">
+	                        <Calendar size={12} className="text-indigo-400" />
+	                        <span className="font-medium">{periodText}</span>
+	                      </div>
+	                    </td>
+	                    <td className={tdClass}>{task.time || '-'}</td>
+		                    <td className={`${tdClass} font-medium`}>{task.title}</td>
+	                      <td className={tdClass}>{task.firm || '-'}</td>
+	                      <td className={tdClass}>{task.owner || '-'}</td>
+		                    <td className={tdClass}>{task.category}</td>
+	                    <td className={tdClass}>{task.assignee}</td>
                     <td className={tdClass}>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getStatusColor(effectiveStatus)} whitespace-normal break-words`}>
                             {effectiveStatus}
                         </span>
                     </td>
-	                    <td className={`${tdClass}`}>
-		                      <div className="flex items-center gap-1">
-		                        <Calendar size={12} className="text-indigo-400" />
-		                        <span className="font-medium">{periodText}</span>
-		                      </div>
-			                    </td>
-		                    <td className={tdClass}>{task.time || '-'}</td>
-		                    <td className={tdClass}>{goalDisplay}</td>
+			                    <td className={tdClass}>{goalDisplay}</td>
 		                    <td className={tdClass}>{achievedDisplay}</td>
 		                    <td className={tdClass}>{getAchievedPercent(goalDisplay, achievedDisplay)}</td>
 		                    <td className={tdClass}>{task.lastUpdatedOn || '-'}</td>
