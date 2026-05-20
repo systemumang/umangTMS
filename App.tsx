@@ -601,7 +601,11 @@ export default function App() {
         setCategories((data.categories || []).map((c: any) => ({ ...c, id: Number(c.id) })));
         setStatuses((data.statuses || []).map((s: any) => ({ ...s, id: Number(s.id), name: String(s.name || ''), is_system: Number(s.is_system || 0) })));
         setVendorCategories((data.vendorCategories || []).map((vc: any) => ({ ...vc, id: Number(vc.id) })));
-        setDesignations((data.designations || []).map((d: any) => ({ ...d, id: Number(d.id) })));
+        setDesignations((data.designations || []).map((d: any) => ({
+          id: Number(d.id),
+          title: String(d.title || d.name || ''),
+          description: String(d.description || '')
+        })));
         const normalizedLogs = (data.actionLogs || []).map((l: any) => {
             const rawProject = String(l.project || l.Project || '').trim();
             const rawClient = String(l.clientName || l['client Name'] || l['Client Name'] || l.client || l.Client || '').trim();
@@ -1329,7 +1333,26 @@ export default function App() {
       />
       <AddClientModal isOpen={isClientModalOpen} onClose={() => setIsClientModalOpen(false)} onSave={handleInstantAddClient} clients={clients} />
       <AddUserModal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} onSave={(u) => { setUsers(p => [...p, { ...u, id: Date.now(), isActive: true } as any]); apiPost('addMaster', u, 'Users'); }} designations={designations} onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }} users={users} />
-      <AddDesignationModal isOpen={isDesignationModalOpen} onClose={() => { setIsDesignationModalOpen(false); setEditingDesignation(null); }} initialData={editingDesignation} onSave={(d) => { if (editingDesignation) { const updatedDesignation = { ...editingDesignation, ...d }; setDesignations(prev => prev.map(x => x.id === updatedDesignation.id ? updatedDesignation : x)); apiPost('updateMaster', updatedDesignation, 'Designations'); } else { setDesignations(p => [...p, { ...d, id: Date.now() } as any]); apiPost('addMaster', d, 'Designations'); } }} designations={designations} />
+      <AddDesignationModal isOpen={isDesignationModalOpen} onClose={() => { setIsDesignationModalOpen(false); setEditingDesignation(null); }} initialData={editingDesignation} onSave={async (d) => {
+        const designationPayload = { name: d.title };
+        if (editingDesignation) {
+          const updatedDesignation = { ...editingDesignation, ...d };
+          const result = await apiPost('updateMaster', { id: updatedDesignation.id, ...designationPayload }, 'Designations');
+          if (!result?.success) {
+            alert(result?.error || 'Failed to update designation.');
+            return;
+          }
+          setDesignations(prev => prev.map(x => x.id === updatedDesignation.id ? updatedDesignation : x));
+        } else {
+          const result = await apiPost('addMaster', designationPayload, 'Designations');
+          if (!result?.success) {
+            alert(result?.error || 'Failed to add designation.');
+            return;
+          }
+          const newId = Number(result?.data?.id || Date.now());
+          setDesignations(prev => [...prev, { ...d, id: newId } as any]);
+        }
+      }} designations={designations} />
       <AddVendorModal isOpen={isVendorModalOpen} onClose={() => setIsVendorModalOpen(false)} onSave={(v) => { setVendors(p => [...p, { ...v, id: Date.now() } as any]); apiPost('addMaster', v, 'Vendors'); }} vendors={vendors} />
       <AddFirmModal isOpen={isFirmModalOpen} onClose={() => setIsFirmModalOpen(false)} onSave={handleInstantAddFirm} firms={firms} />
       
