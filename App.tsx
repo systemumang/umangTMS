@@ -643,6 +643,9 @@ export default function App() {
 	            .sort((a: any, b: any) => Number(b.id || 0) - Number(a.id || 0))
 	        );
 	        setActionLogs(normalizedLogs);
+		        const recurringTaskGoalById = new Map<number, string>(
+		          (data.recurringTasks || []).map((t: any) => [Number(t.id || 0), String(t.goal || '')])
+		        );
 		        setRecurringTasks((data.recurringTasks || []).map((t: any) => ({
 			            ...t,
 		            id: Number(t.id),
@@ -666,7 +669,8 @@ export default function App() {
 		          assignee: String(a.assignee || a.Assignee || ''),
 		          status: String(a.status || a.Status || 'Not Yet Started') as any,
 			          remarks: String(a.remarks || a.Remarks || a.remark || ''),
-				          goal: String(a.goal || a.Goal || ''),
+					          goal: String(a.goal || a.Goal || ''),
+			          taskGoal: recurringTaskGoalById.get(Number(a.taskId || a.taskID || a.taskid || 0)) || '',
                 firm: String(a.firm || a.Firm || ''),
                   owner: String(a.owner || a.Owner || ''),
 				          photos: String(a.photos || a.Photos || ''),

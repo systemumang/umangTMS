@@ -94,6 +94,7 @@ export interface RecurringTaskAction {
   timestamp: string; 
   remarks: string;
   goal?: number;
+  taskGoal?: number | string;
   photos?: string;
   pdf?: string;
 }
