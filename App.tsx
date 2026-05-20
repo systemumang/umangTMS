@@ -1348,27 +1348,32 @@ export default function App() {
 	        isOpen={isRecurringTaskUpdateModalOpen}
 	        onClose={() => setIsRecurringTaskUpdateModalOpen(false)}
 	        task={selectedRecurringTask}
-	        onSave={(t) => {
-	          const now = new Date();
-	          const updatedOn = now.toLocaleDateString('en-GB');
-	          const timestamp = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-	          const updatedTask = { ...t, lastUpdatedOn: updatedOn, lastUpdateRemarks: t.lastUpdateRemarks, goal: t.goal || '' };
-	          const photos = String((t as any).photos || '');
-	          const pdf = String((t as any).pdf || '');
+		        onSave={(t) => {
+		          const now = new Date();
+		          const updatedOn = now.toLocaleDateString('en-GB');
+		          const timestamp = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+		          const existingTask = recurringTasks.find(x => Number(x.id) === Number(t.id));
+		          const updatedTask = {
+		            ...t,
+		            lastUpdatedOn: updatedOn,
+		            lastUpdateRemarks: t.lastUpdateRemarks,
+		            goal: existingTask?.goal || ''
+		          };
+		          const photos = String((t as any).photos || '');
+		          const pdf = String((t as any).pdf || '');
 
 	          setRecurringTasks(prev => prev.map(x => x.id === t.id ? updatedTask : x));
 
 	          // Only patch fields that are actually updated here so we don't accidentally wipe columns
 	          // (e.g., keep StartDate in the backend sheet unchanged).
-		          apiPost('updateMaster', {
-		            id: t.id,
-		            status: t.status,
+			          apiPost('updateMaster', {
+			            id: t.id,
+			            status: t.status,
                 firm: t.firm || '',
                 owner: t.owner || '',
-		            goal: t.goal || '',
-		            lastUpdatedOn: updatedOn,
-		            lastUpdateRemarks: t.lastUpdateRemarks || ''
-		          }, 'RecurringTasks');
+			            lastUpdatedOn: updatedOn,
+			            lastUpdateRemarks: t.lastUpdateRemarks || ''
+			          }, 'RecurringTasks');
 
 	          apiPost('addMaster', {
 		            taskId: t.id,
