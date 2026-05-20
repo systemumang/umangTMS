@@ -180,7 +180,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
     return `${((achieved / goal) * 100).toFixed(2)}%`;
   };
 
-  const getLastCompletionDate = (task: RecurringTask): string => {
+  function getLastCompletionDate(task: RecurringTask): string {
     const taskHistory = actions
       .filter(a => Number(a.taskId) === Number(task.id) && a.status === 'Complete')
       .sort((a, b) => {
@@ -192,7 +192,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
       });
 
     return taskHistory.length > 0 ? taskHistory[0].updatedOn : task.startDate;
-  };
+  }
 
   const getNextDueDateObject = (task: RecurringTask): Date | null => {
     const periodicity = task.periodicity || 'Fixed Days';
