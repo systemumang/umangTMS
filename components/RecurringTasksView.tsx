@@ -64,17 +64,109 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
   const assignees = useMemo(() => ['All', ...Array.from(new Set(tasks.map(t => t.assignee)))], [tasks]);
   const statuses = ['All', 'Not Yet Started', 'In Progress', 'Complete'];
 
+  const parseDDMMYYYY = (value: string): Date | null => {
+    const match = String(value || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (!match) return null;
+    const day = Number(match[1]);
+    const month = Number(match[2]) - 1;
+    const year = Number(match[3]);
+    const date = new Date(year, month, day);
+    if (isNaN(date.getTime())) return null;
+    date.setHours(0, 0, 0, 0);
+    return date;
+  };
+
+  const clampDay = (year: number, monthIndex: number, day: number): Date => {
+    const maxDay = new Date(year, monthIndex + 1, 0).getDate();
+    const safeDay = Math.min(Math.max(day, 1), maxDay);
+    const date = new Date(year, monthIndex, safeDay);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  };
+
+  const addDays = (date: Date, days: number): Date => {
+    const next = new Date(date);
+    next.setDate(next.getDate() + days);
+    next.setHours(0, 0, 0, 0);
+    return next;
+  };
+
+  const getCycleWindow = (task: RecurringTask): { start: Date; end: Date } | null => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const periodicity = task.periodicity || 'Fixed Days';
+
+    if (periodicity === 'Fixed Days') {
+      const anchor = parseDDMMYYYY(getLastCompletionDate(task));
+      if (!anchor) return null;
+      const frequencyDays = Math.max(1, Number(task.frequencyDays || 1));
+      const diffDays = Math.floor((today.getTime() - anchor.getTime()) / (1000 * 60 * 60 * 24));
+      const cyclesElapsed = Math.max(0, Math.floor(diffDays / frequencyDays));
+      const start = addDays(anchor, cyclesElapsed * frequencyDays);
+      const end = addDays(start, frequencyDays - 1);
+      return { start, end };
+    }
+
+    if (periodicity === 'Weekly') {
+      const targetDay = typeof task.recurrenceDay === 'number' ? task.recurrenceDay : 0;
+      const start = new Date(today);
+      const diff = (today.getDay() - targetDay + 7) % 7;
+      start.setDate(today.getDate() - diff);
+      start.setHours(0, 0, 0, 0);
+      const end = addDays(start, 6);
+      return { start, end };
+    }
+
+    if (periodicity === 'Monthly') {
+      const targetDay = typeof task.recurrenceDay === 'number' ? task.recurrenceDay : 1;
+      let start = clampDay(today.getFullYear(), today.getMonth(), targetDay);
+      if (start > today) {
+        start = clampDay(today.getFullYear(), today.getMonth() - 1, targetDay);
+      }
+      const nextStart = clampDay(start.getFullYear(), start.getMonth() + 1, targetDay);
+      const end = addDays(nextStart, -1);
+      return { start, end };
+    }
+
+    if (periodicity === 'Yearly') {
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const targetMonth = Math.max(0, months.indexOf(task.recurrenceMonth || 'January'));
+      const targetDay = typeof task.recurrenceDay === 'number' ? task.recurrenceDay : 1;
+      let start = clampDay(today.getFullYear(), targetMonth, targetDay);
+      if (start > today) {
+        start = clampDay(today.getFullYear() - 1, targetMonth, targetDay);
+      }
+      const nextStart = clampDay(start.getFullYear() + 1, targetMonth, targetDay);
+      const end = addDays(nextStart, -1);
+      return { start, end };
+    }
+
+    return null;
+  };
+
   const achievedSumByTaskId = useMemo(() => {
     const map = new Map<number, number>();
-    actions.forEach((action) => {
-      const taskId = Number(action.taskId || 0);
+    tasks.forEach((task) => {
+      const taskId = Number(task.id || 0);
       if (!taskId) return;
-      const achievedValue = Number(String(action.goal || '').trim());
-      const prev = map.get(taskId) || 0;
-      map.set(taskId, prev + (Number.isFinite(achievedValue) ? achievedValue : 0));
+      const window = getCycleWindow(task);
+      if (!window) {
+        map.set(taskId, 0);
+        return;
+      }
+      const total = actions
+        .filter((action) => Number(action.taskId || 0) === taskId)
+        .reduce((sum, action) => {
+          const actionDate = parseDDMMYYYY(String(action.updatedOn || ''));
+          if (!actionDate) return sum;
+          if (actionDate < window.start || actionDate > window.end) return sum;
+          const achievedValue = Number(String(action.goal || '').trim());
+          return sum + (Number.isFinite(achievedValue) ? achievedValue : 0);
+        }, 0);
+      map.set(taskId, total);
     });
     return map;
-  }, [actions]);
+  }, [actions, tasks]);
 
   const parseNumber = (value: unknown): number => {
     const num = Number(String(value ?? '').trim());
