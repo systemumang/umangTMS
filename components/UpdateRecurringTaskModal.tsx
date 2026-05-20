@@ -91,13 +91,13 @@ export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> =
               />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium text-black">Goal</label>
+              <label className="text-sm font-medium text-black">Achieved</label>
               <input
                 type="number"
                 min="0"
                 step="1"
                 className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
-                placeholder=""
+                placeholder="Enter achieved value"
                 value={goal}
                 onChange={(e) => setGoal(e.target.value.replace(/[^\d.]/g, ''))}
               />

@@ -625,22 +625,21 @@ export default function App() {
                 vendor: l.vendor || l.Vendor || ''
             };
         });
-	        const latestAchievedByTaskId = new Map<number, string>();
-	        normalizedLogs
-	          .slice()
-	          .sort((a: any, b: any) => Number(b.id || 0) - Number(a.id || 0))
-	          .forEach((log: any) => {
-	            const taskId = Number(log.taskId || 0);
-	            if (!taskId || latestAchievedByTaskId.has(taskId)) return;
-	            latestAchievedByTaskId.set(taskId, String(log.goal || ''));
-	          });
+		        const achievedSumByTaskId = new Map<number, number>();
+		        normalizedLogs.forEach((log: any) => {
+		          const taskId = Number(log.taskId || 0);
+		          if (!taskId) return;
+		          const achievedValue = Number(String(log.goal || '').trim());
+		          const prev = achievedSumByTaskId.get(taskId) || 0;
+		          achievedSumByTaskId.set(taskId, prev + (Number.isFinite(achievedValue) ? achievedValue : 0));
+		        });
 
 	        setTasks(
-	          normalizedTaskList
-	            .map((task: any) => ({
-	              ...task,
-	              achieved: latestAchievedByTaskId.get(Number(task.id || 0)) || ''
-	            }))
+		          normalizedTaskList
+		            .map((task: any) => ({
+		              ...task,
+		              achieved: String(achievedSumByTaskId.get(Number(task.id || 0)) || '')
+		            }))
 	            .sort((a: any, b: any) => Number(b.id || 0) - Number(a.id || 0))
 	        );
 	        setActionLogs(normalizedLogs);
@@ -852,7 +851,13 @@ export default function App() {
     const now = new Date();
     const timestamp = now.toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', '');
     // Note: Cumulative hours are calculated by server, UI adds newly logged hours to local optimistic state
-    setTasks(prev => prev.map(t => t.id === task.id ? { ...task, achieved: String(task.goal || ''), lastUpdateDate: timestamp } : t)); 
+    setTasks(prev => prev.map(t => {
+      if (t.id !== task.id) return t;
+      const currentAchieved = Number(String((t as any).achieved || '0').trim());
+      const newAchieved = Number(String(task.goal || '0').trim());
+      const sumAchieved = (Number.isFinite(currentAchieved) ? currentAchieved : 0) + (Number.isFinite(newAchieved) ? newAchieved : 0);
+      return { ...task, achieved: String(sumAchieved), lastUpdateDate: timestamp };
+    })); 
     setSyncingIds(prev => new Set(prev).add(task.id));
     try {
       const targetSheet = task.vendor && task.vendor.trim() !== '' ? 'VendorTasks' : 'MainTasks';
