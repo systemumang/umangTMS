@@ -553,9 +553,9 @@ export default function App() {
 	      });
 	      const result = await safeJsonParse(response, 'Data Load');
 	      
-	      if (result.success) {
-	        const { data } = result;
-        const normalizeTasks = (list: any[]) => (list || []).map(item => {
+		      if (result.success) {
+		        const { data } = result;
+	        const normalizeTasks = (list: any[]) => (list || []).map(item => {
             const rawProject = String(item.project || item.Project || '').trim();
             const rawClient = String(item.clientName || item['client Name'] || item['Client Name'] || item.client || item.Client || '').trim();
             
@@ -574,22 +574,23 @@ export default function App() {
                 category: item.category ? String(item.category) : '',
                 vendorCategory: item.vendorCategory || item.vendorcategory || '',
                 clientName: rawClient,
-                hours: Number(item.hours || 0), // Normalize hours
-                time: String(item.time || ''),
-                goal: String(item.goal || ''),
-                firm: String(item.firm || item.Firm || ''),
-                photos: String(item.photos || ''),
-                pdf: String(item.pdf || ''),
+	                hours: Number(item.hours || 0), // Normalize hours
+	                time: String(item.time || ''),
+	                goal: String(item.goal || ''),
+	                achieved: '',
+	                firm: String(item.firm || item.Firm || ''),
+	                photos: String(item.photos || ''),
+	                pdf: String(item.pdf || ''),
                 project: (rawProject && rawClient && !rawProject.includes('(')) 
                     ? `${rawProject} (${rawClient})` 
                     : rawProject || ''
             };
         });
 
-        setTasks(
-          normalizeTasks([...(data.mainTasks || []), ...(data.vendorTasks || [])])
-            .sort((a: any, b: any) => Number(b.id || 0) - Number(a.id || 0))
-        );
+	        const normalizedTaskList = normalizeTasks([...(data.mainTasks || []), ...(data.vendorTasks || [])]);
+	        const taskGoalById = new Map<number, string>(
+	          normalizedTaskList.map((t: any) => [Number(t.id || 0), String(t.goal || '')])
+	        );
         setUsers((data.users || []).map((u: any) => ({ ...u, id: Number(u.id), isActive: String(u.isActive).toUpperCase() === 'TRUE' })));
         setProjects((data.projects || []).map((p: any) => ({ ...p, id: Number(p.id) })));
         setClients((data.clients || []).map((c: any) => ({ ...c, id: Number(c.id), gstNumber: c.gstNumber || c.gSTNumber || c.GSTNumber || '' })));
@@ -613,8 +614,9 @@ export default function App() {
                 assignees: String(l.assignees || l.Assignees || ''),
                 hours: Number(l.hours || 0), // Normalize hours in log
                 time: String(l.time || l.Time || ''),
-                goal: String(l.goal || l.Goal || ''),
-                firm: String(l.firm || l.Firm || ''),
+	                goal: String(l.goal || l.Goal || ''),
+	                taskGoal: taskGoalById.get(Number(l.taskId || l.taskID || 0)) || '',
+	                firm: String(l.firm || l.Firm || ''),
                 photos: String(l.photos || ''),
                 pdf: String(l.pdf || ''),
                 project: (rawProject && rawClient && !rawProject.includes('(')) 
@@ -623,7 +625,25 @@ export default function App() {
                 vendor: l.vendor || l.Vendor || ''
             };
         });
-        setActionLogs(normalizedLogs);
+	        const latestAchievedByTaskId = new Map<number, string>();
+	        normalizedLogs
+	          .slice()
+	          .sort((a: any, b: any) => Number(b.id || 0) - Number(a.id || 0))
+	          .forEach((log: any) => {
+	            const taskId = Number(log.taskId || 0);
+	            if (!taskId || latestAchievedByTaskId.has(taskId)) return;
+	            latestAchievedByTaskId.set(taskId, String(log.goal || ''));
+	          });
+
+	        setTasks(
+	          normalizedTaskList
+	            .map((task: any) => ({
+	              ...task,
+	              achieved: latestAchievedByTaskId.get(Number(task.id || 0)) || ''
+	            }))
+	            .sort((a: any, b: any) => Number(b.id || 0) - Number(a.id || 0))
+	        );
+	        setActionLogs(normalizedLogs);
 		        setRecurringTasks((data.recurringTasks || []).map((t: any) => ({
 			            ...t,
 		            id: Number(t.id),
@@ -832,7 +852,7 @@ export default function App() {
     const now = new Date();
     const timestamp = now.toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', '');
     // Note: Cumulative hours are calculated by server, UI adds newly logged hours to local optimistic state
-    setTasks(prev => prev.map(t => t.id === task.id ? { ...task, lastUpdateDate: timestamp } : t)); 
+    setTasks(prev => prev.map(t => t.id === task.id ? { ...task, achieved: String(task.goal || ''), lastUpdateDate: timestamp } : t)); 
     setSyncingIds(prev => new Set(prev).add(task.id));
     try {
       const targetSheet = task.vendor && task.vendor.trim() !== '' ? 'VendorTasks' : 'MainTasks';
@@ -872,12 +892,13 @@ export default function App() {
     const lastLog = remainingLogs[0];
     const task = tasks.find(t => t.id === taskId);
     if (task) {
-      const updatedTask = {
-        ...task,
-        status: lastLog ? lastLog.status as any : 'Not Yet Started',
-        lastUpdateDate: lastLog ? lastLog.updateDate : '',
-        lastUpdateRemarks: lastLog ? lastLog.remarks : ''
-      };
+	      const updatedTask = {
+	        ...task,
+	        status: lastLog ? lastLog.status as any : 'Not Yet Started',
+	        lastUpdateDate: lastLog ? lastLog.updateDate : '',
+	        lastUpdateRemarks: lastLog ? lastLog.remarks : '',
+	        achieved: lastLog ? String(lastLog.goal || '') : ''
+	      };
       setTasks(prev => prev.map(t => t.id === taskId ? updatedTask : t));
       const targetTaskSheet = isVendorLog ? 'VendorTasks' : 'MainTasks';
       apiPost('updateTask', { ...updatedTask, skipLog: true }, targetTaskSheet);

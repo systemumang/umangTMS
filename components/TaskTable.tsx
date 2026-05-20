@@ -93,6 +93,18 @@ export const TaskTable: React.FC<TaskTableProps> = ({
     return formatToIndianDate(dateStr);
   };
 
+  const parseNumber = (value: unknown): number => {
+    const num = Number(String(value ?? '').trim());
+    return Number.isFinite(num) ? num : 0;
+  };
+
+  const getAchievedPercent = (goalValue: unknown, achievedValue: unknown): string => {
+    const goal = parseNumber(goalValue);
+    const achieved = parseNumber(achievedValue);
+    if (goal <= 0) return '-';
+    return `${((achieved / goal) * 100).toFixed(2)}%`;
+  };
+
   const isUpdatedToday = (lastUpdateDate?: string) => {
     if (!lastUpdateDate) return false;
     const today = new Date().toLocaleDateString('en-GB'); // dd/MM/yyyy
@@ -172,7 +184,9 @@ export const TaskTable: React.FC<TaskTableProps> = ({
 	                <th className={thClass} style={{ width: '100px' }} onClick={() => requestSort('time')}><div className="flex items-center">Time {getSortIcon('time')}</div></th>
 	                <th className={thClass} style={{ width: '120px' }}><div className="flex items-center">Photo</div></th>
 	                <th className={thClass} style={{ width: '120px' }}><div className="flex items-center">PDF</div></th>
-	                <th className={thClass} style={{ width: '180px' }} onClick={() => requestSort('goal')}><div className="flex items-center">Goal {getSortIcon('goal')}</div></th>
+		                <th className={thClass} style={{ width: '140px' }} onClick={() => requestSort('goal')}><div className="flex items-center">Goal {getSortIcon('goal')}</div></th>
+		                <th className={thClass} style={{ width: '140px' }}><div className="flex items-center">Achieved</div></th>
+		                <th className={thClass} style={{ width: '120px' }}><div className="flex items-center">Achieved %</div></th>
 	                <th className={thClass} style={{ width: '120px' }} onClick={() => requestSort('dueDate')}><div className="flex items-center">Due Date {getSortIcon('dueDate')}</div></th>
 	                <th className={thClass} style={{ width: '150px' }} onClick={() => requestSort('lastUpdateDate')}><div className="flex items-center">Last Update {getSortIcon('lastUpdateDate')}</div></th>
 	                <th className={thClass} style={{ width: '120px' }} onClick={() => requestSort('status')}><div className="flex items-center">Status {getSortIcon('status')}</div></th>
@@ -244,7 +258,9 @@ export const TaskTable: React.FC<TaskTableProps> = ({
 	                          </button>
 	                        ) : '-'}
 	                      </td>
-	                      <td className={tdClass}>{task.goal || '-'}</td>
+		                      <td className={tdClass}>{task.goal || '-'}</td>
+		                      <td className={tdClass}>{task.achieved || '-'}</td>
+		                      <td className={tdClass}>{getAchievedPercent(task.goal, task.achieved)}</td>
 	                    <td className={`${tdClass}`}>{formatDate(task.dueDate)}</td>
 	                    <td className={`${tdClass}`}>
 	                        {task.status === 'Not Yet Started' ? '-' : (formatDate(task.lastUpdateDate || ''))}
@@ -366,16 +382,24 @@ export const TaskTable: React.FC<TaskTableProps> = ({
 
                 {isExpanded && (
                   <>
-                    {(task.time || task.goal || parsePhotos(task.photos).length > 0 || task.pdf) && (
+                    {(task.time || task.goal || task.achieved || parsePhotos(task.photos).length > 0 || task.pdf) && (
                       <div className="grid grid-cols-2 gap-x-3 gap-y-4 mt-2">
                         <div>
                           <span className="text-[10px] uppercase font-black text-blue-900/60 block">Time</span>
                           <span className="text-xs font-bold text-black">{task.time || '-'}</span>
                         </div>
-                        <div>
-                          <span className="text-[10px] uppercase font-black text-blue-900/60 block">Goal</span>
-                          <span className="text-xs font-bold text-black break-words">{task.goal || '-'}</span>
-                        </div>
+	                        <div>
+	                          <span className="text-[10px] uppercase font-black text-blue-900/60 block">Goal</span>
+	                          <span className="text-xs font-bold text-black break-words">{task.goal || '-'}</span>
+	                        </div>
+	                        <div>
+	                          <span className="text-[10px] uppercase font-black text-blue-900/60 block">Achieved</span>
+	                          <span className="text-xs font-bold text-black break-words">{task.achieved || '-'}</span>
+	                        </div>
+	                        <div>
+	                          <span className="text-[10px] uppercase font-black text-blue-900/60 block">Achieved %</span>
+	                          <span className="text-xs font-bold text-black break-words">{getAchievedPercent(task.goal, task.achieved)}</span>
+	                        </div>
                         <div>
                           <span className="text-[10px] uppercase font-black text-blue-900/60 block">Photo</span>
                           {parsePhotos(task.photos).length > 0 ? (

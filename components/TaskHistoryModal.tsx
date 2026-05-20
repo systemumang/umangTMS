@@ -30,6 +30,18 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
   
   const isVendorTask = !!(task.vendor && task.vendor.trim() !== '');
 
+  const parseNumber = (value: unknown): number => {
+    const num = Number(String(value ?? '').trim());
+    return Number.isFinite(num) ? num : 0;
+  };
+
+  const getAchievedPercent = (goalValue: unknown, achievedValue: unknown): string => {
+    const goal = parseNumber(goalValue);
+    const achieved = parseNumber(achievedValue);
+    if (goal <= 0) return '-';
+    return `${((achieved / goal) * 100).toFixed(2)}%`;
+  };
+
 	  const parsePhotos = (rawPhotos?: string): string[] => {
 	    if (!rawPhotos) return [];
 	    try {
@@ -75,7 +87,7 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
     doc.setTextColor(0);
     doc.text(`Updates for: ${task.title}`, 14, 30);
     doc.setFontSize(10);
-		    let tableColumn: string[] = ["Task Date", "Update Date", "Status", "Remarks", "Owner", "Goal", "Photo", "PDF"];
+			    let tableColumn: string[] = ["Task Date", "Update Date", "Status", "Remarks", "Owner", "Goal", "Achieved", "Achieved %", "Photo", "PDF"];
 	    let tableRows: any[] = [];
 
     if (isVendorTask) {
@@ -87,8 +99,10 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
 		            log.status,
 		            log.remarks || '-',
 		            log.owner,
-	              log.goal || '-',
-	              parsePhotos(log.photos).length > 0 ? `${parsePhotos(log.photos).length} photo(s)` : '-',
+		              task.goal || '-',
+		              log.goal || '-',
+		              getAchievedPercent(task.goal, log.goal),
+		              parsePhotos(log.photos).length > 0 ? `${parsePhotos(log.photos).length} photo(s)` : '-',
 	              log.pdf ? 'Open PDF' : '-',
 		            log.vendor || '-',
 		            log.hours || 0
@@ -102,8 +116,10 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
 		            log.status,
 		            log.remarks || '-',
 		            log.owner,
-	              log.goal || '-',
-	              parsePhotos(log.photos).length > 0 ? `${parsePhotos(log.photos).length} photo(s)` : '-',
+		              task.goal || '-',
+		              log.goal || '-',
+		              getAchievedPercent(task.goal, log.goal),
+		              parsePhotos(log.photos).length > 0 ? `${parsePhotos(log.photos).length} photo(s)` : '-',
 	              log.pdf ? 'Open PDF' : '-',
 		            log.assignees,
 		            log.hours || 0
@@ -233,10 +249,18 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
 	                      <span className="text-gray-400 font-bold uppercase block">Minutes</span>
 	                      <span className="font-black text-indigo-600">{log.hours || 0}</span>
 	                    </div>
-                      <div className="space-y-0.5">
-                        <span className="text-gray-400 font-bold uppercase block">Goal</span>
-                        <span className="font-bold text-black break-words">{log.goal || '-'}</span>
-                      </div>
+	                      <div className="space-y-0.5">
+	                        <span className="text-gray-400 font-bold uppercase block">Goal</span>
+	                        <span className="font-bold text-black break-words">{task.goal || '-'}</span>
+	                      </div>
+	                      <div className="space-y-0.5">
+	                        <span className="text-gray-400 font-bold uppercase block">Achieved</span>
+	                        <span className="font-bold text-black break-words">{log.goal || '-'}</span>
+	                      </div>
+	                      <div className="space-y-0.5">
+	                        <span className="text-gray-400 font-bold uppercase block">Achieved %</span>
+	                        <span className="font-bold text-black break-words">{getAchievedPercent(task.goal, log.goal)}</span>
+	                      </div>
                       <div className="space-y-0.5">
                         <span className="text-gray-400 font-bold uppercase block">Photo</span>
                         {parsePhotos(log.photos).length > 0 ? (
@@ -300,7 +324,9 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
 		                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Status</th>
 		                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Remarks</th>
 		                    <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Owner(s)</th>
-	                      <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Goal</th>
+		                      <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Goal</th>
+		                      <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Achieved</th>
+		                      <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Achieved %</th>
 	                      <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">Photo</th>
 	                      <th className="px-6 py-4 text-[10px] font-bold text-white uppercase tracking-widest border-r border-black">PDF</th>
 	                    {isVendorTask ? (
@@ -323,7 +349,9 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
 	                      </td>
 	                      <td className="px-6 py-4 text-xs text-black max-w-[300px] font-medium border-r border-black">"{log.remarks}"</td>
 	                      <td className="px-6 py-4 text-xs text-black font-bold uppercase border-r border-black">{log.owner}</td>
-	                        <td className="px-6 py-4 text-xs text-black font-bold border-r border-black">{log.goal || '-'}</td>
+		                        <td className="px-6 py-4 text-xs text-black font-bold border-r border-black">{task.goal || '-'}</td>
+		                        <td className="px-6 py-4 text-xs text-black font-bold border-r border-black">{log.goal || '-'}</td>
+		                        <td className="px-6 py-4 text-xs text-black font-bold border-r border-black">{getAchievedPercent(task.goal, log.goal)}</td>
 	                        <td className="px-6 py-4 text-xs border-r border-black">
 	                          {parsePhotos(log.photos).length > 0 ? (
                             <button
@@ -352,7 +380,7 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
 	                  ))}
 	                  {taskLogs.length === 0 && (
 	                    <tr>
-		                      <td colSpan={10} className="px-6 py-12 text-center text-black font-bold opacity-40 uppercase tracking-widest text-xs bg-gray-50/20">
+			                      <td colSpan={12} className="px-6 py-12 text-center text-black font-bold opacity-40 uppercase tracking-widest text-xs bg-gray-50/20">
 		                        No update history found for this task.
 		                      </td>
 		                    </tr>

@@ -213,14 +213,14 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-900 block mb-1">Goal</label>
+                <label className="text-sm font-medium text-gray-900 block mb-1">Achieved</label>
                 <input
                   type="number"
                   min="0"
                   step="1"
                   value={goalInput}
                   onChange={handleGoalChange}
-                  placeholder="Enter goal"
+                  placeholder="Enter achieved value"
                   className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none text-gray-900"
                 />
               </div>

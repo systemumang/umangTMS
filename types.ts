@@ -57,6 +57,7 @@ export interface Task {
   hours?: number;
   time?: string;
   goal?: number;
+  achieved?: number | string;
   photos?: string; // JSON stringified array of data URLs
   pdf?: string; // data URL
 }
@@ -177,6 +178,7 @@ export interface ActionLogEntry {
     hours?: number;
     time?: string;
     goal?: number;
+    taskGoal?: number | string;
     photos?: string;
     pdf?: string;
 }
