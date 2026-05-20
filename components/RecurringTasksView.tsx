@@ -519,15 +519,34 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
               {paginatedTasks.map((task, idx) => {
                 const effectiveStatus = getEffectiveStatus(task);
                 const nextDueStr = getNextDueDateStr(task);
-	                const nextDueObj = getNextDueDateObject(task);
-	                const isOverdue = effectiveStatus !== 'Complete' && nextDueObj && (nextDueObj.getTime() < new Date().setHours(0,0,0,0));
+		                const nextDueObj = getNextDueDateObject(task);
+		                const isOverdue = effectiveStatus !== 'Complete' && nextDueObj && (nextDueObj.getTime() < new Date().setHours(0,0,0,0));
                   const achieved = String(achievedSumByTaskId.get(Number(task.id || 0)) || 0);
                   const goalDisplay = hasGoalValue(task.goal) ? String(task.goal) : '1';
                   const achievedDisplay = hasGoalValue(task.goal) ? achieved : '0';
-	                
-	                return (
-                  <tr 
-                    key={task.id} 
+                  const periodText = getFrequencyText(task);
+                  const prevTask = idx > 0 ? paginatedTasks[idx - 1] : null;
+                  const prevPeriodText = prevTask ? getFrequencyText(prevTask) : '';
+                  const showAssigneeHeader = !prevTask || String(prevTask.assignee || '') !== String(task.assignee || '');
+                  const showPeriodHeader = showAssigneeHeader || prevPeriodText !== periodText;
+		                
+		                return (
+                  <React.Fragment key={task.id}>
+                    {showAssigneeHeader && (
+                      <tr>
+                        <td colSpan={isAdmin ? 17 : 16} className="px-4 py-2 bg-indigo-100 text-indigo-800 text-xs font-bold uppercase tracking-wider">
+                          Assignee Name: {task.assignee || '-'}
+                        </td>
+                      </tr>
+                    )}
+                    {showPeriodHeader && (
+                      <tr>
+                        <td colSpan={isAdmin ? 17 : 16} className="px-4 py-2 bg-indigo-50 text-indigo-700 text-xs font-bold uppercase tracking-wider">
+                          Period: {periodText}
+                        </td>
+                      </tr>
+                    )}
+                  <tr
                     onDoubleClick={() => onUpdate(task)}
                     className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedIds.includes(task.id) ? 'bg-indigo-50/50' : ''}`}
                   >
@@ -553,11 +572,11 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                         </span>
                     </td>
 	                    <td className={`${tdClass}`}>
-	                      <div className="flex items-center gap-1">
-	                        <Calendar size={12} className="text-indigo-400" />
-	                        <span className="font-medium">{getFrequencyText(task)}</span>
-	                      </div>
-		                    </td>
+		                      <div className="flex items-center gap-1">
+		                        <Calendar size={12} className="text-indigo-400" />
+		                        <span className="font-medium">{periodText}</span>
+		                      </div>
+			                    </td>
 		                    <td className={tdClass}>{task.time || '-'}</td>
 		                    <td className={tdClass}>{goalDisplay}</td>
 		                    <td className={tdClass}>{achievedDisplay}</td>
@@ -575,9 +594,10 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                         <button onClick={() => onDelete(task.id)} className="p-1 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
                       </div>
                     </td>
-                  </tr>
-                );
-              })}
+	                  </tr>
+                    </React.Fragment>
+	                );
+	              })}
 			              {paginatedTasks.length === 0 && (<tr><td colSpan={isAdmin ? 17 : 16} className="px-6 py-10 text-center text-gray-500">No recurring tasks found.</td></tr>)}
 	            </tbody>
 	          </table>
