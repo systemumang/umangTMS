@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, UserPlus, Folder, CheckSquare, Clock, AlertTriangle, CheckCircle, Users, Building2, Truck, FileText, RotateCcw, LayoutList, History, ShieldAlert, Tags, UserCheck, UserCog, GraduationCap, IndianRupee, Wallet } from 'lucide-react';
+import { Plus, UserPlus, Folder, CheckSquare, Clock, AlertTriangle, CheckCircle, Users, Building2, Truck, FileText, RotateCcw, LayoutList, History, ShieldAlert, Tags } from 'lucide-react';
 import { StatCard } from './StatCard';
 import { QuickAction } from './QuickAction';
 import { PendingTable } from './PendingTable';
@@ -50,12 +50,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const regularTasks = tasks.filter(t => !t.vendor || t.vendor.trim() === '');
     const totalTasks = regularTasks.length;
     const pendingTasks = regularTasks.filter(t => t.status !== 'Completed').length;
-    
-    const pendingClientTasks = regularTasks.filter(t => t.status === 'Pending for Client').length;
-    const pendingOwnerTasks = regularTasks.filter(t => t.status === 'Pending for Owner').length;
-    const pendingTrainingTasks = regularTasks.filter(t => t.status === 'Pending for Training').length;
-    const pendingBillingTasks = regularTasks.filter(t => t.status === 'Pending for Billing').length;
-    const pendingPaymentTasks = regularTasks.filter(t => t.status === 'Pending for Payment').length;
 
     const todayISO = new Date().toISOString().split('T')[0];
     const overdueTasks = regularTasks.filter(t => {
@@ -66,8 +60,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     const completedTasks = regularTasks.filter(t => t.status === 'Completed').length;
     const totalUsers = users.length;
-    return { totalTasks, pendingTasks, overdueTasks, completedTasks, totalUsers, pendingClientTasks, pendingOwnerTasks, pendingTrainingTasks, pendingBillingTasks, pendingPaymentTasks };
+    return { totalTasks, pendingTasks, overdueTasks, completedTasks, totalUsers };
   }, [tasks, users]);
+
+  const dynamicLiveStatuses = useMemo(() => {
+    const baseStatuses = statuses
+      .map(s => String(s.name || '').trim())
+      .filter(Boolean);
+    const taskStatuses = Array.from(new Set(tasks.map(t => String(t.status || '').trim()).filter(Boolean)));
+    const merged = Array.from(new Set([...baseStatuses, ...taskStatuses]));
+    return merged.filter(s => !['completed', 'not yet started', 'in progress', 'started'].includes(s.toLowerCase()));
+  }, [statuses, tasks]);
+
+  const dynamicLiveStatusCounts = useMemo(() => {
+    const regularTasks = tasks.filter(t => !t.vendor || t.vendor.trim() === '');
+    const countMap: Record<string, number> = {};
+    dynamicLiveStatuses.forEach(status => {
+      countMap[status] = regularTasks.filter(t => String(t.status || '').trim().toLowerCase() === status.toLowerCase()).length;
+    });
+    return countMap;
+  }, [tasks, dynamicLiveStatuses]);
 
   const dynamicPendingStatuses = useMemo(() => {
     const fromMaster = statuses
@@ -263,19 +275,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       <div className="bg-blue-50/70 p-6 rounded-2xl border-2 border-blue-300 shadow-sm">
         <SectionHeader title="Live Statistics" icon={<Clock size={20}/>} />
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-10 gap-4">
-            <StatCard title="Total Tasks" value={stats.totalTasks} icon={<CheckSquare size={20}/>} iconBgColor="bg-blue-100" iconColor="text-blue-600" onClick={() => onNavigate('all-tasks')} />
-            <StatCard title="Pending" value={stats.pendingTasks} icon={<Clock size={20}/>} iconBgColor="bg-amber-100" iconColor="text-amber-600" onClick={() => onNavigate('pending')}/>
-            <StatCard title="For Client" value={stats.pendingClientTasks} icon={<UserCheck size={20}/>} iconBgColor="bg-purple-100" iconColor="text-purple-600" onClick={() => onNavigate('pending-client')}/>
-            <StatCard title="For Owner" value={stats.pendingOwnerTasks} icon={<UserCog size={20}/>} iconBgColor="bg-indigo-100" iconColor="text-indigo-600" onClick={() => onNavigate('pending-owner')}/>
-            <StatCard title="For Training" value={stats.pendingTrainingTasks} icon={<GraduationCap size={20}/>} iconBgColor="bg-cyan-100" iconColor="text-cyan-700" onClick={() => onNavigate('pending-training')}/>
-            <StatCard title="For Billing" value={stats.pendingBillingTasks} icon={<IndianRupee size={20}/>} iconBgColor="bg-orange-100" iconColor="text-orange-700" onClick={() => onNavigate('pending-billing')}/>
-            <StatCard title="For Payment" value={stats.pendingPaymentTasks} icon={<Wallet size={20}/>} iconBgColor="bg-emerald-100" iconColor="text-emerald-700" onClick={() => onNavigate('pending-payment')}/>
-            <StatCard title="Overdue" value={stats.overdueTasks} icon={<AlertTriangle size={20}/>} iconBgColor="bg-red-100" iconColor="text-red-600" onClick={() => onFilterChange('status', 'Overdue')}/>
-            <StatCard title="Completed" value={stats.completedTasks} icon={<CheckCircle size={20}/>} iconBgColor="bg-green-100" iconColor="text-green-600" onClick={() => onNavigate('completed')}/>
-            <StatCard title="Total Users" value={stats.totalUsers} icon={<Users size={20}/>} iconBgColor="bg-indigo-100" iconColor="text-indigo-600" onClick={isAdmin ? () => onNavigate('users') : undefined}/>
-        </div>
-      </div>
+	        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-10 gap-4">
+	            <StatCard title="Total Tasks" value={stats.totalTasks} icon={<CheckSquare size={20}/>} iconBgColor="bg-blue-100" iconColor="text-blue-600" onClick={() => onNavigate('all-tasks')} />
+	            <StatCard title="Pending" value={stats.pendingTasks} icon={<Clock size={20}/>} iconBgColor="bg-amber-100" iconColor="text-amber-600" onClick={() => onNavigate('pending')}/>
+              {dynamicLiveStatuses.map((status) => (
+                <StatCard
+                  key={status}
+                  title={status}
+                  value={dynamicLiveStatusCounts[status] || 0}
+                  icon={<Tags size={20}/>}
+                  iconBgColor="bg-indigo-100"
+                  iconColor="text-indigo-600"
+                  onClick={() => onFilterChange('status', status)}
+                />
+              ))}
+	            <StatCard title="Overdue" value={stats.overdueTasks} icon={<AlertTriangle size={20}/>} iconBgColor="bg-red-100" iconColor="text-red-600" onClick={() => onFilterChange('status', 'Overdue')}/>
+	            <StatCard title="Completed" value={stats.completedTasks} icon={<CheckCircle size={20}/>} iconBgColor="bg-green-100" iconColor="text-green-600" onClick={() => onNavigate('completed')}/>
+	            <StatCard title="Total Users" value={stats.totalUsers} icon={<Users size={20}/>} iconBgColor="bg-indigo-100" iconColor="text-indigo-600" onClick={isAdmin ? () => onNavigate('users') : undefined}/>
+	        </div>
+	      </div>
 
       <div className="space-y-6">
         <SectionHeader title="Today's Activity" icon={<History size={20}/>} />
