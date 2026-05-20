@@ -529,20 +529,33 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                   const prevPeriodText = prevTask ? getFrequencyText(prevTask) : '';
                   const showAssigneeHeader = !prevTask || String(prevTask.assignee || '') !== String(task.assignee || '');
                   const showPeriodHeader = showAssigneeHeader || prevPeriodText !== periodText;
+                  const assigneeKey = String(task.assignee || '').trim().toLowerCase();
+                  const assigneeBgClass = (() => {
+                    const palettes = [
+                      'bg-indigo-100 text-indigo-800',
+                      'bg-emerald-100 text-emerald-800',
+                      'bg-sky-100 text-sky-800',
+                      'bg-violet-100 text-violet-800',
+                      'bg-amber-100 text-amber-800',
+                    ];
+                    let hash = 0;
+                    for (let i = 0; i < assigneeKey.length; i++) hash += assigneeKey.charCodeAt(i);
+                    return palettes[hash % palettes.length];
+                  })();
 		                
 		                return (
                   <React.Fragment key={task.id}>
                     {showAssigneeHeader && (
                       <tr>
-                        <td colSpan={isAdmin ? 17 : 16} className="px-4 py-2 bg-indigo-100 text-indigo-800 text-xs font-bold uppercase tracking-wider">
-                          Assignee Name: {task.assignee || '-'}
+                        <td colSpan={isAdmin ? 17 : 16} className={`px-4 py-2 text-xs font-bold uppercase tracking-wider ${assigneeBgClass}`}>
+                          {task.assignee || '-'}
                         </td>
                       </tr>
                     )}
                     {showPeriodHeader && (
                       <tr>
                         <td colSpan={isAdmin ? 17 : 16} className="px-4 py-2 bg-indigo-50 text-indigo-700 text-xs font-bold uppercase tracking-wider">
-                          Period: {periodText}
+                          {periodText}
                         </td>
                       </tr>
                     )}

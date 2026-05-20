@@ -423,11 +423,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                  )}
               </div>
            </div>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border-2 border-sky-200 shadow-sm">
-          <div className="flex items-center gap-2 mb-4 border-b border-sky-50 pb-2">
-            <History size={18} className="text-sky-600" />
-            <h4 className="text-sm font-black text-sky-900 uppercase">Daily KRA Tracker</h4>
+          <div className="bg-white p-5 rounded-2xl border-2 border-sky-200 shadow-sm">
+	          <div className="flex items-center gap-2 mb-4 border-b border-sky-50 pb-2">
+	            <History size={18} className="text-sky-600" />
+	            <h4 className="text-sm font-black text-sky-900 uppercase">Daily KRA Tracker</h4>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -454,10 +453,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </tr>
                 )}
               </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+	            </table>
+	          </div>
+	        </div>
+	        </div>
+	      </div>
 
 	      <div className="grid grid-cols-1 gap-8">
 	        <PendingTable title="Pending by Assignee" headerLabel="Assignee Name" data={assigneeData} onRowClick={(name) => onFilterChange('assignee', name)} statusColumns={dynamicPendingStatuses}/>
