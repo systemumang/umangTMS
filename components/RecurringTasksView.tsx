@@ -173,6 +173,13 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
     return Number.isFinite(num) ? num : 0;
   };
 
+  const hasGoalValue = (value: unknown): boolean => {
+    const raw = String(value ?? '').trim();
+    if (!raw || raw === '-') return false;
+    const num = Number(raw);
+    return Number.isFinite(num) && num > 0;
+  };
+
   const getAchievedPercent = (goalValue: unknown, achievedValue: unknown): string => {
     const goal = parseNumber(goalValue);
     const achieved = parseNumber(achievedValue);
@@ -503,6 +510,8 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 	                const nextDueObj = getNextDueDateObject(task);
 	                const isOverdue = effectiveStatus !== 'Complete' && nextDueObj && (nextDueObj.getTime() < new Date().setHours(0,0,0,0));
                   const achieved = String(achievedSumByTaskId.get(Number(task.id || 0)) || 0);
+                  const goalDisplay = hasGoalValue(task.goal) ? String(task.goal) : '-';
+                  const achievedDisplay = hasGoalValue(task.goal) ? achieved : '-';
 	                
 	                return (
                   <tr 
@@ -538,9 +547,9 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 	                      </div>
 		                    </td>
 		                    <td className={tdClass}>{task.time || '-'}</td>
-		                    <td className={tdClass}>{task.goal || '-'}</td>
-		                    <td className={tdClass}>{achieved}</td>
-		                    <td className={tdClass}>{getAchievedPercent(task.goal, achieved)}</td>
+		                    <td className={tdClass}>{goalDisplay}</td>
+		                    <td className={tdClass}>{achievedDisplay}</td>
+		                    <td className={tdClass}>{getAchievedPercent(task.goal, achievedDisplay)}</td>
 		                    <td className={tdClass}>{task.lastUpdatedOn || '-'}</td>
 	                    <td className={`${tdClass}`}>{task.lastUpdateRemarks || '-'}</td>
 	                    <td className={`${tdClass} font-bold ${isOverdue ? 'text-red-600 animate-pulse' : 'text-indigo-600'}`}>
@@ -570,6 +579,8 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 	             const nextDueObj = getNextDueDateObject(task);
 	             const isOverdue = effectiveStatus !== 'Complete' && nextDueObj && (nextDueObj.getTime() < new Date().setHours(0,0,0,0));
                const achieved = String(achievedSumByTaskId.get(Number(task.id || 0)) || 0);
+               const goalDisplay = hasGoalValue(task.goal) ? String(task.goal) : '-';
+               const achievedDisplay = hasGoalValue(task.goal) ? achieved : '-';
 
              return (
                 <div 
@@ -602,9 +613,9 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 	                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Assignee</span><span className="whitespace-normal break-words">{task.assignee}</span></div>
 		                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Rule</span><span className="whitespace-normal break-words">{getFrequencyText(task)}</span></div>
 		                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Time</span><span className="whitespace-normal break-words">{task.time || '-'}</span></div>
-                        <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Goal</span><span className="whitespace-normal break-words">{task.goal || '-'}</span></div>
-                        <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Achieved</span><span className="whitespace-normal break-words">{achieved}</span></div>
-                        <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Achieved %</span><span className="whitespace-normal break-words">{getAchievedPercent(task.goal, achieved)}</span></div>
+                        <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Goal</span><span className="whitespace-normal break-words">{goalDisplay}</span></div>
+                        <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Achieved</span><span className="whitespace-normal break-words">{achievedDisplay}</span></div>
+                        <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Achieved %</span><span className="whitespace-normal break-words">{getAchievedPercent(task.goal, achievedDisplay)}</span></div>
 		                    <div>
 		                        <span className="text-indigo-500 font-bold uppercase text-[9px] block">Next Due</span>
 	                        <span className={`font-bold ${isOverdue ? 'text-red-600' : 'text-indigo-600'} whitespace-normal break-words`}>{nextDueStr}</span>
