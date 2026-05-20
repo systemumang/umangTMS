@@ -270,16 +270,36 @@ export const Dashboard: React.FC<DashboardProps> = ({
       return diffDays >= 0 && diffDays % freq === 0;
     });
 
-    return dueToday.map(task => {
-      const goal = Number(task.goal || 0);
-      const achieved = recurringActions
+    const byEmployee = new Map<string, { goal: number; achieved: number }>();
+
+    dueToday.forEach(task => {
+      const employeeName = String(task.assignee || '-').trim() || '-';
+      const rawGoal = Number(task.goal || 0);
+      const effectiveGoal = rawGoal > 0 ? rawGoal : 1;
+
+      const achievedFromActions = recurringActions
         .filter(a => Number(a.taskId) === Number(task.id) && parseToISO(a.updatedOn) === isoToday)
         .reduce((sum, a) => sum + Number(a.goal || 0), 0);
-      const achievedPercent = goal > 0 ? ((achieved / goal) * 100).toFixed(2) + '%' : '0%';
+
+      const isCompleted = String(task.status || '').trim().toLowerCase() === 'complete';
+      const effectiveAchieved = achievedFromActions > 0
+        ? achievedFromActions
+        : (rawGoal <= 0 && isCompleted ? 1 : 0);
+
+      if (!byEmployee.has(employeeName)) {
+        byEmployee.set(employeeName, { goal: 0, achieved: 0 });
+      }
+      const row = byEmployee.get(employeeName)!;
+      row.goal += effectiveGoal;
+      row.achieved += effectiveAchieved;
+    });
+
+    return Array.from(byEmployee.entries()).map(([employeeName, values]) => {
+      const achievedPercent = values.goal > 0 ? ((values.achieved / values.goal) * 100).toFixed(2) + '%' : '0%';
       return {
-        employeeName: task.assignee || '-',
-        goal: goal || 0,
-        achieved: achieved || 0,
+        employeeName,
+        goal: values.goal,
+        achieved: values.achieved,
         achievedPercent
       };
     });

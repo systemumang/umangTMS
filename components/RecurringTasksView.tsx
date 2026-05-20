@@ -365,6 +365,18 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
         if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
         return 0;
       });
+    } else {
+      sortableItems.sort((a, b) => {
+        const assigneeCompare = String(a.assignee || '').localeCompare(String(b.assignee || ''), undefined, { sensitivity: 'base' });
+        if (assigneeCompare !== 0) return assigneeCompare;
+
+        const periodA = String(getFrequencyText(a) || '');
+        const periodB = String(getFrequencyText(b) || '');
+        const periodCompare = periodA.localeCompare(periodB, undefined, { sensitivity: 'base' });
+        if (periodCompare !== 0) return periodCompare;
+
+        return String(a.title || '').localeCompare(String(b.title || ''), undefined, { sensitivity: 'base' });
+      });
     }
     return sortableItems;
   }, [filteredTasks, sortConfig, actions]);
