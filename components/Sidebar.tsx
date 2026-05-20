@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { NavItem } from '../types';
-import { X, RefreshCw, AlertCircle, LogOut, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, LogOut, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface SidebarProps {
   items: NavItem[];
@@ -220,26 +220,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
 
         <div className="hidden md:block p-4 bg-white/50 border-t-2 border-indigo-500 space-y-3 mt-auto">
-
-          <div className="flex items-center justify-between px-1">
-            <div className="flex flex-col">
-              <span className={`text-[10px] uppercase font-bold tracking-wider flex items-center gap-1 ${hasError ? 'text-red-500' : 'text-indigo-600'}`}>
-                <RefreshCw size={10} className={isSyncing ? 'animate-spin' : ''} />
-                {hasError ? 'Connection Lost' : 'Database Status'}
-              </span>
-              <span className={`text-[11px] italic ${hasError ? 'text-red-600 font-medium' : 'text-indigo-600 font-medium'}`}>
-                {isSyncing ? 'Syncing...' : hasError ? 'Reconnecting...' : lastSynced ? `Synced: ${lastSynced.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` : 'Connected'}
-              </span>
-            </div>
-            <button 
-              onClick={() => onSync?.(false)} 
-              disabled={isSyncing}
-              className={`p-1.5 rounded-full ${isSyncing ? 'text-indigo-400 animate-spin' : hasError ? 'text-red-500 hover:bg-red-50' : 'text-indigo-600 hover:bg-indigo-100'}`}
-              title="Sync now"
-            >
-              {hasError ? <AlertCircle size={16} /> : <RefreshCw size={16} />}
-            </button>
-          </div>
 
           <div className="grid grid-cols-2 gap-2">
             <button onClick={onLogout} className="flex items-center justify-center gap-2 py-2 text-xs font-bold text-indigo-600 bg-white border border-indigo-200 rounded-lg hover:bg-indigo-50">
