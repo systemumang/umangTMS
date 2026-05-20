@@ -63,7 +63,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const activeItem = items.find(item => item.id === activeTab);
     const activeSection = activeItem?.section || 'main';
     const sectionLabel = activeSection === 'main' ? 'Dashboard' : (activeSection === 'Tasks' ? 'Simple Tasks' : activeSection);
-    setOpenSections(prev => ({ ...prev, [sectionLabel]: true }));
+    setOpenSections({
+      Dashboard: sectionLabel === 'Dashboard',
+      Master: sectionLabel === 'Master',
+      'Simple Tasks': sectionLabel === 'Simple Tasks',
+      'Recurring Tasks': sectionLabel === 'Recurring Tasks',
+      Vendor: sectionLabel === 'Vendor',
+    });
   }, [activeTab, items]);
 
   const groupedItems = items.reduce((acc, item) => {
@@ -200,7 +206,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div key={sectionInfo.key} className="mb-2 px-3">
                 <button
                   type="button"
-                  onClick={() => setOpenSections(prev => ({ ...prev, [sectionInfo.key]: !prev[sectionInfo.key] }))}
+                  onClick={() =>
+                    setOpenSections(prev => {
+                      const willOpen = !prev[sectionInfo.key];
+                      return {
+                        Dashboard: false,
+                        Master: false,
+                        'Simple Tasks': false,
+                        'Recurring Tasks': false,
+                        Vendor: false,
+                        [sectionInfo.key]: willOpen,
+                      };
+                    })
+                  }
                   className="w-full px-4 py-2 mb-1 flex items-center justify-between text-indigo-600 hover:bg-indigo-100/60 rounded-md"
                 >
                   <span className="text-xs font-bold uppercase tracking-wider">{sectionInfo.key}</span>
