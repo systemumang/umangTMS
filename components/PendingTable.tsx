@@ -8,10 +8,13 @@ interface PendingTableProps {
   data: TableRow[];
   onRowClick: (name: string) => void;
   className?: string;
+  statusColumns?: string[];
 }
 
-export const PendingTable: React.FC<PendingTableProps> = ({ title, headerLabel, data, onRowClick, className = '' }) => {
+export const PendingTable: React.FC<PendingTableProps> = ({ title, headerLabel, data, onRowClick, className = '', statusColumns = [] }) => {
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+  const columns = statusColumns.length > 0 ? statusColumns : ['Not Yet Started', 'In Progress', 'Pending for Client', 'Pending for Owner', 'Pending for Training', 'Pending for Billing', 'Pending for Payment'];
+  const labelize = (status: string) => status.replace(/^Pending for\s+/i, '');
 
   return (
     <div className={`${className || 'bg-white'} rounded-xl shadow-sm border-2 border-black overflow-hidden`}>
@@ -40,13 +43,11 @@ export const PendingTable: React.FC<PendingTableProps> = ({ title, headerLabel, 
             <tr className="bg-blue-600 text-white">
               <th className="px-6 py-4 font-bold text-[10px] uppercase tracking-widest border-r border-black last:border-r-0">{headerLabel}</th>
               <th className="px-6 py-4 font-bold text-[10px] uppercase tracking-widest text-center border-r border-black last:border-r-0">Total Pending</th>
-              <th className="px-6 py-4 font-bold text-[10px] uppercase tracking-widest text-center border-r border-black last:border-r-0">Not Started</th>
-              <th className="px-6 py-4 font-bold text-[10px] uppercase tracking-widest text-center border-r border-black last:border-r-0">In Progress</th>
-              <th className="px-6 py-4 font-bold text-[10px] uppercase tracking-widest text-center border-r border-black last:border-r-0">Pending Client</th>
-              <th className="px-6 py-4 font-bold text-[10px] uppercase tracking-widest text-center border-r border-black last:border-r-0">Pending Owner</th>
-              <th className="px-6 py-4 font-bold text-[10px] uppercase tracking-widest text-center border-r border-black last:border-r-0">Pending Training</th>
-              <th className="px-6 py-4 font-bold text-[10px] uppercase tracking-widest text-center border-r border-black last:border-r-0">Pending Billing</th>
-              <th className="px-6 py-4 font-bold text-[10px] uppercase tracking-widest text-center border-r border-black last:border-r-0">Pending Payment</th>
+              {columns.map((column) => (
+                <th key={column} className="px-6 py-4 font-bold text-[10px] uppercase tracking-widest text-center border-r border-black last:border-r-0">
+                  {column}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-black">
@@ -59,18 +60,16 @@ export const PendingTable: React.FC<PendingTableProps> = ({ title, headerLabel, 
                 >
                   <td className="px-6 py-4 text-sm text-black font-bold border-r border-black last:border-r-0">{row.name}</td>
                   <td className="px-6 py-4 text-sm text-black text-center font-bold border-r border-black last:border-r-0">{row.total}</td>
-                  <td className="px-6 py-4 text-sm text-red-600 text-center font-extrabold border-r border-black last:border-r-0">{row.notStarted}</td>
-                  <td className="px-6 py-4 text-sm text-green-600 text-center font-extrabold border-r border-black last:border-r-0">{row.inProgress}</td>
-                  <td className="px-6 py-4 text-sm text-purple-600 text-center font-extrabold border-r border-black last:border-r-0">{row.pendingClient}</td>
-                  <td className="px-6 py-4 text-sm text-indigo-600 text-center font-extrabold border-r border-black last:border-r-0">{row.pendingOwner}</td>
-                  <td className="px-6 py-4 text-sm text-cyan-700 text-center font-extrabold border-r border-black last:border-r-0">{row.pendingTraining}</td>
-                  <td className="px-6 py-4 text-sm text-orange-600 text-center font-extrabold border-r border-black last:border-r-0">{row.pendingBilling}</td>
-                  <td className="px-6 py-4 text-sm text-emerald-600 text-center font-extrabold border-r border-black last:border-r-0">{row.pendingPayment}</td>
+                  {columns.map((column) => (
+                    <td key={`${row.name}-${column}`} className="px-6 py-4 text-sm text-center font-extrabold border-r border-black last:border-r-0 text-blue-700">
+                      {row.statusCounts?.[column] || 0}
+                    </td>
+                  ))}
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={9} className="px-6 py-10 text-center text-blue-900/40 text-sm font-bold uppercase">
+                <td colSpan={2 + columns.length} className="px-6 py-10 text-center text-blue-900/40 text-sm font-bold uppercase">
                   No pending data found.
                 </td>
               </tr>
@@ -97,34 +96,12 @@ export const PendingTable: React.FC<PendingTableProps> = ({ title, headerLabel, 
                     </div>
                     
                     <div className="grid grid-cols-2 gap-3 pt-3 border-t border-black">
-                        <div className="text-center p-2 bg-red-50 border-2 border-red-300 rounded-lg">
-                            <div className="text-[9px] font-bold text-red-400 uppercase tracking-tighter mb-0.5">Not Started</div>
-                            <div className="font-black text-red-600">{row.notStarted}</div>
-                        </div>
-                        <div className="text-center p-2 bg-green-50 border-2 border-green-900 rounded-lg">
-                            <div className="text-[9px] font-bold text-green-900 uppercase tracking-tighter mb-0.5">In Progress</div>
-                            <div className="font-black text-green-900">{row.inProgress}</div>
-                        </div>
-                        <div className="text-center p-2 bg-purple-50 border-2 border-purple-300 rounded-lg">
-                            <div className="text-[9px] font-bold text-purple-400 uppercase tracking-tighter mb-0.5">For Client</div>
-                            <div className="font-black text-purple-600">{row.pendingClient}</div>
-                        </div>
-                        <div className="text-center p-2 bg-indigo-50 border-2 border-indigo-300 rounded-lg">
-                            <div className="text-[9px] font-bold text-indigo-400 uppercase tracking-tighter mb-0.5">For Owner</div>
-                            <div className="font-black text-indigo-600">{row.pendingOwner}</div>
-                        </div>
-                        <div className="text-center p-2 bg-cyan-50 border-2 border-cyan-300 rounded-lg">
-                            <div className="text-[9px] font-bold text-cyan-500 uppercase tracking-tighter mb-0.5">Training</div>
-                            <div className="font-black text-cyan-700">{row.pendingTraining}</div>
-                        </div>
-                        <div className="text-center p-2 bg-orange-50 border-2 border-orange-300 rounded-lg">
-                            <div className="text-[9px] font-bold text-orange-500 uppercase tracking-tighter mb-0.5">Billing</div>
-                            <div className="font-black text-orange-700">{row.pendingBilling}</div>
-                        </div>
-                        <div className="text-center p-2 bg-emerald-50 border-2 border-emerald-300 rounded-lg col-span-2">
-                            <div className="text-[9px] font-bold text-emerald-500 uppercase tracking-tighter mb-0.5">Payment</div>
-                            <div className="font-black text-emerald-700">{row.pendingPayment}</div>
-                        </div>
+                        {columns.map((column) => (
+                          <div key={`${row.name}-m-${column}`} className="text-center p-2 bg-blue-50 border-2 border-blue-200 rounded-lg">
+                              <div className="text-[9px] font-bold text-blue-500 uppercase tracking-tighter mb-0.5">{labelize(column)}</div>
+                              <div className="font-black text-blue-800">{row.statusCounts?.[column] || 0}</div>
+                          </div>
+                        ))}
                     </div>
                 </div>
             ))

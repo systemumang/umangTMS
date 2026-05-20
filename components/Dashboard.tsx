@@ -3,7 +3,7 @@ import { Plus, UserPlus, Folder, CheckSquare, Clock, AlertTriangle, CheckCircle,
 import { StatCard } from './StatCard';
 import { QuickAction } from './QuickAction';
 import { PendingTable } from './PendingTable';
-import { Task, User, Project, ActionLogEntry, RecurringTaskAction, Category, TableRow } from '../types';
+import { Task, User, Project, ActionLogEntry, RecurringTaskAction, Category, TableRow, StatusMaster } from '../types';
 import { parseToISO } from '../App';
 
 const VENDOR_MODULE_ENABLED = false;
@@ -22,6 +22,7 @@ interface DashboardProps {
   users: User[];
   projects: Project[];
   categories: Category[];
+  statuses: StatusMaster[];
   actionLogs?: ActionLogEntry[];
   recurringActions?: RecurringTaskAction[];
 }
@@ -40,6 +41,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   users, 
   projects,
   categories,
+  statuses,
   actionLogs = [],
   recurringActions = []
 }) => {
@@ -67,19 +69,47 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return { totalTasks, pendingTasks, overdueTasks, completedTasks, totalUsers, pendingClientTasks, pendingOwnerTasks, pendingTrainingTasks, pendingBillingTasks, pendingPaymentTasks };
   }, [tasks, users]);
 
+  const dynamicPendingStatuses = useMemo(() => {
+    const fromMaster = statuses
+      .map(s => String(s.name || '').trim())
+      .filter(Boolean)
+      .filter(name => name.toLowerCase() !== 'completed');
+    const fromTasks = Array.from(
+      new Set(
+        tasks
+          .map(t => String(t.status || '').trim())
+          .filter(Boolean)
+          .filter(name => name.toLowerCase() !== 'completed')
+      )
+    );
+    const merged = Array.from(new Set([...fromMaster, ...fromTasks]));
+    const preferredOrder = ['Not Yet Started', 'In Progress', 'Pending for Client', 'Pending for Owner', 'Pending for Training', 'Pending for Billing', 'Pending for Payment'];
+    return merged.sort((a, b) => {
+      const ia = preferredOrder.indexOf(a);
+      const ib = preferredOrder.indexOf(b);
+      if (ia !== -1 && ib !== -1) return ia - ib;
+      if (ia !== -1) return -1;
+      if (ib !== -1) return 1;
+      return a.localeCompare(b);
+    });
+  }, [statuses, tasks]);
+
   const updateTableDataMap = (map: Map<string, TableRow>, key: string, status: string) => {
     if (!map.has(key)) {
-      map.set(key, { name: key, total: 0, notStarted: 0, inProgress: 0, pendingClient: 0, pendingOwner: 0, pendingTraining: 0, pendingBilling: 0, pendingPayment: 0 });
+      map.set(key, { name: key, total: 0, notStarted: 0, inProgress: 0, pendingClient: 0, pendingOwner: 0, pendingTraining: 0, pendingBilling: 0, pendingPayment: 0, statusCounts: {} });
     }
     const entry = map.get(key)!;
     entry.total += 1;
-    if (status === 'Not Yet Started') entry.notStarted += 1;
-    if (status === 'In Progress' || status === 'Started') entry.inProgress += 1;
-    if (status === 'Pending for Client') entry.pendingClient += 1;
-    if (status === 'Pending for Owner') entry.pendingOwner += 1;
-    if (status === 'Pending for Training') entry.pendingTraining += 1;
-    if (status === 'Pending for Billing') entry.pendingBilling += 1;
-    if (status === 'Pending for Payment') entry.pendingPayment += 1;
+    const normalizedStatus = String(status || '').trim();
+    if (!entry.statusCounts) entry.statusCounts = {};
+    entry.statusCounts[normalizedStatus] = (entry.statusCounts[normalizedStatus] || 0) + 1;
+    if (normalizedStatus === 'Not Yet Started') entry.notStarted += 1;
+    if (normalizedStatus === 'In Progress' || normalizedStatus === 'Started') entry.inProgress += 1;
+    if (normalizedStatus === 'Pending for Client') entry.pendingClient += 1;
+    if (normalizedStatus === 'Pending for Owner') entry.pendingOwner += 1;
+    if (normalizedStatus === 'Pending for Training') entry.pendingTraining += 1;
+    if (normalizedStatus === 'Pending for Billing') entry.pendingBilling += 1;
+    if (normalizedStatus === 'Pending for Payment') entry.pendingPayment += 1;
   };
 
   const assigneeData = useMemo(() => {
@@ -247,17 +277,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-	      <div className="grid grid-cols-1 gap-8">
-	        <PendingTable title="Pending by Assignee" headerLabel="Assignee Name" data={assigneeData} onRowClick={(name) => onFilterChange('assignee', name)}/>
-	        <PendingTable title="Pending by Priority" headerLabel="Priority Level" data={priorityData} onRowClick={(name) => onFilterChange('priority', name)} className="bg-indigo-50/30"/>
-	        <PendingTable title="Pending by Category" headerLabel="Category Name" data={categoryData} onRowClick={(name) => onFilterChange('category', name)} className="bg-indigo-50/30"/>
-	        {VENDOR_MODULE_ENABLED && (
-	          <PendingTable title="Pending by Vendor" headerLabel="Vendor Name" data={vendorData} onRowClick={(name) => onFilterChange('vendor', name)} className="bg-orange-50/30"/>
-	        )}
-	      </div>
-
       <div className="space-y-6">
-        <SectionHeader title="Today's Activity Recap" icon={<History size={20}/>} />
+        <SectionHeader title="Today's Activity" icon={<History size={20}/>} />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
            <div className="bg-white p-5 rounded-2xl border-2 border-blue-200 shadow-sm flex flex-col">
               <div className="flex items-center gap-2 mb-4 border-b border-blue-50 pb-2">
@@ -325,6 +346,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
            </div>
         </div>
       </div>
+
+	      <div className="grid grid-cols-1 gap-8">
+	        <PendingTable title="Pending by Assignee" headerLabel="Assignee Name" data={assigneeData} onRowClick={(name) => onFilterChange('assignee', name)} statusColumns={dynamicPendingStatuses}/>
+	        <PendingTable title="Pending by Priority" headerLabel="Priority Level" data={priorityData} onRowClick={(name) => onFilterChange('priority', name)} className="bg-indigo-50/30" statusColumns={dynamicPendingStatuses}/>
+	        <PendingTable title="Pending by Category" headerLabel="Category Name" data={categoryData} onRowClick={(name) => onFilterChange('category', name)} className="bg-indigo-50/30" statusColumns={dynamicPendingStatuses}/>
+	        {VENDOR_MODULE_ENABLED && (
+	          <PendingTable title="Pending by Vendor" headerLabel="Vendor Name" data={vendorData} onRowClick={(name) => onFilterChange('vendor', name)} className="bg-orange-50/30" statusColumns={dynamicPendingStatuses}/>
+	        )}
+	      </div>
     </div>
   );
 };
