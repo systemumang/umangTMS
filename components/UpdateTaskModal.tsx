@@ -25,6 +25,7 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
   const [isConfirming, setIsConfirming] = useState(false);
 
   const isVendorTask = task ? !!task.vendor && task.vendor.trim() !== '' : false;
+  const hasTaskGoal = task ? String(task.goal ?? '').trim() !== '' : false;
 
   const readFileAsDataUrl = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -99,6 +100,12 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
   };
 
   const handleFinalSubmit = () => {
+    if (hasTaskGoal && goalInput.trim() === '') {
+      setError('Achieved is required when Goal is set.');
+      setIsConfirming(false);
+      return;
+    }
+
     const updatedTask: Task = { 
         ...task, 
         status: formData.status as any,
@@ -212,18 +219,20 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
                 ></textarea>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-900 block mb-1">Achieved</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={goalInput}
-                  onChange={handleGoalChange}
-                  placeholder="Enter achieved value"
-                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none text-gray-900"
-                />
-              </div>
+              {hasTaskGoal && (
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-900 block mb-1">Achieved <span className="text-red-500">*</span></label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={goalInput}
+                    onChange={handleGoalChange}
+                    placeholder="Enter achieved value"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none text-gray-900"
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">

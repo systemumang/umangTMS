@@ -40,7 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [openPendingGroup, setOpenPendingGroup] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     Dashboard: false,
-    Tasks: false,
+    'Simple Tasks': false,
     Master: false,
     'Recurring Tasks': false,
     Vendor: false,
@@ -62,7 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   useEffect(() => {
     const activeItem = items.find(item => item.id === activeTab);
     const activeSection = activeItem?.section || 'main';
-    const sectionLabel = activeSection === 'main' ? 'Dashboard' : activeSection;
+    const sectionLabel = activeSection === 'main' ? 'Dashboard' : (activeSection === 'Tasks' ? 'Simple Tasks' : activeSection);
     setOpenSections(prev => ({ ...prev, [sectionLabel]: true }));
   }, [activeTab, items]);
 
@@ -188,8 +188,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <nav className="flex-1 overflow-y-auto py-4">
           {[
             { key: 'Dashboard', source: 'main' },
-            { key: 'Tasks', source: 'Tasks' },
             { key: 'Master', source: 'Master' },
+            { key: 'Simple Tasks', source: 'Tasks' },
             { key: 'Recurring Tasks', source: 'Recurring Tasks' },
             ...(groupedItems['Vendor'] ? [{ key: 'Vendor', source: 'Vendor' }] : [])
           ].map(sectionInfo => {
@@ -208,7 +208,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
                 {isOpenSection && (
                   <ul className="space-y-1">
-                    {sectionInfo.key === 'Tasks'
+                    {sectionInfo.source === 'Tasks'
                       ? renderTasksSection()
                       : sectionItems.map(item => <li key={item.id}><NavButton item={item} /></li>)}
                   </ul>

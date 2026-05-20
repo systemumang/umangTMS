@@ -26,9 +26,14 @@ export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> =
   const [pdf, setPdf] = useState('');
 
   if (!isOpen || !task) return null;
+  const hasTaskGoal = String(task.goal ?? '').trim() !== '';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (hasTaskGoal && goal.trim() === '') {
+      alert('Achieved is required when Goal is set.');
+      return;
+    }
     
     // Explicitly include title, category, and assignee in the update payload 
     // to ensure logs correctly identify the task in the spreadsheet.
@@ -90,18 +95,20 @@ export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> =
                 onChange={(e) => setRemarks(e.target.value)}
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-black">Achieved</label>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
-                placeholder="Enter achieved value"
-                value={goal}
-                onChange={(e) => setGoal(e.target.value.replace(/[^\d.]/g, ''))}
-              />
-            </div>
+            {hasTaskGoal && (
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-black">Achieved <span className="text-red-500">*</span></label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+                  placeholder="Enter achieved value"
+                  value={goal}
+                  onChange={(e) => setGoal(e.target.value.replace(/[^\d.]/g, ''))}
+                />
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-sm font-medium text-black block mb-1">Photo (Up to 5)</label>
