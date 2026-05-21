@@ -783,7 +783,7 @@ export default function App() {
                 status: String(t.status || 'Not Yet Started') as any,
               })).slice(0, 300),
               recurringActions: (data.recurringActions || []).slice(0, 500),
-              settings: data.settings || settings,
+              settings: data.settings || null,
             });
 		      } else {
 		        setApiError(result?.error || 'Failed to load data.');
@@ -800,7 +800,7 @@ export default function App() {
 	      if (showLoading) setIsLoading(false);
 	      setIsSyncing(false);
 	    }
-		  }, [apiUrl, persistCache, settings]);
+		  }, [apiUrl, persistCache]);
 
 	  useEffect(() => {
 	    if (apiUrl && currentUser) {
