@@ -102,56 +102,83 @@ function notifications_format_datetime(): string {
     return date('d/m/Y H:i');
 }
 
+function notifications_trim(string $value): string {
+    return trim(preg_replace('/\s+/', ' ', $value));
+}
+
+function notifications_format_date_dmy(string $value): string {
+    $value = trim($value);
+    if ($value === '') return '';
+    // Already dd/mm/yyyy?
+    if (preg_match('/^\d{1,2}\/\d{1,2}\/\d{4}$/', $value)) {
+        [$d, $m, $y] = explode('/', $value);
+        return str_pad($d, 2, '0', STR_PAD_LEFT) . '/' . str_pad($m, 2, '0', STR_PAD_LEFT) . '/' . $y;
+    }
+    // ISO yyyy-mm-dd
+    if (preg_match('/^\d{4}-\d{2}-\d{2}/', $value)) {
+        $date = substr($value, 0, 10);
+        [$y, $m, $d] = explode('-', $date);
+        return $d . '/' . $m . '/' . $y;
+    }
+    // Try parse
+    $ts = strtotime($value);
+    if ($ts !== false) return date('d/m/Y', $ts);
+    return $value;
+}
+
+function notifications_format_time_hhmm(string $value): string {
+    $value = trim($value);
+    if ($value === '') return '';
+    if (preg_match('/^\d{1,2}:\d{2}$/', $value)) {
+        [$h, $m] = explode(':', $value);
+        return str_pad($h, 2, '0', STR_PAD_LEFT) . ':' . $m;
+    }
+    $ts = strtotime($value);
+    if ($ts !== false) return date('H:i', $ts);
+    return $value;
+}
+
+function notifications_add_line(array &$lines, string $label, string $value, bool $optional = false): void {
+    $value = notifications_trim($value);
+    if ($optional && $value === '') return;
+    if ($value === '') return;
+    $lines[] = $label . ': ' . $value;
+}
+
 function notifications_compose_task_created(array $task, bool $isVendor): string {
     $lines = [];
-    $lines[] = $isVendor ? "New Vendor Task" : "New Task Assigned";
-    $lines[] = "Task: " . trim((string)($task['title'] ?? ''));
-    $firm = trim((string)($task['firm'] ?? ''));
-    if ($firm !== '') $lines[] = "Firm: " . $firm;
-    $project = trim((string)($task['project'] ?? ''));
-    if ($project !== '') $lines[] = "Project: " . $project;
-    $client = trim((string)($task['client'] ?? ''));
-    if ($client !== '') $lines[] = "Client: " . $client;
-    $category = trim((string)($task['category'] ?? ''));
-    if ($category !== '') $lines[] = "Category: " . $category;
-    $owner = trim((string)($task['owner'] ?? ''));
-    if ($owner !== '') $lines[] = "Owner: " . $owner;
-    if ($isVendor) {
-        $vendor = trim((string)($task['vendor'] ?? ''));
-        if ($vendor !== '') $lines[] = "Vendor: " . $vendor;
-    } else {
-        $assignees = trim((string)($task['assignees'] ?? ''));
-        if ($assignees !== '') $lines[] = "Assignees: " . $assignees;
+    $lines[] = $isVendor ? "*New Vendor Task*" : "*New Task Assigned*";
+    $lines[] = '';
+
+    notifications_add_line($lines, 'Task', (string)($task['title'] ?? ''));
+    notifications_add_line($lines, 'Notes', (string)($task['notes'] ?? ''), true);
+    notifications_add_line($lines, 'Firm', (string)($task['firm'] ?? ''));
+    notifications_add_line($lines, 'Category', (string)($task['category'] ?? ''));
+    if (!$isVendor) {
+        notifications_add_line($lines, 'Assignees', (string)($task['assignees'] ?? ''));
     }
-    $priority = trim((string)($task['priority'] ?? ''));
-    if ($priority !== '') $lines[] = "Priority: " . $priority;
-    $due = trim((string)($task['dueDate'] ?? ''));
-    if ($due !== '') $lines[] = "Due Date: " . $due;
-    $notes = trim((string)($task['description'] ?? $task['notes'] ?? ''));
-    if ($notes !== '') $lines[] = "Notes: " . $notes;
-    $lines[] = "Created At: " . notifications_format_datetime();
+    notifications_add_line($lines, 'Owner', (string)($task['owner'] ?? ''));
+    notifications_add_line($lines, 'Priority', (string)($task['priority'] ?? ''));
+    $time = notifications_format_time_hhmm((string)($task['time'] ?? ''));
+    notifications_add_line($lines, 'Time', $time, true);
+    notifications_add_line($lines, 'Goal', (string)($task['goal'] ?? ''), true);
+    $due = notifications_format_date_dmy((string)($task['dueDate'] ?? ''));
+    notifications_add_line($lines, 'Due Date', $due);
+    $lines[] = 'Created At: ' . notifications_format_datetime();
     return implode("\n", $lines);
 }
 
 function notifications_compose_task_updated(array $task, array $log): string {
     $lines = [];
-    $lines[] = "Task Updated";
-    $lines[] = "Task: " . trim((string)($task['title'] ?? ''));
-    $firm = trim((string)($task['firm'] ?? ''));
-    if ($firm !== '') $lines[] = "Firm: " . $firm;
-    $project = trim((string)($task['project'] ?? ''));
-    if ($project !== '') $lines[] = "Project: " . $project;
-    $status = trim((string)($task['status'] ?? ''));
-    if ($status !== '') $lines[] = "Status: " . $status;
-    $remarks = trim((string)($log['remarks'] ?? ''));
-    if ($remarks !== '') $lines[] = "Remarks: " . $remarks;
-    $goal = trim((string)($task['goal'] ?? ''));
-    if ($goal !== '') $lines[] = "Goal: " . $goal;
-    $achieved = trim((string)($log['goal'] ?? ''));
-    if ($achieved !== '') $lines[] = "Achieved: " . $achieved;
-    $minutes = (string)($log['hours'] ?? '');
-    if ($minutes !== '' && $minutes !== '0') $lines[] = "Minutes: " . $minutes;
-    $lines[] = "Updated At: " . notifications_format_datetime();
+    $lines[] = "*Task Updated*";
+    $lines[] = '';
+    notifications_add_line($lines, 'Task', (string)($task['title'] ?? ''));
+    notifications_add_line($lines, 'Firm', (string)($task['firm'] ?? ''));
+    notifications_add_line($lines, 'Status', (string)($task['status'] ?? ''));
+    notifications_add_line($lines, 'Remarks', (string)($log['remarks'] ?? ''));
+    notifications_add_line($lines, 'Minutes', (string)($log['minutes'] ?? ''));
+    notifications_add_line($lines, 'Achieved', (string)($log['achieved'] ?? ''), true);
+    $lines[] = 'Updated At: ' . notifications_format_datetime();
     return implode("\n", $lines);
 }
 
@@ -177,21 +204,14 @@ function notifications_compose_recurring_created(array $task): string {
 
 function notifications_compose_recurring_action(array $action): string {
     $lines = [];
-    $lines[] = "Recurring Task Updated";
-    $lines[] = "Task: " . trim((string)($action['taskTitle'] ?? ''));
-    $firm = trim((string)($action['firm'] ?? ''));
-    if ($firm !== '') $lines[] = "Firm: " . $firm;
-    $category = trim((string)($action['category'] ?? ''));
-    if ($category !== '') $lines[] = "Category: " . $category;
-    $assignee = trim((string)($action['assignee'] ?? ''));
-    if ($assignee !== '') $lines[] = "Assignee: " . $assignee;
-    $status = trim((string)($action['status'] ?? ''));
-    if ($status !== '') $lines[] = "Status: " . $status;
-    $remarks = trim((string)($action['remarks'] ?? ''));
-    if ($remarks !== '') $lines[] = "Remarks: " . $remarks;
-    $goal = trim((string)($action['goal'] ?? ''));
-    if ($goal !== '') $lines[] = "Achieved: " . $goal;
-    $lines[] = "Updated At: " . notifications_format_datetime();
+    $lines[] = "*Recurring Task Updated*";
+    $lines[] = '';
+    notifications_add_line($lines, 'Task', (string)($action['taskTitle'] ?? ''));
+    notifications_add_line($lines, 'Firm', (string)($action['firm'] ?? ''));
+    notifications_add_line($lines, 'Status', (string)($action['status'] ?? ''));
+    notifications_add_line($lines, 'Remarks', (string)($action['remarks'] ?? ''));
+    notifications_add_line($lines, 'Achieved', (string)($action['goal'] ?? ''), true);
+    $lines[] = 'Updated At: ' . notifications_format_datetime();
     return implode("\n", $lines);
 }
 
@@ -351,4 +371,3 @@ function notifications_dispatch(mysqli $conn, array $queueRow): array {
 
     return ['ok' => false, 'error' => 'Unknown channel'];
 }
-

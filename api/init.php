@@ -116,31 +116,12 @@ function notify_task_updated(mysqli $conn, array $taskRow, array $logRow, bool $
     $message = notifications_compose_task_updated($taskRow, $logRow);
 
     if ($waProvider !== '') {
-        if ($isVendorTask) {
-            $mobile = notifications_get_vendor_mobile($conn, (string)($taskRow['vendor'] ?? ''));
-            if ($mobile !== '') {
-                notifications_enqueue($conn, 'whatsapp', $waProvider, 'personal', $mobile, $message, ['event' => 'task_updated']);
-                notifications_log($conn, 'task_updated', 'whatsapp', $waProvider, $mobile, 'enqueued', '');
-            }
-        } else {
-            $assignees = (string)($taskRow['assignees'] ?? '');
-            foreach (array_filter(array_map('trim', explode(',', $assignees))) as $assignee) {
-                $mobile = notifications_get_user_mobile($conn, $assignee);
-                if ($mobile === '') continue;
-                notifications_enqueue($conn, 'whatsapp', $waProvider, 'personal', $mobile, $message, ['event' => 'task_updated']);
-                notifications_log($conn, 'task_updated', 'whatsapp', $waProvider, $mobile, 'enqueued', '');
-            }
-        }
-    }
-
-    if ($waProvider === 'mas') {
-        $defaultGroup = trim((string)($settings['whatsappGroupId'] ?? ''));
-        $project = (string)($taskRow['project'] ?? '');
-        $groups = notifications_get_project_groups($conn, $project);
-        $groupId = trim((string)($groups['whatsappGroupId'] ?? '')) ?: $defaultGroup;
-        if ($groupId !== '') {
-            notifications_enqueue($conn, 'whatsapp', $waProvider, 'group', $groupId, $message, ['event' => 'task_updated']);
-            notifications_log($conn, 'task_updated', 'whatsapp', $waProvider, $groupId, 'enqueued', '');
+        // Update message goes to Owner only.
+        $owner = (string)($taskRow['owner'] ?? '');
+        $mobile = notifications_get_user_mobile($conn, $owner);
+        if ($mobile !== '') {
+            notifications_enqueue($conn, 'whatsapp', $waProvider, 'personal', $mobile, $message, ['event' => 'task_updated']);
+            notifications_log($conn, 'task_updated', 'whatsapp', $waProvider, $mobile, 'enqueued', '');
         }
     }
 
@@ -187,8 +168,9 @@ function notify_recurring_action(mysqli $conn, array $actionRow): void {
     $message = notifications_compose_recurring_action($actionRow);
 
     if ($waProvider !== '') {
-        $assignee = (string)($actionRow['assignee'] ?? '');
-        $mobile = notifications_get_user_mobile($conn, $assignee);
+        // Recurring update goes to Owner.
+        $owner = (string)($actionRow['owner'] ?? '');
+        $mobile = notifications_get_user_mobile($conn, $owner);
         if ($mobile !== '') {
             notifications_enqueue($conn, 'whatsapp', $waProvider, 'personal', $mobile, $message, ['event' => 'recurring_action']);
             notifications_log($conn, 'recurring_action', 'whatsapp', $waProvider, $mobile, 'enqueued', '');
@@ -371,20 +353,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
           // Notifications (non-blocking): enqueue after successful write.
           try {
-              $taskRow = [
-                  'title' => $title,
-                  'firm' => $firm,
-                  'project' => $project,
-                  'client' => $client,
-                  'category' => $category,
-                  'owner' => $owner,
-                  'assignees' => $assignees,
-                  'priority' => $priority,
-                  'status' => $status,
-                  'dueDate' => $dueDate,
-                  'description' => $description,
-                  'vendor' => $vendor,
-              ];
+	              $taskRow = [
+	                  'title' => $title,
+	                  'notes' => $description,
+	                  'firm' => $firm,
+	                  'project' => $project,
+	                  'client' => $client,
+	                  'category' => $category,
+	                  'owner' => $owner,
+	                  'assignees' => $assignees,
+	                  'priority' => $priority,
+	                  'status' => $status,
+	                  'dueDate' => $dueDate,
+	                  'time' => $time,
+	                  'goal' => $goal,
+	                  'vendor' => $vendor,
+	              ];
               notify_task_created($conn, $taskRow, $table === 'vendor_tasks' || trim($vendor) !== '');
           } catch (Throwable $e) {
               // Never break the main flow.
@@ -730,6 +714,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           try {
               $taskRow = [
                   'title' => $title,
+                  'notes' => $description,
                   'firm' => $firm,
                   'project' => $project,
                   'client' => $client,
@@ -739,14 +724,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   'priority' => $priority,
                   'status' => $status,
                   'dueDate' => $dueDate,
-                  'description' => $description,
                   'vendor' => $vendor,
                   'goal' => $goal,
               ];
               $logRow = [
                   'remarks' => $lastUpdateRemarks,
-                  'hours' => $hours,
-                  'goal' => $logGoal,
+                  'minutes' => $hours,
+                  'achieved' => $logGoal,
               ];
               notify_task_updated($conn, $taskRow, $logRow, $table === 'vendor_tasks' || trim($vendor) !== '');
           } catch (Throwable $e) {
