@@ -6,17 +6,20 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:smoke": "playwright test tests/smoke-non-vendor.spec.ts",
+    "test:smoke:headed": "playwright test tests/smoke-non-vendor.spec.ts --headed"
   },
   "dependencies": {
+    "jspdf": "2.5.1",
+    "jspdf-autotable": "3.8.2",
+    "lucide-react": "0.460.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "lucide-react": "0.460.0",
-    "recharts": "2.13.0",
-    "jspdf": "2.5.1",
-    "jspdf-autotable": "3.8.2"
+    "recharts": "2.13.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
     "typescript": "~5.8.2",

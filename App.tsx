@@ -39,6 +39,7 @@ import { AddRecurringTaskModal } from './components/AddRecurringTaskModal';
 import { UpdateRecurringTaskModal } from './components/UpdateRecurringTaskModal';
 import { EditRecurringTaskModal } from './components/EditRecurringTaskModal';
 import { TelegramSetupView } from './components/TelegramSetupView'; 
+import { DocumentationView } from './components/DocumentationView';
 import { 
   LayoutDashboard, 
   CheckSquare, 
@@ -108,6 +109,9 @@ const navItems: NavItem[] = [
 	  ] as NavItem[]) : []),
   { id: 'settings', label: 'Settings', icon: <Settings size={20} />, section: 'Master' },
   { id: 'telegram-setup', label: 'Telegram Setup', icon: <Send size={20} />, section: 'Master' },
+
+  // Documentation (keep last so it appears at the bottom of the menu)
+  { id: 'documentation', label: 'Documentation', icon: <FileText size={20} />, section: 'Documentation' },
 ];
 
 export const formatToIndianDate = (dateInput: any): string => {
@@ -1161,6 +1165,7 @@ export default function App() {
       case 'designations': if (!isAdmin) return null; return <DesignationsView designations={designations} onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }} onDeleteDesignation={(id) => { if (!confirmDelete('this designation')) return; setDesignations(prev => prev.filter(d => d.id !== id)); apiPost('deleteRecord', { id }, 'Designations'); }} onEditDesignation={(designation) => { setEditingDesignation(designation); setIsDesignationModalOpen(true); }} />;
       case 'settings': if (!isAdmin) return null; return <SettingsView settings={settings} onUpdate={(s) => { setSettings(s); apiPost('updateMaster', s, 'AppSettings'); }} />;
       case 'telegram-setup': if (!isAdmin) return null; return <TelegramSetupView />;
+      case 'documentation': return <DocumentationView />;
       default: return null;
     }
   };

@@ -34,6 +34,7 @@ export interface TableRow {
   pendingTraining: number;
   pendingBilling: number;
   pendingPayment: number;
+  statusCounts?: Record<string, number>;
 }
 
 export interface Task {

@@ -1,0 +1,106 @@
+TaskPro WhatsApp Message Templates + MessageAutoSender Code
+
+Helpers:
+const escapeMarkdown = (text = '') =>
+  String(text).replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&');
+
+const formatDateDMY = (dateStr) => {
+  if (!dateStr) return '-';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+};
+
+const timestamp = new Date().toLocaleString('en-GB', {
+  day: '2-digit', month: '2-digit', year: 'numeric',
+  hour: '2-digit', minute: '2-digit', hour12: false
+});
+
+1) New Task Created
+msg =
+`🆕 *New Task Created*\n\n` +
+`*Task:* ${escapeMarkdown(taskTitle)}\n` +
+`*Firm:* ${escapeMarkdown(firmName || '-')}\n` +
+`*Project:* ${escapeMarkdown(project || '-')}\n` +
+`*Category:* ${escapeMarkdown(category || '-')}\n` +
+`*Assignee:* ${escapeMarkdown(assignee || '-')}\n` +
+`*Owner:* ${escapeMarkdown(owner || '-')}\n` +
+`*Priority:* ${escapeMarkdown(priority || '-')}\n` +
+`*Due Date:* ${formatDateDMY(dueDate)}\n` +
+`*Created At:* ${timestamp}`;
+
+2) Task Updated
+msg =
+`📝 *Task Updated*\n\n` +
+`*Task:* ${escapeMarkdown(taskTitle)}\n` +
+`*Firm:* ${escapeMarkdown(firmName || '-')}\n` +
+`*Status:* ${escapeMarkdown(status || '-')}\n` +
+`*Goal:* ${escapeMarkdown(goal || '-')}\n` +
+`*Achieved:* ${escapeMarkdown(achieved || '-')}\n` +
+`*Minutes:* ${minutes || 0}\n` +
+`*Remarks:* ${escapeMarkdown(remarks || '-')}\n` +
+`*Updated At:* ${timestamp}`;
+
+3) Task Reassigned
+msg =
+`🔁 *Task Reassigned*\n\n` +
+`*Task:* ${escapeMarkdown(taskTitle)}\n` +
+`*Firm:* ${escapeMarkdown(firmName || '-')}\n` +
+`*From:* ${escapeMarkdown(oldAssignee || '-')}\n` +
+`*To:* ${escapeMarkdown(newAssignee || '-')}\n` +
+`*Status:* ${escapeMarkdown(status || '-')}\n` +
+`*Updated At:* ${timestamp}`;
+
+4) Task Completed
+msg =
+`✅ *Task Completed*\n\n` +
+`*Task:* ${escapeMarkdown(taskTitle)}\n` +
+`*Firm:* ${escapeMarkdown(firmName || '-')}\n` +
+`*Project:* ${escapeMarkdown(project || '-')}\n` +
+`*Assignee:* ${escapeMarkdown(assignee || '-')}\n` +
+`*Completed At:* ${timestamp}`;
+
+5) Task Deleted
+msg =
+`🗑️ *Task Deleted*\n\n` +
+`*Task:* ${escapeMarkdown(taskTitle)}\n` +
+`*Firm:* ${escapeMarkdown(firmName || '-')}\n` +
+`*Project:* ${escapeMarkdown(project || '-')}\n` +
+`*Deleted At:* ${timestamp}`;
+
+6) New Recurring Task Created
+msg =
+`🔄 *New Recurring Task Created*\n\n` +
+`*Task:* ${escapeMarkdown(taskTitle)}\n` +
+`*Firm:* ${escapeMarkdown(firmName || '-')}\n` +
+`*Category:* ${escapeMarkdown(category || '-')}\n` +
+`*Assignee:* ${escapeMarkdown(assignee || '-')}\n` +
+`*Start Date:* ${formatDateDMY(startDate)}\n` +
+`*Rule:* ${escapeMarkdown(ruleText || '-')}\n` +
+`*Created At:* ${timestamp}`;
+
+7) Recurring Task Updated (Action)
+msg =
+`♻️ *Recurring Task Updated*\n\n` +
+`*Task:* ${escapeMarkdown(taskTitle)}\n` +
+`*Firm:* ${escapeMarkdown(firmName || '-')}\n` +
+`*Status:* ${escapeMarkdown(status || '-')}\n` +
+`*Goal:* ${escapeMarkdown(goal || '-')}\n` +
+`*Achieved:* ${escapeMarkdown(achieved || '-')}\n` +
+`*Remarks:* ${escapeMarkdown(remarks || '-')}\n` +
+`*Updated At:* ${timestamp}`;
+
+MessageAutoSender send code (Google Apps Script):
+function sendpersonalMessage(waMessage, mobileNumber, username, password) {
+  const url = "https://app.messageautosender.com/api/v1/message/create";
+  const payload = { "receiverMobileNo": mobileNumber, "message": [waMessage.toString()] };
+  const options = {
+    'method': 'post',
+    'contentType': 'application/json',
+    'payload': JSON.stringify(payload),
+    'headers': { 'Authorization': 'Basic ' + Utilities.base64Encode(username + ":" + password) },
+    'muteHttpExceptions': true
+  };
+  try { UrlFetchApp.fetch(url, options); } catch (e) { Logger.log(e); }
+}
+
