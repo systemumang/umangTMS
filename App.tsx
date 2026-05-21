@@ -1081,6 +1081,28 @@ export default function App() {
     await apiPost('addMaster', client, 'Clients');
   };
 
+  const handleBulkAddRecurringTasks = async (
+    list: Array<Omit<RecurringTask, 'id' | 'lastUpdatedOn' | 'lastUpdateRemarks'>>
+  ): Promise<{ successCount: number; failCount: number }> => {
+    let successCount = 0;
+    let failCount = 0;
+    for (const item of list) {
+      try {
+        const createResult = await apiPost('addMaster', item, 'RecurringTasks');
+        if (!createResult?.success) {
+          failCount++;
+          continue;
+        }
+        const createdId = Number(createResult?.data?.id || Date.now() + successCount);
+        setRecurringTasks(prev => [{ ...item, id: createdId, status: 'Not Yet Started' } as any, ...prev]);
+        successCount++;
+      } catch {
+        failCount++;
+      }
+    }
+    return { successCount, failCount };
+  };
+
   const handleInstantAddFirm = async (firm: Omit<Firm, 'id'>) => {
     const tempId = Date.now();
     const newFirm = { ...firm, id: tempId } as Firm;
@@ -1251,8 +1273,8 @@ export default function App() {
       case 'pending-vendor-tasks': return <TasksView title="Pending Vendor Tasks" tasks={visibleTasks.filter(t => t.vendor && t.vendor !== '')} {...commonTaskProps} isVendorView={true} filterType="pending" />;
       case 'completed-vendor-tasks': return <TasksView title="Completed Vendor Tasks" tasks={visibleTasks.filter(t => t.vendor && t.vendor !== '')} {...commonTaskProps} isVendorView={true} filterType="completed" />;
       case 'vendor-action-log': return <ActionLogView logs={visibleActionLogs.filter(l => l.vendor && l.vendor !== '')} projects={projects} isVendorView={true} onDeleteLog={(logId, taskId) => handleDeleteLog(logId, taskId, true)} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
-      case 'due-recurring-tasks': return <RecurringTasksView title="Due Recurring Tasks" filterType="due" tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={(id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); apiPost('deleteRecord', { id }, 'RecurringTasks'); }} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
-      case 'recurring-tasks': return <RecurringTasksView title="Recurring Tasks" tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={(id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); apiPost('deleteRecord', { id }, 'RecurringTasks'); }} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
+      case 'due-recurring-tasks': return <RecurringTasksView title="Due Recurring Tasks" filterType="due" tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={(id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); apiPost('deleteRecord', { id }, 'RecurringTasks'); }} onBulkUpload={handleBulkAddRecurringTasks} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
+      case 'recurring-tasks': return <RecurringTasksView title="Recurring Tasks" tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={(id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); apiPost('deleteRecord', { id }, 'RecurringTasks'); }} onBulkUpload={handleBulkAddRecurringTasks} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
       case 'recurring-actions': return <RecurringTaskActionsView actions={visibleRecurringActions} onDeleteAction={(logId, taskId) => { if (!confirmDelete('this recurring log')) return; apiPost('deleteRecord', { id: logId, taskId: taskId }, 'RecurringActions'); }} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
       case 'users': if (!isAdmin) return null; return <UsersView users={users} designations={designations} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} onAddUser={(u) => { setUsers(p => [...p, { ...u, id: Date.now(), isActive: true } as any]); apiPost('addMaster', u, 'Users'); }} onEditUser={(u) => { setUsers(p => p.map(x => x.id === u.id ? u : x)); apiPost('updateMaster', u, 'Users'); }} onToggleStatus={(id) => { const user = users.find(u => u.id === id); if (!user) return; const newStatus = !user.isActive; setUsers(prev => prev.map(u => u.id === id ? { ...u, isActive: newStatus } : u)); apiPost('updateMaster', { id, isActive: newStatus ? 'TRUE' : 'FALSE' }, 'Users'); }} onDeleteUser={(id) => { if (!confirmDelete('this user')) return; setUsers(p => p.filter(u => u.id !== id)); apiPost('deleteRecord', { id }, 'Users'); }} onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }} />;
       case 'firms': if (!isAdmin) return null; return <FirmsView firms={firms} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} onAddFirm={() => setIsFirmModalOpen(true)} onDeleteFirm={(id) => { const target = firms.find(f => f.id === id); if (!target) return; if (String(target.name || '').trim().toUpperCase() === 'GENERAL') return; if (!confirmDelete('this firm')) return; setFirms(p => p.filter(f => f.id !== id)); apiPost('deleteRecord', { id }, 'Firms'); }} onEditFirm={(f) => { if (String(f.name || '').trim().toUpperCase() === 'GENERAL') return; setFirms(p => p.map(x => x.id === f.id ? f : x)); apiPost('updateMaster', f, 'Firms'); }} />;

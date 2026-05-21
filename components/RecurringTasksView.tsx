@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { RotateCcw, Plus, Search, Filter, X, FileText, Download, Info, ArrowUpDown, ArrowUp, ArrowDown, Trash2, Edit2, LayoutGrid, LayoutList, AlertCircle, Calendar } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { RotateCcw, Plus, Search, Filter, X, FileText, Download, Info, ArrowUpDown, ArrowUp, ArrowDown, Trash2, Edit2, LayoutGrid, LayoutList, AlertCircle, Calendar, Upload } from 'lucide-react';
 import { RecurringTask, RecurringTaskAction } from '../types';
 import { SearchableSelect } from './SearchableSelect';
 
@@ -11,6 +11,7 @@ interface RecurringTasksViewProps {
   onEdit: (task: RecurringTask) => void;
   onViewHistory: (task: RecurringTask) => void;
   onDelete: (id: number) => void;
+  onBulkUpload: (tasks: Array<Omit<RecurringTask, 'id' | 'lastUpdatedOn' | 'lastUpdateRemarks'>>) => Promise<{ successCount: number; failCount: number }>;
   title?: string;
   filterType?: 'all' | 'due';
   currentUser?: any;
@@ -30,6 +31,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
     onEdit, 
     onViewHistory, 
     onDelete, 
+    onBulkUpload,
     title = "Recurring Tasks",
     filterType = 'all',
     currentUser,
@@ -45,12 +47,123 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
   const [sortConfig, setSortConfig] = useState<SortConfig>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isUploadingBulk, setIsUploadingBulk] = useState(false);
+  const bulkFileInputRef = useRef<HTMLInputElement>(null);
 
   const isAdmin = currentUser?.role === 'Admin';
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
+
+  const parseCsvLine = (line: string): string[] => {
+    const values: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        values.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    values.push(current.trim());
+    return values;
+  };
+
+  const handleDownloadTemplate = () => {
+    const headers = ['title', 'goal', 'firm', 'owner', 'category', 'assignee', 'startDate', 'time', 'periodicity', 'frequencyDays', 'recurrenceDay', 'recurrenceMonth'];
+    const sampleRows = [
+      ['Daily Lead Entry', '1', 'Umang Communications', 'Amit', 'Office', 'Pankaj Jain', '2026-05-21', '10:00', 'Fixed Days', '1', '', ''],
+      ['Weekly Review', '1', 'Umang Communications', 'Amit', 'Finance', 'Pankaj Jain', '2026-05-21', '11:00', 'Weekly', '', '1', ''],
+      ['Salary Process', '1', 'Umang Communications', 'Amit', 'Office', 'Pankaj Jain', '2026-05-21', '', 'Monthly', '', '1', ''],
+      ['Annual Audit', '1', 'Umang Communications', 'Amit', 'Finance', 'Pankaj Jain', '2026-05-21', '', 'Yearly', '', '15', 'March'],
+    ];
+    const csv = [headers.join(','), ...sampleRows.map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'RecurringTasksTemplate.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+    if (lines.length <= 1) {
+      alert('Template is empty.');
+      event.target.value = '';
+      return;
+    }
+    const headers = parseCsvLine(lines[0]).map(header => header.trim());
+    const requiredHeaders = ['title', 'firm', 'owner', 'category', 'assignee', 'startDate', 'periodicity'];
+    for (const required of requiredHeaders) {
+      if (!headers.includes(required)) {
+        alert(`Missing required column: ${required}`);
+        event.target.value = '';
+        return;
+      }
+    }
+    const toNumberOrDefault = (value: string, fallback: number) => {
+      const numberValue = Number(String(value || '').trim());
+      return Number.isFinite(numberValue) ? numberValue : fallback;
+    };
+
+    const rows = lines.slice(1).map(line => parseCsvLine(line));
+    const tasks = rows.map((row) => {
+      const get = (column: string) => {
+        const index = headers.indexOf(column);
+        return index >= 0 ? String(row[index] || '').trim() : '';
+      };
+      const periodicity = get('periodicity') || 'Fixed Days';
+      const recurrenceDay = get('recurrenceDay');
+      const recurrenceMonth = get('recurrenceMonth');
+      const frequencyDays = get('frequencyDays');
+      return {
+        title: get('title'),
+        goal: get('goal'),
+        firm: get('firm'),
+        owner: get('owner'),
+        category: get('category'),
+        assignee: get('assignee'),
+        startDate: get('startDate'),
+        time: get('time'),
+        periodicity: periodicity as any,
+        frequencyDays: periodicity === 'Fixed Days' ? toNumberOrDefault(frequencyDays, 1) : 0,
+        recurrenceDay: recurrenceDay ? toNumberOrDefault(recurrenceDay, 1) : (periodicity === 'Weekly' ? 0 : 1),
+        recurrenceMonth: periodicity === 'Yearly' ? (recurrenceMonth || 'January') : undefined,
+      } as Omit<RecurringTask, 'id' | 'lastUpdatedOn' | 'lastUpdateRemarks'>;
+    }).filter(task => String(task.title || '').trim() !== '');
+
+    if (tasks.length === 0) {
+      alert('No valid rows found.');
+      event.target.value = '';
+      return;
+    }
+    setIsUploadingBulk(true);
+    try {
+      const result = await onBulkUpload(tasks);
+      alert(`Bulk upload completed.\nSuccess: ${result.successCount}\nFailed: ${result.failCount}`);
+    } finally {
+      setIsUploadingBulk(false);
+      event.target.value = '';
+    }
+  };
 
   useEffect(() => {
     setCurrentPage(1);
@@ -455,6 +568,19 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
              </button>
           )}
           <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center space-x-1 px-3 py-2 border rounded-md text-sm font-medium shadow-sm transition-all duration-200 ${showFilters ? 'bg-indigo-600 border-indigo-700 text-white' : 'bg-indigo-50 border-indigo-300 text-indigo-600 hover:bg-indigo-100'}`}><Filter size={16} /><span>Filters</span></button>
+          {filterType !== 'due' && (
+            <>
+              <input ref={bulkFileInputRef} type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
+              <button onClick={handleDownloadTemplate} className="flex items-center justify-center space-x-2 px-4 py-2 bg-white border border-indigo-300 text-indigo-700 rounded-md hover:bg-indigo-50 text-sm font-medium transition-colors shadow-sm">
+                <Download size={16} />
+                <span>Template</span>
+              </button>
+              <button disabled={isUploadingBulk} onClick={() => bulkFileInputRef.current?.click()} className="flex items-center justify-center space-x-2 px-4 py-2 bg-white border border-indigo-300 text-indigo-700 rounded-md hover:bg-indigo-50 disabled:opacity-60 disabled:cursor-not-allowed text-sm font-medium transition-colors shadow-sm">
+                <Upload size={16} />
+                <span>{isUploadingBulk ? 'Uploading...' : 'Upload'}</span>
+              </button>
+            </>
+          )}
             {filterType !== 'due' && (
 	            <button onClick={onAdd} className="flex items-center justify-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium transition-colors shadow-sm"><Plus size={16} /><span>New Recurring Task</span></button>
             )}
