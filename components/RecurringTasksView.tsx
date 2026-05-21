@@ -82,12 +82,9 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 
   const handleDownloadTemplate = () => {
     const templateHeaders = ['Task', 'goal', 'firm', 'owner', 'category', 'assignee', 'startDate', 'time', 'Period', 'frequencyDays', 'Day', 'Month'];
-    const templateRows = [
-      templateHeaders,
-      ['', '', '', '', '', '', '', '', '', '', '', ''],
-      ['', '', '', '', '', '', '', '', '', '', '', ''],
-      ['', '', '', '', '', '', '', '', '', '', '', ''],
-    ];
+    const spacerHeaders = ['', ''];
+    const validationHeaders = ['Users', 'Owners', 'Categories', 'Period', 'Month'];
+    const combinedHeader = [...templateHeaders, ...spacerHeaders, ...validationHeaders];
 
     const users = Array.from(new Set(tasks.map(task => String(task.assignee || '').trim()).filter(Boolean)));
     const owners = Array.from(new Set(tasks.map(task => String(task.owner || '').trim()).filter(Boolean)));
@@ -96,9 +93,11 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
     const monthOptions = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
     const maxLen = Math.max(users.length, owners.length, categoryOptions.length, periodicityOptions.length, monthOptions.length);
-    const masterRows = [['Users', 'Owners', 'Categories', 'Period', 'Month']];
+    const rows: string[][] = [combinedHeader];
     for (let index = 0; index < maxLen; index++) {
-      masterRows.push([
+      rows.push([
+        '', '', '', '', '', '', '', '', '', '', '', '',
+        '', '',
         users[index] || '',
         owners[index] || '',
         categoryOptions[index] || '',
@@ -106,47 +105,16 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
         monthOptions[index] || '',
       ]);
     }
-    masterRows.push([]);
-    masterRows.push(['Notes']);
-    masterRows.push(['Day rules: Weekly => 0-6 (Sun-Sat), Monthly => 1-31, Yearly => 1-31 with Month']);
-    masterRows.push(['Date format: YYYY-MM-DD, Time format: HH:MM']);
+    rows.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '', 'Notes', '', '', '', '']);
+    rows.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '', 'Day rules: Weekly => 0-6 (Sun-Sat), Monthly => 1-31, Yearly => 1-31 with Month', '', '', '', '']);
+    rows.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '', 'Date format: YYYY-MM-DD, Time format: HH:MM', '', '', '', '']);
 
-    const xmlEscape = (value: string) =>
-      value
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;');
-
-    const toWorksheetXml = (sheetName: string, rows: string[][]) => {
-      const rowsXml = rows
-        .map((row) => {
-          const cellsXml = row
-            .map((cell) => `<Cell><Data ss:Type="String">${xmlEscape(String(cell || ''))}</Data></Cell>`)
-            .join('');
-          return `<Row>${cellsXml}</Row>`;
-        })
-        .join('');
-      return `<Worksheet ss:Name="${xmlEscape(sheetName)}"><Table>${rowsXml}</Table></Worksheet>`;
-    };
-
-    const workbookXml = `<?xml version="1.0"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:o="urn:schemas-microsoft-com:office:office"
- xmlns:x="urn:schemas-microsoft-com:office:excel"
- xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:html="http://www.w3.org/TR/REC-html40">
-${toWorksheetXml('RecurringTasksTemplate', templateRows)}
-${toWorksheetXml('DataValidation', masterRows)}
-</Workbook>`;
-
-    const blob = new Blob([workbookXml], { type: 'application/vnd.ms-excel' });
+    const csv = rows.map(row => row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'RecurringTasksTemplate.xml';
+    link.download = 'RecurringTasksTemplate.csv';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
