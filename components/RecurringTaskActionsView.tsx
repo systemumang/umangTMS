@@ -2,8 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Search, History, Filter, X, FileText, Download, ArrowUpDown, ArrowUp, ArrowDown, Trash2, LayoutGrid, LayoutList, Calendar, Tag, User } from 'lucide-react';
 import { RecurringTaskAction } from '../types';
 import { SearchableSelect } from './SearchableSelect';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { parseToISO } from '../App';
 
 interface RecurringTaskActionsViewProps {

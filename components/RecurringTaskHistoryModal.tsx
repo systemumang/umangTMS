@@ -2,8 +2,6 @@
 import React from 'react';
 import { X, Download, Clock, Calendar, AlertCircle } from 'lucide-react';
 import { RecurringTask, RecurringTaskAction } from '../types';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 interface RecurringTaskHistoryModalProps {
   isOpen: boolean;
@@ -87,10 +85,14 @@ export const RecurringTaskHistoryModal: React.FC<RecurringTaskHistoryModalProps>
     return s;
   };
 
-  const handleDownloadPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.text('Recurring Task History', 14, 20);
+	  const handleDownloadPDF = async () => {
+      const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+      ]);
+	    const doc = new jsPDF();
+	    doc.setFontSize(18);
+	    doc.text('Recurring Task History', 14, 20);
     doc.setFontSize(11);
     doc.setTextColor(100);
     doc.text(`Task: ${task.title}`, 14, 28);

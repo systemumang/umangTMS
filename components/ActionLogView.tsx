@@ -3,8 +3,6 @@ import { Search, FileText, LayoutGrid, LayoutList, Calendar, User, Clock, AlertC
 import { ActionLogEntry, Project } from '../types';
 import { SearchableSelect } from './SearchableSelect';
 import { formatToIndianDate, formatToIndianDateTime, parseToISO } from '../App';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 interface ActionLogViewProps {
   logs?: ActionLogEntry[];
@@ -304,7 +302,11 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
     link.click();
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
+    const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable'),
+    ]);
     const doc = new jsPDF('l', 'mm', 'a4');
     const exportDate = new Date().toISOString().split('T')[0];
     const title = isVendorView ? 'Vendor Action Log' : 'Task Action Log';

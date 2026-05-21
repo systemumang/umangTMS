@@ -2,8 +2,6 @@ import React, { useState, useMemo } from 'react';
 import { ActionLogEntry, User } from '../types';
 import { parseToISO, formatToIndianDate } from '../App';
 import { X, LayoutGrid, LayoutList, Clock, Filter, FileText, Download } from 'lucide-react';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 interface ActivityDashboardViewProps {
   logs: ActionLogEntry[];
@@ -120,7 +118,11 @@ export const ActivityDashboardView: React.FC<ActivityDashboardViewProps> = ({ lo
     link.click();
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
+    const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable'),
+    ]);
     const doc = new jsPDF('l', 'mm', 'a4');
     doc.setFontSize(16);
     doc.text('Activity Dashboard', 14, 14);

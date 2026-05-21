@@ -3,9 +3,34 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/config.php';
 
+// Optional gzip compression for large JSON responses (init payload can be multiple MB).
+// This greatly reduces transfer time on slow networks and improves page load.
+if (!headers_sent()) {
+    header('Vary: Accept-Encoding');
+}
+if (!ini_get('zlib.output_compression') && isset($_SERVER['HTTP_ACCEPT_ENCODING']) && strpos((string)$_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== false) {
+    // phpcs:ignore
+    @ob_start('ob_gzhandler');
+}
+
 function fetchAllRows(mysqli $conn, string $table): array {
     $safe = preg_replace('/[^a-zA-Z0-9_]/', '', $table);
     $sql = "SELECT * FROM `{$safe}`";
+    $result = $conn->query($sql);
+    if (!$result) {
+        return [];
+    }
+    $rows = [];
+    while ($row = $result->fetch_assoc()) {
+        $rows[] = $row;
+    }
+    return $rows;
+}
+
+function fetchRecentRows(mysqli $conn, string $table, int $limit): array {
+    $safe = preg_replace('/[^a-zA-Z0-9_]/', '', $table);
+    $limit = max(1, min(5000, $limit));
+    $sql = "SELECT * FROM `{$safe}` ORDER BY id DESC LIMIT {$limit}";
     $result = $conn->query($sql);
     if (!$result) {
         return [];
@@ -36,6 +61,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if ($action !== 'init') {
         sendJson(['success' => false, 'error' => 'Invalid action.'], 400);
     }
+
+    // Limits (optional). Tasks are kept unbounded to avoid changing core behavior.
+    // Logs can become very large; limiting them drastically improves init payload size.
+    $actionLogsLimit = isset($_GET['actionLogsLimit']) ? (int)$_GET['actionLogsLimit'] : 500;
+    $recurringActionsLimit = isset($_GET['recurringActionsLimit']) ? (int)$_GET['recurringActionsLimit'] : 500;
 
     $users = array_map(static function(array $u): array {
         $isActiveRaw = strtolower((string)($u['isActive'] ?? '1'));
@@ -70,9 +100,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'clients' => fetchAllRows($conn, 'clients'),
             'firms' => fetchAllRows($conn, 'firms'),
             'vendors' => fetchAllRows($conn, 'vendors'),
-            'actionLogs' => fetchAllRows($conn, 'action_logs'),
+            'actionLogs' => fetchRecentRows($conn, 'action_logs', $actionLogsLimit),
             'recurringTasks' => fetchAllRows($conn, 'recurring_tasks'),
-            'recurringActions' => fetchAllRows($conn, 'recurring_actions'),
+            'recurringActions' => fetchRecentRows($conn, 'recurring_actions', $recurringActionsLimit),
             'settings' => $settings
         ]
     ]);

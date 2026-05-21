@@ -2,8 +2,6 @@ import React, { useMemo, useState } from 'react';
 import { Plus, Search, Edit2, Trash2, FileText, Download } from 'lucide-react';
 import { Firm } from '../types';
 import { AddFirmModal } from './AddFirmModal';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 interface FirmsViewProps {
   firms: Firm[];
@@ -35,12 +33,16 @@ export const FirmsView: React.FC<FirmsViewProps> = ({ firms, onAddFirm, onDelete
     link.setAttribute('download', `Firms_${new Date().toISOString().split('T')[0]}.csv`);
     link.click();
   };
-  const handleExportPDF = () => {
-    const doc = new jsPDF();
-    doc.text('Firms', 14, 14);
-    autoTable(doc, { head: [['S.No.', 'Firm Name', 'Sort Name']], body: filtered.map((f, i) => [i + 1, f.name || '-', f.sortName || '-']), startY: 20 });
-    doc.save(`Firms_${new Date().toISOString().split('T')[0]}.pdf`);
-  };
+	  const handleExportPDF = async () => {
+      const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+      ]);
+	    const doc = new jsPDF();
+	    doc.text('Firms', 14, 14);
+	    autoTable(doc, { head: [['S.No.', 'Firm Name', 'Sort Name']], body: filtered.map((f, i) => [i + 1, f.name || '-', f.sortName || '-']), startY: 20 });
+	    doc.save(`Firms_${new Date().toISOString().split('T')[0]}.pdf`);
+	  };
 
   return (
     <div className="space-y-6 pb-10">

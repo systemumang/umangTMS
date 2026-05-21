@@ -3,8 +3,6 @@ import { Plus, Edit2, Trash2, FileText, Download } from 'lucide-react';
 import { StatusMaster } from '../types';
 import { AddStatusModal } from './AddStatusModal';
 import { ConfirmationModal } from './ConfirmationModal';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 interface StatusesViewProps {
   statuses: StatusMaster[];
@@ -31,7 +29,11 @@ export const StatusesView: React.FC<StatusesViewProps> = ({ statuses, onAddStatu
     link.setAttribute('download', `Status_${new Date().toISOString().split('T')[0]}.csv`);
     link.click();
   };
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
+    const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable'),
+    ]);
     const doc = new jsPDF();
     doc.text('Status', 14, 14);
     autoTable(doc, { head: [['S.No.', 'Status Name']], body: statuses.map((s, i) => [i + 1, s.name || '-']), startY: 20 });

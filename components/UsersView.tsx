@@ -5,8 +5,6 @@ import { UserTable } from './UserTable';
 import { AddUserModal } from './AddUserModal';
 import { UpdateUserModal } from './UpdateUserModal';
 import { User, Designation } from '../types';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 interface UsersViewProps {
   users: User[];
@@ -65,16 +63,20 @@ export const UsersView: React.FC<UsersViewProps> = ({ users, designations, onAdd
     link.setAttribute('download', `Users_${new Date().toISOString().split('T')[0]}.csv`);
     link.click();
   };
-  const handleExportPDF = () => {
-    const doc = new jsPDF('l', 'mm', 'a4');
-    doc.text('Users', 14, 14);
-    autoTable(doc, {
-      head: [['S.No.', 'Name', 'Email', 'Mobile', 'Designation', 'Role', 'Status']],
-      body: filteredUsers.map((u, i) => [i + 1, u.name || '-', u.email || '-', u.mobile || '-', u.designation || '-', u.role || '-', u.isActive ? 'Active' : 'Inactive']),
-      startY: 20
-    });
-    doc.save(`Users_${new Date().toISOString().split('T')[0]}.pdf`);
-  };
+	  const handleExportPDF = async () => {
+      const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+      ]);
+	    const doc = new jsPDF('l', 'mm', 'a4');
+	    doc.text('Users', 14, 14);
+	    autoTable(doc, {
+	      head: [['S.No.', 'Name', 'Email', 'Mobile', 'Designation', 'Role', 'Status']],
+	      body: filteredUsers.map((u, i) => [i + 1, u.name || '-', u.email || '-', u.mobile || '-', u.designation || '-', u.role || '-', u.isActive ? 'Active' : 'Inactive']),
+	      startY: 20
+	    });
+	    doc.save(`Users_${new Date().toISOString().split('T')[0]}.pdf`);
+	  };
 
   return (
     <div className="space-y-6 pb-10">

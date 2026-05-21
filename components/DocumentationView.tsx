@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Download, FileText, Pause, Play, Square, Volume2 } from 'lucide-react';
-import { jsPDF } from 'jspdf';
 
 type DocSection = {
   title: string;
@@ -170,7 +169,8 @@ export const DocumentationView: React.FC = () => {
     };
   }, []);
 
-  const downloadPdf = () => {
+  const downloadPdf = async () => {
+    const [{ jsPDF }] = await Promise.all([import('jspdf')]);
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 54;

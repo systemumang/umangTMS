@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { X, Download, Calendar, User, Users, Clock, Tag, Briefcase, History, Building2, Hammer, LayoutGrid, LayoutList } from 'lucide-react';
 import { ActionLogEntry, Task } from '../types';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { formatToIndianDate, formatToIndianDateTime } from '../App';
 
 interface TaskHistoryModalProps {
@@ -79,10 +77,14 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({ isOpen, onCl
 	    }
 	  };
   
-  const handleDownloadPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.text('Task History', 14, 20);
+	  const handleDownloadPDF = async () => {
+      const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+      ]);
+	    const doc = new jsPDF();
+	    doc.setFontSize(18);
+	    doc.text('Task History', 14, 20);
     doc.setFontSize(12);
     doc.setTextColor(0);
     doc.text(`Updates for: ${task.title}`, 14, 30);

@@ -4,8 +4,6 @@ import { Plus, Search, Edit2, Trash2, LayoutGrid, LayoutList, ArrowUpDown, Arrow
 import { Category } from '../types';
 import { AddCategoryModal } from './AddCategoryModal';
 import { ConfirmationModal } from './ConfirmationModal';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 interface CategoriesViewProps {
   categories: Category[];
@@ -81,12 +79,16 @@ export const CategoriesView: React.FC<CategoriesViewProps> = ({ categories, onAd
     link.setAttribute('download', `Categories_${new Date().toISOString().split('T')[0]}.csv`);
     link.click();
   };
-  const handleExportPDF = () => {
-    const doc = new jsPDF();
-    doc.text('Categories', 14, 14);
-    autoTable(doc, { head: [['S.No.', 'Name']], body: sortedCategories.map((c, i) => [i + 1, c.name || '-']), startY: 20 });
-    doc.save(`Categories_${new Date().toISOString().split('T')[0]}.pdf`);
-  };
+	  const handleExportPDF = async () => {
+      const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+      ]);
+	    const doc = new jsPDF();
+	    doc.text('Categories', 14, 14);
+	    autoTable(doc, { head: [['S.No.', 'Name']], body: sortedCategories.map((c, i) => [i + 1, c.name || '-']), startY: 20 });
+	    doc.save(`Categories_${new Date().toISOString().split('T')[0]}.pdf`);
+	  };
 
   return (
     <div className="space-y-6 pb-10">

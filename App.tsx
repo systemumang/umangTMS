@@ -612,11 +612,13 @@ export default function App() {
 	    }, 20000);
 	    
 	    try {
-	      const response = await fetch(`${apiUrl}${apiUrl.includes('?') ? '&' : '?'}action=init&_cb=${Date.now()}`, { 
-	        signal: abortControllerRef.current.signal,
-	        cache: 'no-store',
-	        mode: 'cors'
-	      });
+		      const response = await fetch(
+            `${apiUrl}${apiUrl.includes('?') ? '&' : '?'}action=init&actionLogsLimit=500&recurringActionsLimit=500&_cb=${Date.now()}`,
+            { 
+		        signal: abortControllerRef.current.signal,
+		        cache: 'no-store',
+		        mode: 'cors'
+		      });
 	      const result = await safeJsonParse(response, 'Data Load');
 	      
 			      if (result.success) {

@@ -8,8 +8,6 @@ import { BulkUpdateModal } from './BulkUpdateModal';
 import { Task, User, Project, Category, Vendor, VendorCategory, Firm } from '../types';
 import { SearchableSelect } from './SearchableSelect';
 import { parseToISO, formatToIndianDate } from '../App';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 interface TasksViewProps {
 	  title: string;
@@ -330,11 +328,15 @@ export const TasksView: React.FC<TasksViewProps> = ({
     link.click();
   };
 
-  const handleDownloadPDF = () => {
-    const doc = new jsPDF('l', 'mm', 'a4');
-    doc.setFontSize(18);
-    doc.setTextColor(79, 70, 229); 
-    doc.text(`${title} Report`, 14, 15);
+	  const handleDownloadPDF = async () => {
+      const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+      ]);
+	    const doc = new jsPDF('l', 'mm', 'a4');
+	    doc.setFontSize(18);
+	    doc.setTextColor(79, 70, 229); 
+	    doc.text(`${title} Report`, 14, 15);
     
     doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
@@ -390,10 +392,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
       columnStyles[3] = { cellWidth: 35 };
     }
 
-    autoTable(doc, {
-      head: headers,
-      body: data,
-      theme: 'grid',
+	    autoTable(doc, {
+	      head: headers,
+	      body: data,
+	      theme: 'grid',
       startY: 32 + (splitFilters.length * 4),
       styles: { fontSize: 7, cellPadding: 2, overflow: 'linebreak', textColor: [0, 0, 0], lineColor: [0, 0, 0], lineWidth: 0.1 },
       headStyles: { fillColor: [79, 70, 229], lineColor: [0, 0, 0], lineWidth: 0.1 },

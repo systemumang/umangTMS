@@ -1,8 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Search, Edit2, Trash2, LayoutGrid, LayoutList, ArrowUpDown, ArrowUp, ArrowDown, FileText, Download } from 'lucide-react';
 import { Designation } from '../types';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 interface DesignationsViewProps {
   designations: Designation[];
@@ -62,7 +60,11 @@ export const DesignationsView: React.FC<DesignationsViewProps> = ({ designations
     link.click();
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
+    const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable'),
+    ]);
     const doc = new jsPDF();
     doc.text('Designations', 14, 14);
     autoTable(doc, {
