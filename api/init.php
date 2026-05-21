@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/notifications.php';
 
 // Optional gzip compression for large JSON responses (init payload can be multiple MB).
 // This greatly reduces transfer time on slow networks and improves page load.
@@ -54,6 +55,153 @@ function normalizeNumericGoal($raw): string {
     if ($value === '') return '';
     if (!is_numeric($value)) return '';
     return (string)(0 + $value);
+}
+
+function notify_task_created(mysqli $conn, array $taskRow, bool $isVendorTask): void {
+    if (!notifications_enabled()) return;
+    $settings = notifications_get_settings($conn);
+
+    // WhatsApp provider selection (Meta -> MAS).
+    $waProvider = notifications_pick_whatsapp_provider($settings);
+    $message = notifications_compose_task_created($taskRow, $isVendorTask);
+
+    // Personal WhatsApp
+    if ($waProvider !== '') {
+        if ($isVendorTask) {
+            $mobile = notifications_get_vendor_mobile($conn, (string)($taskRow['vendor'] ?? ''));
+            if ($mobile !== '') {
+                notifications_enqueue($conn, 'whatsapp', $waProvider, 'personal', $mobile, $message, ['event' => 'task_created']);
+                notifications_log($conn, 'task_created', 'whatsapp', $waProvider, $mobile, 'enqueued', '');
+            }
+        } else {
+            $assignees = (string)($taskRow['assignees'] ?? '');
+            foreach (array_filter(array_map('trim', explode(',', $assignees))) as $assignee) {
+                $mobile = notifications_get_user_mobile($conn, $assignee);
+                if ($mobile === '') continue;
+                notifications_enqueue($conn, 'whatsapp', $waProvider, 'personal', $mobile, $message, ['event' => 'task_created']);
+                notifications_log($conn, 'task_created', 'whatsapp', $waProvider, $mobile, 'enqueued', '');
+            }
+        }
+    }
+
+    // WhatsApp group (optional): supported via MessageAutoSender only.
+    if ($waProvider === 'mas') {
+        $defaultGroup = trim((string)($settings['whatsappGroupId'] ?? ''));
+        $project = (string)($taskRow['project'] ?? '');
+        $groups = notifications_get_project_groups($conn, $project);
+        $groupId = trim((string)($groups['whatsappGroupId'] ?? '')) ?: $defaultGroup;
+        if ($groupId !== '') {
+            notifications_enqueue($conn, 'whatsapp', $waProvider, 'group', $groupId, $message, ['event' => 'task_created']);
+            notifications_log($conn, 'task_created', 'whatsapp', $waProvider, $groupId, 'enqueued', '');
+        }
+    }
+
+    // Telegram (independent): if configured, send to project group if available else office group.
+    if (notifications_is_telegram_configured($settings)) {
+        $officeChatId = trim((string)($settings['officeTelegramGroupId'] ?? ''));
+        $project = (string)($taskRow['project'] ?? '');
+        $groups = notifications_get_project_groups($conn, $project);
+        $chatId = trim((string)($groups['telegramGroupId'] ?? '')) ?: $officeChatId;
+        if ($chatId !== '') {
+            notifications_enqueue($conn, 'telegram', 'telegram', 'group', $chatId, $message, ['event' => 'task_created']);
+            notifications_log($conn, 'task_created', 'telegram', 'telegram', $chatId, 'enqueued', '');
+        }
+    }
+}
+
+function notify_task_updated(mysqli $conn, array $taskRow, array $logRow, bool $isVendorTask): void {
+    if (!notifications_enabled()) return;
+    $settings = notifications_get_settings($conn);
+    $waProvider = notifications_pick_whatsapp_provider($settings);
+    $message = notifications_compose_task_updated($taskRow, $logRow);
+
+    if ($waProvider !== '') {
+        if ($isVendorTask) {
+            $mobile = notifications_get_vendor_mobile($conn, (string)($taskRow['vendor'] ?? ''));
+            if ($mobile !== '') {
+                notifications_enqueue($conn, 'whatsapp', $waProvider, 'personal', $mobile, $message, ['event' => 'task_updated']);
+                notifications_log($conn, 'task_updated', 'whatsapp', $waProvider, $mobile, 'enqueued', '');
+            }
+        } else {
+            $assignees = (string)($taskRow['assignees'] ?? '');
+            foreach (array_filter(array_map('trim', explode(',', $assignees))) as $assignee) {
+                $mobile = notifications_get_user_mobile($conn, $assignee);
+                if ($mobile === '') continue;
+                notifications_enqueue($conn, 'whatsapp', $waProvider, 'personal', $mobile, $message, ['event' => 'task_updated']);
+                notifications_log($conn, 'task_updated', 'whatsapp', $waProvider, $mobile, 'enqueued', '');
+            }
+        }
+    }
+
+    if ($waProvider === 'mas') {
+        $defaultGroup = trim((string)($settings['whatsappGroupId'] ?? ''));
+        $project = (string)($taskRow['project'] ?? '');
+        $groups = notifications_get_project_groups($conn, $project);
+        $groupId = trim((string)($groups['whatsappGroupId'] ?? '')) ?: $defaultGroup;
+        if ($groupId !== '') {
+            notifications_enqueue($conn, 'whatsapp', $waProvider, 'group', $groupId, $message, ['event' => 'task_updated']);
+            notifications_log($conn, 'task_updated', 'whatsapp', $waProvider, $groupId, 'enqueued', '');
+        }
+    }
+
+    if (notifications_is_telegram_configured($settings)) {
+        $officeChatId = trim((string)($settings['officeTelegramGroupId'] ?? ''));
+        $project = (string)($taskRow['project'] ?? '');
+        $groups = notifications_get_project_groups($conn, $project);
+        $chatId = trim((string)($groups['telegramGroupId'] ?? '')) ?: $officeChatId;
+        if ($chatId !== '') {
+            notifications_enqueue($conn, 'telegram', 'telegram', 'group', $chatId, $message, ['event' => 'task_updated']);
+            notifications_log($conn, 'task_updated', 'telegram', 'telegram', $chatId, 'enqueued', '');
+        }
+    }
+}
+
+function notify_recurring_created(mysqli $conn, array $taskRow): void {
+    if (!notifications_enabled()) return;
+    $settings = notifications_get_settings($conn);
+    $waProvider = notifications_pick_whatsapp_provider($settings);
+    $message = notifications_compose_recurring_created($taskRow);
+
+    if ($waProvider !== '') {
+        $assignee = (string)($taskRow['assignee'] ?? '');
+        $mobile = notifications_get_user_mobile($conn, $assignee);
+        if ($mobile !== '') {
+            notifications_enqueue($conn, 'whatsapp', $waProvider, 'personal', $mobile, $message, ['event' => 'recurring_created']);
+            notifications_log($conn, 'recurring_created', 'whatsapp', $waProvider, $mobile, 'enqueued', '');
+        }
+    }
+
+    if (notifications_is_telegram_configured($settings)) {
+        $officeChatId = trim((string)($settings['officeTelegramGroupId'] ?? ''));
+        if ($officeChatId !== '') {
+            notifications_enqueue($conn, 'telegram', 'telegram', 'group', $officeChatId, $message, ['event' => 'recurring_created']);
+            notifications_log($conn, 'recurring_created', 'telegram', 'telegram', $officeChatId, 'enqueued', '');
+        }
+    }
+}
+
+function notify_recurring_action(mysqli $conn, array $actionRow): void {
+    if (!notifications_enabled()) return;
+    $settings = notifications_get_settings($conn);
+    $waProvider = notifications_pick_whatsapp_provider($settings);
+    $message = notifications_compose_recurring_action($actionRow);
+
+    if ($waProvider !== '') {
+        $assignee = (string)($actionRow['assignee'] ?? '');
+        $mobile = notifications_get_user_mobile($conn, $assignee);
+        if ($mobile !== '') {
+            notifications_enqueue($conn, 'whatsapp', $waProvider, 'personal', $mobile, $message, ['event' => 'recurring_action']);
+            notifications_log($conn, 'recurring_action', 'whatsapp', $waProvider, $mobile, 'enqueued', '');
+        }
+    }
+
+    if (notifications_is_telegram_configured($settings)) {
+        $officeChatId = trim((string)($settings['officeTelegramGroupId'] ?? ''));
+        if ($officeChatId !== '') {
+            notifications_enqueue($conn, 'telegram', 'telegram', 'group', $officeChatId, $message, ['event' => 'recurring_action']);
+            notifications_log($conn, 'recurring_action', 'telegram', 'telegram', $officeChatId, 'enqueued', '');
+        }
+    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -216,12 +364,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param('issssssssssssssssdssss', $id, $date, $title, $description, $project, $firm, $category, $owner, $assignees, $vendor, $vendorCategory, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf);
         }
 
-        $ok = $stmt->execute();
-        $stmtError = $stmt->error;
-        $stmt->close();
-        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to add task: ' . $stmtError], 400);
-        sendJson(['success' => true, 'data' => ['id' => $id]]);
-    }
+	        $ok = $stmt->execute();
+	        $stmtError = $stmt->error;
+	        $stmt->close();
+	        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to add task: ' . $stmtError], 400);
+
+          // Notifications (non-blocking): enqueue after successful write.
+          try {
+              $taskRow = [
+                  'title' => $title,
+                  'firm' => $firm,
+                  'project' => $project,
+                  'client' => $client,
+                  'category' => $category,
+                  'owner' => $owner,
+                  'assignees' => $assignees,
+                  'priority' => $priority,
+                  'status' => $status,
+                  'dueDate' => $dueDate,
+                  'description' => $description,
+                  'vendor' => $vendor,
+              ];
+              notify_task_created($conn, $taskRow, $table === 'vendor_tasks' || trim($vendor) !== '');
+          } catch (Throwable $e) {
+              // Never break the main flow.
+          }
+
+	        sendJson(['success' => true, 'data' => ['id' => $id]]);
+	    }
 
     if ($action === 'addMaster' && $table === 'clients') {
         $name = trim((string)($data['name'] ?? ''));
@@ -368,12 +538,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare recurring task insert.'], 500);
         $idStr = (string)$id;
         $stmt->bind_param('sssssssissss', $idStr, $title, $firm, $owner, $category, $assignee, $frequencyType, $frequencyDays, $startDate, $time, $goal, $status);
-        $ok = $stmt->execute();
-        $stmtError = $stmt->error;
-        $stmt->close();
-        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to add recurring task: ' . $stmtError], 400);
-        sendJson(['success' => true, 'data' => ['id' => $id]]);
-    }
+	        $ok = $stmt->execute();
+	        $stmtError = $stmt->error;
+	        $stmt->close();
+	        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to add recurring task: ' . $stmtError], 400);
+
+          try {
+              notify_recurring_created($conn, [
+                  'title' => $title,
+                  'firm' => $firm,
+                  'owner' => $owner,
+                  'category' => $category,
+                  'assignee' => $assignee,
+                  'frequencyType' => $frequencyType,
+                  'frequencyDays' => $frequencyDays,
+                  'startDate' => $startDate,
+                  'time' => $time,
+                  'goal' => $goal,
+                  'status' => $status,
+              ]);
+          } catch (Throwable $e) {
+          }
+
+	        sendJson(['success' => true, 'data' => ['id' => $id]]);
+	    }
 
     if ($action === 'addMaster' && $table === 'recurring_actions') {
         $id = (int)($data['id'] ?? 0);
@@ -402,12 +590,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $idStr = (string)$id;
         $taskIdStr = (string)$taskId;
         $stmt->bind_param('ssssssssssssss', $idStr, $taskIdStr, $taskTitle, $firm, $owner, $category, $assignee, $status, $remarks, $goal, $photos, $pdf, $updatedOn, $timestamp);
-        $ok = $stmt->execute();
-        $stmtError = $stmt->error;
-        $stmt->close();
-        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to add recurring action: ' . $stmtError], 400);
-        sendJson(['success' => true, 'data' => ['id' => $id]]);
-    }
+	        $ok = $stmt->execute();
+	        $stmtError = $stmt->error;
+	        $stmt->close();
+	        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to add recurring action: ' . $stmtError], 400);
+
+          try {
+              notify_recurring_action($conn, [
+                  'taskTitle' => $taskTitle,
+                  'firm' => $firm,
+                  'owner' => $owner,
+                  'category' => $category,
+                  'assignee' => $assignee,
+                  'status' => $status,
+                  'remarks' => $remarks,
+                  'goal' => $goal,
+                  'updatedOn' => $updatedOn,
+                  'timestamp' => $timestamp,
+              ]);
+          } catch (Throwable $e) {
+          }
+
+	        sendJson(['success' => true, 'data' => ['id' => $id]]);
+	    }
 
     if ($action === 'updateMaster' && $table === 'users') {
         $id = (int)($data['id'] ?? 0);
@@ -502,8 +707,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->close();
 	        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to update task.'], 400);
 
-	        if (!$skipLog && ($lastUpdateRemarks !== '' || $status !== 'Not Yet Started' || $hours > 0 || $logGoal !== '' || $logPhotos !== '' || $logPdf !== '')) {
-	            $logId = (int)round(microtime(true) * 1000);
+		        if (!$skipLog && ($lastUpdateRemarks !== '' || $status !== 'Not Yet Started' || $hours > 0 || $logGoal !== '' || $logPhotos !== '' || $logPdf !== '')) {
+		            $logId = (int)round(microtime(true) * 1000);
 	            $updatedOn = '';
 	            $timestamp = '';
 	            if ($lastUpdateDate !== '') {
@@ -518,11 +723,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	            $logOk = $logStmt->execute();
 	            $logError = $logStmt->error;
 	            $logStmt->close();
-	            if (!$logOk) sendJson(['success' => false, 'error' => 'Failed to add action log: ' . $logError], 400);
-        }
+		            if (!$logOk) sendJson(['success' => false, 'error' => 'Failed to add action log: ' . $logError], 400);
+	        }
 
-        sendJson(['success' => true]);
-    }
+          // Notifications (non-blocking): enqueue after successful update.
+          try {
+              $taskRow = [
+                  'title' => $title,
+                  'firm' => $firm,
+                  'project' => $project,
+                  'client' => $client,
+                  'category' => $category,
+                  'owner' => $owner,
+                  'assignees' => $assignees,
+                  'priority' => $priority,
+                  'status' => $status,
+                  'dueDate' => $dueDate,
+                  'description' => $description,
+                  'vendor' => $vendor,
+                  'goal' => $goal,
+              ];
+              $logRow = [
+                  'remarks' => $lastUpdateRemarks,
+                  'hours' => $hours,
+                  'goal' => $logGoal,
+              ];
+              notify_task_updated($conn, $taskRow, $logRow, $table === 'vendor_tasks' || trim($vendor) !== '');
+          } catch (Throwable $e) {
+          }
+
+	        sendJson(['success' => true]);
+	    }
 
     if ($action === 'updateMaster' && $table === 'clients') {
         $id = (int)($data['id'] ?? 0);

@@ -8,6 +8,13 @@ $DB_NAME = 'u299994438_tmsumang';
 $DB_USER = 'u299994438_tmsumang';
 $DB_PASS = '!Office1@';
 
+// Notifications feature flag (safe default: off).
+// Set to true after queue tables + settings are configured.
+$NOTIFICATIONS_ENABLED = false;
+
+// Optional: shared secret for the worker endpoint (set a strong random string in production).
+$NOTIFICATIONS_WORKER_TOKEN = '';
+
 mysqli_report(MYSQLI_REPORT_OFF);
 $conn = new mysqli($DB_HOST, $DB_USER, $DB_PASS, $DB_NAME);
 
@@ -21,4 +28,3 @@ if ($conn->connect_error) {
 }
 
 $conn->set_charset('utf8mb4');
-
