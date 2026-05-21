@@ -81,23 +81,51 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
   };
 
   const handleDownloadTemplate = () => {
-    const headers = ['title', 'goal', 'firm', 'owner', 'category', 'assignee', 'startDate', 'time', 'periodicity', 'frequencyDays', 'recurrenceDay', 'recurrenceMonth'];
-    const sampleRows = [
-      ['Daily Lead Entry', '1', 'Umang Communications', 'Amit', 'Office', 'Pankaj Jain', '2026-05-21', '10:00', 'Fixed Days', '1', '', ''],
-      ['Weekly Review', '1', 'Umang Communications', 'Amit', 'Finance', 'Pankaj Jain', '2026-05-21', '11:00', 'Weekly', '', '1', ''],
-      ['Salary Process', '1', 'Umang Communications', 'Amit', 'Office', 'Pankaj Jain', '2026-05-21', '', 'Monthly', '', '1', ''],
-      ['Annual Audit', '1', 'Umang Communications', 'Amit', 'Finance', 'Pankaj Jain', '2026-05-21', '', 'Yearly', '', '15', 'March'],
+    const templateHeaders = ['Task', 'goal', 'firm', 'owner', 'category', 'assignee', 'startDate', 'time', 'Period', 'frequencyDays', 'Day', 'Month'];
+    const templateCsv = `${templateHeaders.join(',')}\n`;
+
+    const users = Array.from(new Set(tasks.map(task => String(task.assignee || '').trim()).filter(Boolean)));
+    const owners = Array.from(new Set(tasks.map(task => String(task.owner || '').trim()).filter(Boolean)));
+    const categoryOptions = categories.filter(value => value !== 'All');
+    const periodicityOptions = ['Fixed Days', 'Weekly', 'Monthly', 'Yearly'];
+    const monthOptions = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+    const masterRows = [
+      ['Users'],
+      ...users.map(value => [value]),
+      [''],
+      ['Owners'],
+      ...owners.map(value => [value]),
+      [''],
+      ['Categories'],
+      ...categoryOptions.map(value => [value]),
+      [''],
+      ['Period'],
+      ...periodicityOptions.map(value => [value]),
+      [''],
+      ['Month'],
+      ...monthOptions.map(value => [value]),
+      [''],
+      ['Notes'],
+      ['Day rules: Weekly => 0-6 (Sun-Sat), Monthly => 1-31, Yearly => 1-31 with Month'],
+      ['Date format: YYYY-MM-DD, Time format: HH:MM'],
     ];
-    const csv = [headers.join(','), ...sampleRows.map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'RecurringTasksTemplate.csv';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    const masterCsv = masterRows.map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\n');
+
+    const downloadCsv = (filename: string, content: string) => {
+      const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    };
+
+    downloadCsv('RecurringTasksTemplate.csv', templateCsv);
+    setTimeout(() => downloadCsv('RecurringTasksMasterData.csv', masterCsv), 150);
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,7 +138,21 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
       event.target.value = '';
       return;
     }
-    const headers = parseCsvLine(lines[0]).map(header => header.trim());
+    const rawHeaders = parseCsvLine(lines[0]).map(header => header.trim());
+    const headerAliases: Record<string, string> = {
+      task: 'title',
+      title: 'title',
+      period: 'periodicity',
+      periodicity: 'periodicity',
+      month: 'recurrenceMonth',
+      recurrencemonth: 'recurrenceMonth',
+      day: 'recurrenceDay',
+      recurrenceday: 'recurrenceDay',
+    };
+    const headers = rawHeaders.map(header => {
+      const key = header.replace(/\s+/g, '').toLowerCase();
+      return headerAliases[key] || header;
+    });
     const requiredHeaders = ['title', 'firm', 'owner', 'category', 'assignee', 'startDate', 'periodicity'];
     for (const required of requiredHeaders) {
       if (!headers.includes(required)) {
