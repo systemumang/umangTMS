@@ -142,7 +142,7 @@ function notifications_add_line(array &$lines, string $label, string $value, boo
     $value = notifications_trim($value);
     if ($optional && $value === '') return;
     if ($value === '') return;
-    $lines[] = $label . ': ' . $value;
+    $lines[] = '*' . $label . ':* ' . $value;
 }
 
 function notifications_compose_task_created(array $task, bool $isVendor): string {
@@ -164,7 +164,7 @@ function notifications_compose_task_created(array $task, bool $isVendor): string
     notifications_add_line($lines, 'Goal', (string)($task['goal'] ?? ''), true);
     $due = notifications_format_date_dmy((string)($task['dueDate'] ?? ''));
     notifications_add_line($lines, 'Due Date', $due);
-    $lines[] = 'Created At: ' . notifications_format_datetime();
+    $lines[] = '*Created At:* ' . notifications_format_datetime();
     return implode("\n", $lines);
 }
 
@@ -178,27 +178,28 @@ function notifications_compose_task_updated(array $task, array $log): string {
     notifications_add_line($lines, 'Remarks', (string)($log['remarks'] ?? ''));
     notifications_add_line($lines, 'Minutes', (string)($log['minutes'] ?? ''));
     notifications_add_line($lines, 'Achieved', (string)($log['achieved'] ?? ''), true);
-    $lines[] = 'Updated At: ' . notifications_format_datetime();
+    $lines[] = '*Updated At:* ' . notifications_format_datetime();
     return implode("\n", $lines);
 }
 
 function notifications_compose_recurring_created(array $task): string {
     $lines = [];
-    $lines[] = "New Recurring Task Created";
-    $lines[] = "Task: " . trim((string)($task['title'] ?? ''));
-    $firm = trim((string)($task['firm'] ?? ''));
-    if ($firm !== '') $lines[] = "Firm: " . $firm;
-    $category = trim((string)($task['category'] ?? ''));
-    if ($category !== '') $lines[] = "Category: " . $category;
-    $assignee = trim((string)($task['assignee'] ?? ''));
-    if ($assignee !== '') $lines[] = "Assignee: " . $assignee;
-    $owner = trim((string)($task['owner'] ?? ''));
-    if ($owner !== '') $lines[] = "Owner: " . $owner;
-    $start = trim((string)($task['startDate'] ?? ''));
-    if ($start !== '') $lines[] = "Start Date: " . $start;
+    $lines[] = "*New Recurring Task Created*";
+    $lines[] = '';
+    notifications_add_line($lines, 'Task', (string)($task['title'] ?? ''));
+    notifications_add_line($lines, 'Firm', (string)($task['firm'] ?? ''));
+    notifications_add_line($lines, 'Category', (string)($task['category'] ?? ''));
+    notifications_add_line($lines, 'Assignee', (string)($task['assignee'] ?? ''));
+    notifications_add_line($lines, 'Owner', (string)($task['owner'] ?? ''));
+    notifications_add_line($lines, 'Start Date', notifications_format_date_dmy((string)($task['startDate'] ?? '')));
     $rule = trim((string)($task['frequencyType'] ?? ''));
-    if ($rule !== '') $lines[] = "Rule: " . $rule . (isset($task['frequencyDays']) ? (" / " . (string)$task['frequencyDays']) : '');
-    $lines[] = "Created At: " . notifications_format_datetime();
+    if ($rule !== '') {
+        $ruleText = $rule . (isset($task['frequencyDays']) ? (" / " . (string)$task['frequencyDays']) : '');
+        notifications_add_line($lines, 'Rule', $ruleText);
+    }
+    notifications_add_line($lines, 'Time', notifications_format_time_hhmm((string)($task['time'] ?? '')), true);
+    notifications_add_line($lines, 'Goal', (string)($task['goal'] ?? ''), true);
+    $lines[] = '*Created At:* ' . notifications_format_datetime();
     return implode("\n", $lines);
 }
 
@@ -211,7 +212,7 @@ function notifications_compose_recurring_action(array $action): string {
     notifications_add_line($lines, 'Status', (string)($action['status'] ?? ''));
     notifications_add_line($lines, 'Remarks', (string)($action['remarks'] ?? ''));
     notifications_add_line($lines, 'Achieved', (string)($action['goal'] ?? ''), true);
-    $lines[] = 'Updated At: ' . notifications_format_datetime();
+    $lines[] = '*Updated At:* ' . notifications_format_datetime();
     return implode("\n", $lines);
 }
 
