@@ -723,6 +723,8 @@ export default function App() {
 		            id: Number(t.id),
 		            frequencyDays: Number(t.frequencyDays || 30),
 		            periodicity: (t.periodicity || t.frequencyType || 'Fixed Days') as any,
+                recurrenceDay: Number(t.recurrenceDay || t.recurrenceday || (['Monthly', 'Yearly'].includes(String(t.periodicity || t.frequencyType || '')) ? (Number(t.frequencyDays || 0) || 1) : (String(t.periodicity || t.frequencyType || '') === 'Weekly' ? Number(t.frequencyDays || 0) : 0))),
+                recurrenceMonth: String(t.recurrenceMonth || t.recurrencemonth || ''),
 		            startDate: formatToIndianDate(t.startDate || ''),
 		            time: formatToHHMM(getCaseInsensitive(t, 'time') || ''),
 			            lastUpdatedOn: formatToIndianDate(t.lastUpdatedOn || ''),

@@ -43,6 +43,24 @@ function fetchRecentRows(mysqli $conn, string $table, int $limit): array {
     return $rows;
 }
 
+function hasColumn(mysqli $conn, string $table, string $column): bool {
+    static $cache = [];
+    $key = strtolower($table . '.' . $column);
+    if (array_key_exists($key, $cache)) {
+        return $cache[$key];
+    }
+    $safeTable = preg_replace('/[^a-zA-Z0-9_]/', '', $table);
+    $safeColumn = preg_replace('/[^a-zA-Z0-9_]/', '', $column);
+    $sql = "SHOW COLUMNS FROM `{$safeTable}` LIKE '{$safeColumn}'";
+    $result = $conn->query($sql);
+    $exists = $result instanceof mysqli_result && $result->num_rows > 0;
+    if ($result instanceof mysqli_result) {
+        $result->free();
+    }
+    $cache[$key] = $exists;
+    return $exists;
+}
+
 function sendJson(array $payload, int $statusCode = 200): void {
     http_response_code($statusCode);
     echo json_encode($payload);
@@ -512,6 +530,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $assignee = trim((string)($data['assignee'] ?? ''));
         $frequencyType = trim((string)($data['frequencyType'] ?? $data['periodicity'] ?? 'Fixed Days'));
         $frequencyDays = (int)($data['frequencyDays'] ?? 0);
+        $recurrenceDay = (int)($data['recurrenceDay'] ?? 0);
+        $recurrenceMonth = trim((string)($data['recurrenceMonth'] ?? ''));
         $startDate = trim((string)($data['startDate'] ?? ''));
         $time = trim((string)($data['time'] ?? ''));
         $goal = normalizeNumericGoal($data['goal'] ?? '');
@@ -519,10 +539,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($title === '') sendJson(['success' => false, 'error' => 'Recurring task title is required.'], 400);
 
-        $stmt = $conn->prepare("INSERT INTO recurring_tasks (id, title, firm, owner, category, assignee, frequencyType, frequencyDays, startDate, time, goal, status, lastUpdatedOn, lastUpdateRemarks) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '')");
-        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare recurring task insert.'], 500);
+        $supportsRecurrenceExtras = hasColumn($conn, 'recurring_tasks', 'recurrenceDay') && hasColumn($conn, 'recurring_tasks', 'recurrenceMonth');
         $idStr = (string)$id;
-        $stmt->bind_param('sssssssissss', $idStr, $title, $firm, $owner, $category, $assignee, $frequencyType, $frequencyDays, $startDate, $time, $goal, $status);
+        if ($supportsRecurrenceExtras) {
+            $stmt = $conn->prepare("INSERT INTO recurring_tasks (id, title, firm, owner, category, assignee, frequencyType, frequencyDays, recurrenceDay, recurrenceMonth, startDate, time, goal, status, lastUpdatedOn, lastUpdateRemarks) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '')");
+            if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare recurring task insert.'], 500);
+            $stmt->bind_param('sssssssiisssss', $idStr, $title, $firm, $owner, $category, $assignee, $frequencyType, $frequencyDays, $recurrenceDay, $recurrenceMonth, $startDate, $time, $goal, $status);
+        } else {
+            if (in_array($frequencyType, ['Monthly', 'Yearly'], true) && $recurrenceDay > 0) {
+                $frequencyDays = $recurrenceDay;
+            }
+            $stmt = $conn->prepare("INSERT INTO recurring_tasks (id, title, firm, owner, category, assignee, frequencyType, frequencyDays, startDate, time, goal, status, lastUpdatedOn, lastUpdateRemarks) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '')");
+            if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare recurring task insert.'], 500);
+            $stmt->bind_param('sssssssissss', $idStr, $title, $firm, $owner, $category, $assignee, $frequencyType, $frequencyDays, $startDate, $time, $goal, $status);
+        }
 	        $ok = $stmt->execute();
 	        $stmtError = $stmt->error;
 	        $stmt->close();
@@ -926,6 +956,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ? trim((string)($data['frequencyType'] ?? $data['periodicity'] ?? 'Fixed Days'))
             : (string)($row['frequencyType'] ?? 'Fixed Days');
         $frequencyDays = array_key_exists('frequencyDays', $data) ? (int)$data['frequencyDays'] : (int)($row['frequencyDays'] ?? 0);
+        $recurrenceDay = array_key_exists('recurrenceDay', $data) ? (int)$data['recurrenceDay'] : (int)($row['recurrenceDay'] ?? 0);
+        $recurrenceMonth = array_key_exists('recurrenceMonth', $data) ? trim((string)$data['recurrenceMonth']) : trim((string)($row['recurrenceMonth'] ?? ''));
         $startDate = array_key_exists('startDate', $data) ? trim((string)$data['startDate']) : (string)($row['startDate'] ?? '');
         $time = array_key_exists('time', $data) ? trim((string)$data['time']) : (string)($row['time'] ?? '');
         $goal = array_key_exists('goal', $data) ? normalizeNumericGoal($data['goal']) : normalizeNumericGoal($row['goal'] ?? '');
@@ -935,9 +967,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($title === '') sendJson(['success' => false, 'error' => 'Recurring task title is required.'], 400);
 
-        $stmt = $conn->prepare("UPDATE recurring_tasks SET title=?, firm=?, owner=?, category=?, assignee=?, frequencyType=?, frequencyDays=?, startDate=?, time=?, goal=?, status=?, lastUpdatedOn=?, lastUpdateRemarks=? WHERE id=?");
-        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare recurring task update.'], 500);
-        $stmt->bind_param('ssssssisssssss', $title, $firm, $owner, $category, $assignee, $frequencyType, $frequencyDays, $startDate, $time, $goal, $status, $lastUpdatedOn, $lastUpdateRemarks, $idStr);
+        $supportsRecurrenceExtras = hasColumn($conn, 'recurring_tasks', 'recurrenceDay') && hasColumn($conn, 'recurring_tasks', 'recurrenceMonth');
+        if ($supportsRecurrenceExtras) {
+            $stmt = $conn->prepare("UPDATE recurring_tasks SET title=?, firm=?, owner=?, category=?, assignee=?, frequencyType=?, frequencyDays=?, recurrenceDay=?, recurrenceMonth=?, startDate=?, time=?, goal=?, status=?, lastUpdatedOn=?, lastUpdateRemarks=? WHERE id=?");
+            if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare recurring task update.'], 500);
+            $stmt->bind_param('ssssssiissssssss', $title, $firm, $owner, $category, $assignee, $frequencyType, $frequencyDays, $recurrenceDay, $recurrenceMonth, $startDate, $time, $goal, $status, $lastUpdatedOn, $lastUpdateRemarks, $idStr);
+        } else {
+            if (in_array($frequencyType, ['Monthly', 'Yearly'], true) && $recurrenceDay > 0) {
+                $frequencyDays = $recurrenceDay;
+            }
+            $stmt = $conn->prepare("UPDATE recurring_tasks SET title=?, firm=?, owner=?, category=?, assignee=?, frequencyType=?, frequencyDays=?, startDate=?, time=?, goal=?, status=?, lastUpdatedOn=?, lastUpdateRemarks=? WHERE id=?");
+            if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare recurring task update.'], 500);
+            $stmt->bind_param('ssssssisssssss', $title, $firm, $owner, $category, $assignee, $frequencyType, $frequencyDays, $startDate, $time, $goal, $status, $lastUpdatedOn, $lastUpdateRemarks, $idStr);
+        }
         $ok = $stmt->execute();
         $stmtError = $stmt->error;
         $stmt->close();

@@ -297,15 +297,14 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
 	                />
 	              </div>
 
-	              <div className="space-y-1">
-	                <label className="text-sm font-medium text-black">Time <span className="text-red-500">*</span></label>
-	                <input
-	                  type="time"
-	                  required
-	                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
-	                  value={formData.time}
-	                  onChange={(e) => setFormData(p => ({ ...p, time: e.target.value }))}
-	                />
+		              <div className="space-y-1">
+		                <label className="text-sm font-medium text-black">Time</label>
+		                <input
+		                  type="time"
+		                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+		                  value={formData.time}
+		                  onChange={(e) => setFormData(p => ({ ...p, time: e.target.value }))}
+		                />
 	              </div>
 	            </div>
 	          </div>
