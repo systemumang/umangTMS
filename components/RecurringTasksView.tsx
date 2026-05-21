@@ -84,10 +84,6 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
     const templateHeaders = ['Task', 'goal', 'firm', 'owner', 'category', 'assignee', 'startDate', 'time', 'Period', 'frequencyDays', 'Day', 'Month'];
     const rows: string[][] = [
       templateHeaders,
-      ['Task 1', '', 'Umang Communications', 'Pankaj Jain', 'Office', 'Pankaj Jain', '2026-05-20', '12:05', 'Fixed Days', '2', '', ''],
-      ['Task 2', '50', 'Umang Communications', 'Pankaj Jain', 'Office', 'Pankaj Jain', '2026-05-20', '', 'Weekly', '', 'Monday', ''],
-      ['Task 3', '', 'Umang Communications', 'Pankaj Jain', 'Office', 'Pankaj Jain', '2026-05-20', '', 'Monthly', '', '5', 'March'],
-      ['', '', '', '', '', '', '', '', '', '', '', ''],
       ['', '', '', '', '', '', '', '', '', '', '', ''],
     ];
 
@@ -457,14 +453,20 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
         november: 'Nov',
         december: 'Dec',
       };
-	    const weeklyDay =
-	      typeof task.recurrenceDay === 'number' && task.recurrenceDay >= 0 && task.recurrenceDay <= 6
-	        ? dayNames[task.recurrenceDay]
-	        : null;
-	    const monthlyDay =
-	      typeof task.recurrenceDay === 'number' && task.recurrenceDay >= 1 && task.recurrenceDay <= 31
-	        ? task.recurrenceDay
-	        : null;
+      const dayRaw = String((task as any).recurrenceDay ?? '').trim();
+      const dayNumeric = Number(dayRaw);
+      const weeklyNameMap: Record<string, number> = {
+        sun: 0, sunday: 0,
+        mon: 1, monday: 1,
+        tue: 2, tues: 2, tuesday: 2,
+        wed: 3, wednesday: 3,
+        thu: 4, thur: 4, thurs: 4, thursday: 4,
+        fri: 5, friday: 5,
+        sat: 6, saturday: 6,
+      };
+      const weeklyIndex = Number.isFinite(dayNumeric) ? dayNumeric : (weeklyNameMap[dayRaw.toLowerCase()] ?? -1);
+	    const weeklyDay = weeklyIndex >= 0 && weeklyIndex <= 6 ? dayNames[weeklyIndex] : null;
+	    const monthlyDay = Number.isFinite(dayNumeric) && dayNumeric >= 1 && dayNumeric <= 31 ? dayNumeric : null;
 
 	    switch(task.periodicity) {
 	      case 'Weekly':
