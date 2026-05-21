@@ -262,6 +262,66 @@ export default function App() {
     masPassword: '', metaAccessToken: '', metaPhoneNumberId: '', metaWabaId: '', metaVerifyToken: ''
   });
 
+  const CACHE_KEY = 'taskpro_init_cache_v1';
+  const hasHydratedCacheRef = useRef(false);
+
+  const hydrateFromCache = useCallback((): boolean => {
+    if (hasHydratedCacheRef.current) return true;
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (!raw) return false;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') return false;
+
+      const {
+        cachedAt,
+        users: cachedUsers,
+        projects: cachedProjects,
+        clients: cachedClients,
+        firms: cachedFirms,
+        vendors: cachedVendors,
+        categories: cachedCategories,
+        statuses: cachedStatuses,
+        vendorCategories: cachedVendorCategories,
+        designations: cachedDesignations,
+        tasks: cachedTasks,
+        actionLogs: cachedActionLogs,
+        recurringTasks: cachedRecurringTasks,
+        recurringActions: cachedRecurringActions,
+        settings: cachedSettings,
+      } = parsed as any;
+
+      if (Array.isArray(cachedUsers)) setUsers(cachedUsers);
+      if (Array.isArray(cachedProjects)) setProjects(cachedProjects);
+      if (Array.isArray(cachedClients)) setClients(cachedClients);
+      if (Array.isArray(cachedFirms)) setFirms(cachedFirms);
+      if (Array.isArray(cachedVendors)) setVendors(cachedVendors);
+      if (Array.isArray(cachedCategories)) setCategories(cachedCategories);
+      if (Array.isArray(cachedStatuses)) setStatuses(cachedStatuses);
+      if (Array.isArray(cachedVendorCategories)) setVendorCategories(cachedVendorCategories);
+      if (Array.isArray(cachedDesignations)) setDesignations(cachedDesignations);
+      if (Array.isArray(cachedTasks)) setTasks(cachedTasks);
+      if (Array.isArray(cachedActionLogs)) setActionLogs(cachedActionLogs);
+      if (Array.isArray(cachedRecurringTasks)) setRecurringTasks(cachedRecurringTasks);
+      if (Array.isArray(cachedRecurringActions)) setRecurringActions(cachedRecurringActions);
+      if (cachedSettings && typeof cachedSettings === 'object') setSettings(cachedSettings);
+      if (cachedAt) setLastSynced(new Date(cachedAt));
+
+      hasHydratedCacheRef.current = true;
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const persistCache = useCallback((payload: any) => {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ ...payload, cachedAt: Date.now() }));
+    } catch {
+      // ignore quota / serialization issues
+    }
+  }, []);
+
   // Master item IDs for filtering
   const masterIds = ['users', 'firms', 'categories', 'statuses', ...(VENDOR_MODULE_ENABLED ? ['vendor-categories', 'vendors'] : []), 'settings', 'telegram-setup'];
   const pendingStatusNavItems = useMemo<NavItem[]>(() => {
@@ -541,10 +601,10 @@ export default function App() {
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
-	  const fetchData = useCallback(async (showLoading = true) => {
-	    if (!apiUrl) return;
-	    if (showLoading) setIsLoading(true);
-	    else setIsSyncing(true);
+		  const fetchData = useCallback(async (showLoading = true) => {
+		    if (!apiUrl) return;
+		    if (showLoading) setIsLoading(true);
+		    else setIsSyncing(true);
 	    if (abortControllerRef.current) abortControllerRef.current.abort();
 	    abortControllerRef.current = new AbortController();
 	    const timeoutId = window.setTimeout(() => {
@@ -559,8 +619,8 @@ export default function App() {
 	      });
 	      const result = await safeJsonParse(response, 'Data Load');
 	      
-		      if (result.success) {
-		        const { data } = result;
+			      if (result.success) {
+			        const { data } = result;
 	        const normalizeTasks = (list: any[]) => (list || []).map(item => {
             const rawProject = String(item.project || item.Project || '').trim();
             const rawClient = String(item.clientName || item['client Name'] || item['Client Name'] || item.client || item.Client || '').trim();
@@ -644,15 +704,15 @@ export default function App() {
 		          achievedSumByTaskId.set(taskId, prev + (Number.isFinite(achievedValue) ? achievedValue : 0));
 		        });
 
-	        setTasks(
-		          normalizedTaskList
-		            .map((task: any) => ({
-		              ...task,
-		              achieved: String(achievedSumByTaskId.get(Number(task.id || 0)) || '')
-		            }))
-	            .sort((a: any, b: any) => Number(b.id || 0) - Number(a.id || 0))
-	        );
-	        setActionLogs(normalizedLogs);
+		        setTasks(
+			          normalizedTaskList
+			            .map((task: any) => ({
+			              ...task,
+			              achieved: String(achievedSumByTaskId.get(Number(task.id || 0)) || '')
+			            }))
+		            .sort((a: any, b: any) => Number(b.id || 0) - Number(a.id || 0))
+		        );
+		        setActionLogs(normalizedLogs);
 		        const recurringTaskGoalById = new Map<number, string>(
 		          (data.recurringTasks || []).map((t: any) => [Number(t.id || 0), String(t.goal || '')])
 		        );
@@ -688,11 +748,46 @@ export default function App() {
 		          timestamp: formatToHHMM(getCaseInsensitive(a, 'timestamp') || ''),
 		          updatedOn: formatToIndianDate(getCaseInsensitive(a, 'updatedOn') || '')
 		        })));
-	        if (data.settings) setSettings(data.settings);
-	        setLastSynced(new Date());
-	      } else {
-	        setApiError(result?.error || 'Failed to load data.');
-	      }
+		        if (data.settings) setSettings(data.settings);
+		        setLastSynced(new Date());
+
+            // Cache a trimmed snapshot for faster next load.
+            persistCache({
+              users: (data.users || []).map((u: any) => ({ ...u, id: Number(u.id), isActive: String(u.isActive).toUpperCase() === 'TRUE' })),
+              projects: (data.projects || []).map((p: any) => ({ ...p, id: Number(p.id) })),
+              clients: (data.clients || []).map((c: any) => ({ ...c, id: Number(c.id), gstNumber: c.gstNumber || c.gSTNumber || c.GSTNumber || '' })),
+              firms: (data.firms || []).map((f: any) => ({ ...f, id: Number(f.id), name: String(f.name || ''), sortName: String(f.sortName || f.sortname || f.SortName || '') })),
+              vendors: (data.vendors || []).map((v: any) => ({ ...v, id: Number(v.id), gstNumber: v.gstNumber || v.gSTNumber || v.GSTNumber || '' })),
+              categories: (data.categories || []).map((c: any) => ({ ...c, id: Number(c.id) })),
+              statuses: (data.statuses || []).map((s: any) => ({ ...s, id: Number(s.id), name: String(s.name || ''), is_system: Number(s.is_system || 0) })),
+              vendorCategories: (data.vendorCategories || []).map((vc: any) => ({ ...vc, id: Number(vc.id) })),
+              designations: (data.designations || []).map((d: any) => ({ id: Number(d.id), title: String(d.title || d.name || ''), description: String(d.description || '') })),
+              // Use the already-normalized + computed arrays, trimmed to keep localStorage small.
+              tasks: normalizedTaskList
+                .map((task: any) => ({ ...task, achieved: String(achievedSumByTaskId.get(Number(task.id || 0)) || '') }))
+                .sort((a: any, b: any) => Number(b.id || 0) - Number(a.id || 0))
+                .slice(0, 500),
+              actionLogs: normalizedLogs.slice(0, 500),
+              recurringTasks: (data.recurringTasks || []).map((t: any) => ({
+                ...t,
+                id: Number(t.id),
+                frequencyDays: Number(t.frequencyDays || 30),
+                periodicity: (t.periodicity || t.frequencyType || 'Fixed Days') as any,
+                startDate: formatToIndianDate(t.startDate || ''),
+                time: formatToHHMM(getCaseInsensitive(t, 'time') || ''),
+                lastUpdatedOn: formatToIndianDate(t.lastUpdatedOn || ''),
+                lastUpdateRemarks: String(t.lastUpdateRemarks || ''),
+                goal: String(t.goal || ''),
+                firm: String(t.firm || ''),
+                owner: String(t.owner || t.Owner || ''),
+                status: String(t.status || 'Not Yet Started') as any,
+              })).slice(0, 300),
+              recurringActions: (data.recurringActions || []).slice(0, 500),
+              settings: data.settings || settings,
+            });
+		      } else {
+		        setApiError(result?.error || 'Failed to load data.');
+		      }
 	    } catch (error: any) {
 	      if (error?.name === 'AbortError') {
 	        setApiError('Loading timed out. Please refresh.');
@@ -705,15 +800,16 @@ export default function App() {
 	      if (showLoading) setIsLoading(false);
 	      setIsSyncing(false);
 	    }
-	  }, [apiUrl]);
+		  }, [apiUrl, persistCache, settings]);
 
-  useEffect(() => {
-    if (apiUrl && currentUser) {
-      fetchData();
-      const interval = setInterval(() => fetchData(false), AUTO_SYNC_INTERVAL);
-      return () => clearInterval(interval);
-    }
-  }, [fetchData, apiUrl, currentUser]);
+	  useEffect(() => {
+	    if (apiUrl && currentUser) {
+        const hadCache = hydrateFromCache();
+	      fetchData(!hadCache);
+	      const interval = setInterval(() => fetchData(false), AUTO_SYNC_INTERVAL);
+	      return () => clearInterval(interval);
+	    }
+	  }, [fetchData, apiUrl, currentUser, hydrateFromCache]);
 
   useEffect(() => {
     if (VENDOR_MODULE_ENABLED) return;
