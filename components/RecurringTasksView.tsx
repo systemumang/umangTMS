@@ -85,8 +85,8 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
     const templateRows = [
       templateHeaders,
       ['', '', '', '', '', '', '', '', '', '', '', ''],
-      ['__MASTER_DATA__', '', '', '', '', '', '', '', '', '', '', ''],
-      ['Users', '', '', '', '', '', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', '', '', '', '', '', ''],
     ];
 
     const users = Array.from(new Set(tasks.map(task => String(task.assignee || '').trim()).filter(Boolean)));
@@ -95,32 +95,58 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
     const periodicityOptions = ['Fixed Days', 'Weekly', 'Monthly', 'Yearly'];
     const monthOptions = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-    const masterRows = [
-      ...users.map(value => [value, '', '', '', '', '', '', '', '', '', '', '']),
-      ['', '', '', '', '', '', '', '', '', '', '', ''],
-      ['Owners', '', '', '', '', '', '', '', '', '', '', ''],
-      ...owners.map(value => [value, '', '', '', '', '', '', '', '', '', '', '']),
-      ['', '', '', '', '', '', '', '', '', '', '', ''],
-      ['Categories', '', '', '', '', '', '', '', '', '', '', ''],
-      ...categoryOptions.map(value => [value, '', '', '', '', '', '', '', '', '', '', '']),
-      ['', '', '', '', '', '', '', '', '', '', '', ''],
-      ['Period', '', '', '', '', '', '', '', '', '', '', ''],
-      ...periodicityOptions.map(value => [value, '', '', '', '', '', '', '', '', '', '', '']),
-      ['', '', '', '', '', '', '', '', '', '', '', ''],
-      ['Month', '', '', '', '', '', '', '', '', '', '', ''],
-      ...monthOptions.map(value => [value, '', '', '', '', '', '', '', '', '', '', '']),
-      ['', '', '', '', '', '', '', '', '', '', '', ''],
-      ['Notes', '', '', '', '', '', '', '', '', '', '', ''],
-      ['Day rules: Weekly => 0-6 (Sun-Sat), Monthly => 1-31, Yearly => 1-31 with Month', '', '', '', '', '', '', '', '', '', '', ''],
-      ['Date format: YYYY-MM-DD, Time format: HH:MM', '', '', '', '', '', '', '', '', '', '', ''],
-    ];
-    const allRows = [...templateRows, ...masterRows];
-    const csv = allRows.map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const maxLen = Math.max(users.length, owners.length, categoryOptions.length, periodicityOptions.length, monthOptions.length);
+    const masterRows = [['Users', 'Owners', 'Categories', 'Period', 'Month']];
+    for (let index = 0; index < maxLen; index++) {
+      masterRows.push([
+        users[index] || '',
+        owners[index] || '',
+        categoryOptions[index] || '',
+        periodicityOptions[index] || '',
+        monthOptions[index] || '',
+      ]);
+    }
+    masterRows.push([]);
+    masterRows.push(['Notes']);
+    masterRows.push(['Day rules: Weekly => 0-6 (Sun-Sat), Monthly => 1-31, Yearly => 1-31 with Month']);
+    masterRows.push(['Date format: YYYY-MM-DD, Time format: HH:MM']);
+
+    const xmlEscape = (value: string) =>
+      value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+
+    const toWorksheetXml = (sheetName: string, rows: string[][]) => {
+      const rowsXml = rows
+        .map((row) => {
+          const cellsXml = row
+            .map((cell) => `<Cell><Data ss:Type="String">${xmlEscape(String(cell || ''))}</Data></Cell>`)
+            .join('');
+          return `<Row>${cellsXml}</Row>`;
+        })
+        .join('');
+      return `<Worksheet ss:Name="${xmlEscape(sheetName)}"><Table>${rowsXml}</Table></Worksheet>`;
+    };
+
+    const workbookXml = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+${toWorksheetXml('RecurringTasksTemplate', templateRows)}
+${toWorksheetXml('DataValidation', masterRows)}
+</Workbook>`;
+
+    const blob = new Blob([workbookXml], { type: 'application/vnd.ms-excel' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'RecurringTasksTemplate.csv';
+    link.download = 'RecurringTasksTemplate.xml';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
