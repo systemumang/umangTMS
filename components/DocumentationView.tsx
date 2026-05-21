@@ -177,6 +177,48 @@ export const DocumentationView: React.FC = () => {
     const maxWidth = pageWidth - margin * 2;
     let y = 56;
 
+    const wrapLines = (text: string): string[] => {
+      const normalized = String(text || '').replace(/\s+/g, ' ').trim();
+      if (!normalized) return [''];
+
+      const lines: string[] = [];
+      const words = normalized.split(' ');
+
+      const pushWordOrSplit = (word: string) => {
+        // If a single word is wider than the available width, split by characters.
+        if (doc.getTextWidth(word) <= maxWidth) return [word];
+        const parts: string[] = [];
+        let current = '';
+        for (const ch of word) {
+          const candidate = current + ch;
+          if (current && doc.getTextWidth(candidate) > maxWidth) {
+            parts.push(current);
+            current = ch;
+          } else {
+            current = candidate;
+          }
+        }
+        if (current) parts.push(current);
+        return parts.length ? parts : [word];
+      };
+
+      let currentLine = '';
+      for (const word of words) {
+        const pieces = pushWordOrSplit(word);
+        for (const piece of pieces) {
+          const candidate = currentLine ? `${currentLine} ${piece}` : piece;
+          if (currentLine && doc.getTextWidth(candidate) > maxWidth) {
+            lines.push(currentLine);
+            currentLine = piece;
+          } else {
+            currentLine = candidate;
+          }
+        }
+      }
+      if (currentLine) lines.push(currentLine);
+      return lines.length ? lines : [''];
+    };
+
     const ensureRoom = (needed: number) => {
       const pageHeight = doc.internal.pageSize.getHeight();
       if (y + needed <= pageHeight - margin) return;
@@ -210,7 +252,7 @@ export const DocumentationView: React.FC = () => {
 
       section.steps.forEach((step, index) => {
         const bullet = `${index + 1}. ${step}`;
-        const lines = doc.splitTextToSize(bullet, maxWidth);
+        const lines = wrapLines(bullet);
         ensureRoom(lines.length * 14 + 6);
         doc.text(lines, margin, y);
         y += lines.length * 14 + 4;
