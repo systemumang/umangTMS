@@ -1261,7 +1261,13 @@ export default function App() {
       case 'categories': if (!isAdmin) return null; return <CategoriesView categories={categories} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} onAddCategory={() => setIsCategoryModalOpen(true)} onDeleteCategory={(id) => { if (!confirmDelete('this category')) return; setCategories(p => p.filter(c => c.id !== id)); apiPost('deleteRecord', { id }, 'Categories'); }} onEditCategory={(c) => { setCategories(p => p.map(x => x.id === c.id ? c : x)); apiPost('updateMaster', c, 'Categories'); }} />;
       case 'statuses': if (!isAdmin) return null; return <StatusesView statuses={statuses} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} onAddStatus={async (status) => { const tempId = Date.now(); const row = { ...status, id: tempId, is_system: 0 } as StatusMaster; setStatuses(prev => [...prev, row]); await apiPost('addMaster', status, 'Statuses'); }} onEditStatus={async (status) => { setStatuses(prev => prev.map(x => x.id === status.id ? status : x)); await apiPost('updateMaster', status, 'Statuses'); }} onDeleteStatus={async (id) => { if (!confirmDelete('this status')) return; setStatuses(prev => prev.filter(x => x.id !== id)); await apiPost('deleteRecord', { id }, 'Statuses'); }} />;
       case 'designations': if (!isAdmin) return null; return <DesignationsView designations={designations} onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }} onDeleteDesignation={(id) => { if (!confirmDelete('this designation')) return; setDesignations(prev => prev.filter(d => d.id !== id)); apiPost('deleteRecord', { id }, 'Designations'); }} onEditDesignation={(designation) => { setEditingDesignation(designation); setIsDesignationModalOpen(true); }} />;
-      case 'settings': if (!isAdmin) return null; return <SettingsView settings={settings} onUpdate={(s) => { setSettings(s); apiPost('updateMaster', s, 'AppSettings'); }} />;
+      case 'settings': if (!isAdmin) return null; return <SettingsView settings={settings} onUpdate={async (s) => {
+        setSettings(s);
+        const result = await apiPost('updateMaster', s, 'AppSettings');
+        if (!result?.success) {
+          throw new Error(result?.error || 'Failed to save settings.');
+        }
+      }} />;
       case 'telegram-setup': if (!isAdmin) return null; return <TelegramSetupView />;
       case 'documentation': return <DocumentationView />;
       default: return null;
@@ -1396,7 +1402,10 @@ export default function App() {
       <AddTaskModal 
         isOpen={isTaskModalOpen} 
         onClose={() => setIsTaskModalOpen(false)} 
-        onSave={(t) => handleAddTaskOptimistic(t, isTaskModalVendorMode)}
+        onSave={(t) => {
+          setActiveTab('all-tasks');
+          handleAddTaskOptimistic(t, isTaskModalVendorMode);
+        }}
         onAddCategory={() => setIsCategoryModalOpen(true)}
         onAddProject={() => setIsProjectModalOpen(true)}
         onAddVendorCategory={() => setIsVendorCategoryModalOpen(true)}
@@ -1465,6 +1474,7 @@ export default function App() {
 	        isOpen={isRecurringTaskModalOpen}
 		        onClose={() => setIsRecurringTaskModalOpen(false)}
 	        onSave={async (t) => {
+	          setActiveTab('recurring-tasks');
 	          const createResult = await apiPost('addMaster', t, 'RecurringTasks');
 	          if (!createResult?.success) {
 	            setApiError(createResult?.error || 'Failed to save recurring task.');

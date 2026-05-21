@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { Save, Shield, Key, MessageSquare, Send, Database } from 'lucide-react';
+import { Save, Key, MessageSquare, Database, Loader2 } from 'lucide-react';
 import { AppSettings } from '../types';
 
 interface SettingsViewProps {
   settings: AppSettings;
-  onUpdate: (settings: AppSettings) => void;
+  onUpdate: (settings: AppSettings) => Promise<void> | void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate }) => {
   const [formData, setFormData] = useState<AppSettings>({ ...settings });
   const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -17,11 +19,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate }
     setIsSaved(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdate(formData);
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
+    setIsSaving(true);
+    setSaveError('');
+    setIsSaved(false);
+    try {
+      await onUpdate(formData);
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+    } catch (error: any) {
+      setSaveError(error?.message || 'Failed to save settings.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const inputClass = "w-full px-4 py-2.5 bg-white border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none text-gray-900 transition-all";
@@ -56,10 +67,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate }
             <div className="space-y-1">
               <label className={labelClass}>Office Telegram Group ID</label>
               <input name="officeTelegramGroupId" value={formData.officeTelegramGroupId} onChange={handleChange} className={inputClass} placeholder="-100xxxxxxxx" />
-            </div>
-            <div className="space-y-1">
-              <label className={labelClass}>Default WhatsApp Group ID</label>
-              <input name="whatsappGroupId" value={formData.whatsappGroupId} onChange={handleChange} className={inputClass} placeholder="group_invite_code" />
             </div>
           </div>
         </div>
@@ -111,12 +118,18 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate }
         </div>
 
         <div className="flex justify-end pt-4">
+          {saveError && (
+            <span className="mr-3 px-3 py-2 bg-red-100 text-red-700 rounded text-sm font-medium">
+              {saveError}
+            </span>
+          )}
           <button 
             type="submit"
-            className="flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all shadow-md font-bold text-sm uppercase tracking-wide"
+            disabled={isSaving}
+            className="flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-md font-bold text-sm uppercase tracking-wide"
           >
-            <Save size={18} />
-            Save All Configuration
+            {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+            {isSaving ? 'Saving...' : 'Save All Configuration'}
           </button>
         </div>
       </form>
