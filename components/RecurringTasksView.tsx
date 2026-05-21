@@ -81,7 +81,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
   };
 
   const handleDownloadTemplate = () => {
-    const templateHeaders = ['Task', 'goal', 'firm', 'owner', 'category', 'assignee', 'startDate', 'time', 'Period', 'frequencyDays', 'Day', 'Month'];
+    const templateHeaders = ['Task', 'goal', 'firm', 'owner', 'category', 'assignee', 'startDate', 'time', 'Period', 'Fixed Days', 'Day', 'Month'];
     const rows: string[][] = [
       templateHeaders,
       ['', '', '', '', '', '', '', '', '', '', '', ''],
@@ -121,6 +121,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
       title: 'title',
       period: 'periodicity',
       periodicity: 'periodicity',
+      fixeddays: 'frequencyDays',
       month: 'recurrenceMonth',
       recurrencemonth: 'recurrenceMonth',
       day: 'recurrenceDay',
