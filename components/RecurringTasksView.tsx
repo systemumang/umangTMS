@@ -82,32 +82,14 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 
   const handleDownloadTemplate = () => {
     const templateHeaders = ['Task', 'goal', 'firm', 'owner', 'category', 'assignee', 'startDate', 'time', 'Period', 'frequencyDays', 'Day', 'Month'];
-    const spacerHeaders = ['', ''];
-    const validationHeaders = ['Users', 'Owners', 'Categories', 'Period', 'Month'];
-    const combinedHeader = [...templateHeaders, ...spacerHeaders, ...validationHeaders];
-
-    const users = Array.from(new Set(tasks.map(task => String(task.assignee || '').trim()).filter(Boolean)));
-    const owners = Array.from(new Set(tasks.map(task => String(task.owner || '').trim()).filter(Boolean)));
-    const categoryOptions = categories.filter(value => value !== 'All');
-    const periodicityOptions = ['Fixed Days', 'Weekly', 'Monthly', 'Yearly'];
-    const monthOptions = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-    const maxLen = Math.max(users.length, owners.length, categoryOptions.length, periodicityOptions.length, monthOptions.length);
-    const rows: string[][] = [combinedHeader];
-    for (let index = 0; index < maxLen; index++) {
-      rows.push([
-        '', '', '', '', '', '', '', '', '', '', '', '',
-        '', '',
-        users[index] || '',
-        owners[index] || '',
-        categoryOptions[index] || '',
-        periodicityOptions[index] || '',
-        monthOptions[index] || '',
-      ]);
-    }
-    rows.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '', 'Notes', '', '', '', '']);
-    rows.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '', 'Day rules: Weekly => 0-6 (Sun-Sat), Monthly => 1-31, Yearly => 1-31 with Month', '', '', '', '']);
-    rows.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '', 'Date format: YYYY-MM-DD, Time format: HH:MM', '', '', '', '']);
+    const rows: string[][] = [
+      templateHeaders,
+      ['Task 1', '', 'Umang Communications', 'Pankaj Jain', 'Office', 'Pankaj Jain', '2026-05-20', '12:05', 'Fixed Days', '2', '', ''],
+      ['Task 2', '50', 'Umang Communications', 'Pankaj Jain', 'Office', 'Pankaj Jain', '2026-05-20', '', 'Weekly', '', 'Monday', ''],
+      ['Task 3', '', 'Umang Communications', 'Pankaj Jain', 'Office', 'Pankaj Jain', '2026-05-20', '', 'Monthly', '', '5', 'March'],
+      ['', '', '', '', '', '', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', '', '', '', '', '', ''],
+    ];
 
     const csv = rows.map(row => row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -164,6 +146,23 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
       const numberValue = Number(String(value || '').trim());
       return Number.isFinite(numberValue) ? numberValue : fallback;
     };
+    const parseWeeklyDay = (value: string): number => {
+      const trimmed = String(value || '').trim();
+      if (!trimmed) return 0;
+      const numeric = Number(trimmed);
+      if (Number.isFinite(numeric) && numeric >= 0 && numeric <= 6) return numeric;
+      const lower = trimmed.toLowerCase();
+      const dayMap: Record<string, number> = {
+        sun: 0, sunday: 0,
+        mon: 1, monday: 1,
+        tue: 2, tues: 2, tuesday: 2,
+        wed: 3, wednesday: 3,
+        thu: 4, thur: 4, thurs: 4, thursday: 4,
+        fri: 5, friday: 5,
+        sat: 6, saturday: 6,
+      };
+      return dayMap[lower] ?? 0;
+    };
 
     const rows = lines.slice(1).map(line => parseCsvLine(line));
     const tasks = rows.map((row) => {
@@ -175,6 +174,11 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
       const recurrenceDay = get('recurrenceDay');
       const recurrenceMonth = get('recurrenceMonth');
       const frequencyDays = get('frequencyDays');
+      const normalizedPeriodicity = String(periodicity || 'Fixed Days').trim();
+      const finalRecurrenceDay =
+        normalizedPeriodicity === 'Weekly'
+          ? parseWeeklyDay(recurrenceDay)
+          : (recurrenceDay ? toNumberOrDefault(recurrenceDay, 1) : 1);
       return {
         title: get('title'),
         goal: get('goal'),
@@ -184,10 +188,10 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
         assignee: get('assignee'),
         startDate: get('startDate'),
         time: get('time'),
-        periodicity: periodicity as any,
-        frequencyDays: periodicity === 'Fixed Days' ? toNumberOrDefault(frequencyDays, 1) : 0,
-        recurrenceDay: recurrenceDay ? toNumberOrDefault(recurrenceDay, 1) : (periodicity === 'Weekly' ? 0 : 1),
-        recurrenceMonth: periodicity === 'Yearly' ? (recurrenceMonth || 'January') : undefined,
+        periodicity: normalizedPeriodicity as any,
+        frequencyDays: normalizedPeriodicity === 'Fixed Days' ? toNumberOrDefault(frequencyDays, 1) : 0,
+        recurrenceDay: finalRecurrenceDay,
+        recurrenceMonth: normalizedPeriodicity === 'Yearly' ? (recurrenceMonth || 'January') : undefined,
       } as Omit<RecurringTask, 'id' | 'lastUpdatedOn' | 'lastUpdateRemarks'>;
     }).filter(task => String(task.title || '').trim() !== '');
 
@@ -439,6 +443,20 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 
 	  const getFrequencyText = (task: RecurringTask) => {
 	    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const monthShortMap: Record<string, string> = {
+        january: 'Jan',
+        february: 'Feb',
+        march: 'Mar',
+        april: 'Apr',
+        may: 'May',
+        june: 'Jun',
+        july: 'Jul',
+        august: 'Aug',
+        september: 'Sep',
+        october: 'Oct',
+        november: 'Nov',
+        december: 'Dec',
+      };
 	    const weeklyDay =
 	      typeof task.recurrenceDay === 'number' && task.recurrenceDay >= 0 && task.recurrenceDay <= 6
 	        ? dayNames[task.recurrenceDay]
@@ -450,14 +468,15 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 
 	    switch(task.periodicity) {
 	      case 'Weekly':
-	        return weeklyDay ? `Weekly\n${weeklyDay}` : 'Weekly';
+	        return weeklyDay ? `Weekly\n(${weeklyDay.toLowerCase()})` : 'Weekly';
 	      case 'Monthly':
-	        return monthlyDay ? `Monthly\n${monthlyDay}` : 'Monthly';
+	        return monthlyDay ? `Monthly\n(${monthlyDay})` : 'Monthly';
 	      case 'Yearly': {
 	        const month = task.recurrenceMonth ? String(task.recurrenceMonth) : '';
-	        if (month && monthlyDay) return `Yearly\n${month} ${monthlyDay}`;
-	        if (month) return `Yearly\n${month}`;
-	        if (monthlyDay) return `Yearly\n${monthlyDay}`;
+          const shortMonth = monthShortMap[month.toLowerCase()] || month.slice(0, 3);
+	        if (shortMonth && monthlyDay) return `Yearly\n(${shortMonth} - ${monthlyDay})`;
+	        if (shortMonth) return `Yearly\n(${shortMonth})`;
+	        if (monthlyDay) return `Yearly\n(${monthlyDay})`;
 	        return 'Yearly';
 	      }
 	      default:
