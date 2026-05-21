@@ -173,12 +173,19 @@ export const DocumentationView: React.FC = () => {
   const downloadPdf = () => {
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 48;
+    const margin = 54;
     const maxWidth = pageWidth - margin * 2;
     let y = 56;
 
+    doc.setCharSpace(0);
+
+    const printableText = (value: string) =>
+      String(value || '')
+        .replace(/\u2192/g, '->')
+        .replace(/\u2013|\u2014/g, '-');
+
     const wrapLines = (text: string): string[] => {
-      const normalized = String(text || '').replace(/\s+/g, ' ').trim();
+      const normalized = printableText(String(text || '')).replace(/\s+/g, ' ').trim();
       if (!normalized) return [''];
 
       const lines: string[] = [];
@@ -244,14 +251,14 @@ export const DocumentationView: React.FC = () => {
       ensureRoom(28);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(13);
-      doc.text(section.title, margin, y);
+      doc.text(printableText(section.title), margin, y);
       y += 16;
 
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(11);
+      doc.setFontSize(10.5);
 
       section.steps.forEach((step, index) => {
-        const bullet = `${index + 1}. ${step}`;
+        const bullet = `${index + 1}. ${printableText(step)}`;
         const lines = wrapLines(bullet);
         ensureRoom(lines.length * 14 + 6);
         doc.text(lines, margin, y);
