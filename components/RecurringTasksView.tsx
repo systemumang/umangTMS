@@ -295,16 +295,19 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 	        : null;
 
 	    switch(task.periodicity) {
-	      case 'Weekly': return weeklyDay ? `Weekly (${weeklyDay})` : 'Weekly';
-	      case 'Monthly': return monthlyDay ? `Monthly on ${monthlyDay}` : 'Monthly';
+	      case 'Weekly':
+	        return weeklyDay ? `Weekly\n${weeklyDay}` : 'Weekly';
+	      case 'Monthly':
+	        return monthlyDay ? `Monthly\n${monthlyDay}` : 'Monthly';
 	      case 'Yearly': {
 	        const month = task.recurrenceMonth ? String(task.recurrenceMonth) : '';
-	        if (month && monthlyDay) return `${month} ${monthlyDay}`;
-	        if (month) return `Yearly (${month})`;
-	        if (monthlyDay) return `Yearly (${monthlyDay})`;
+	        if (month && monthlyDay) return `Yearly\n${month} ${monthlyDay}`;
+	        if (month) return `Yearly\n${month}`;
+	        if (monthlyDay) return `Yearly\n${monthlyDay}`;
 	        return 'Yearly';
 	      }
-	      default: return `${task.frequencyDays}d`;
+	      default:
+	        return `${task.frequencyDays}d`;
 	    }
 	  };
 
@@ -566,7 +569,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 	                    <td className={`${tdClass}`}>
 	                      <div className="flex items-center gap-1">
 	                        <Calendar size={12} className="text-indigo-400" />
-	                        <span className="font-medium">{periodText}</span>
+	                        <span className="font-medium whitespace-pre-line">{periodText}</span>
 	                      </div>
 	                    </td>
 	                    <td className={tdClass}>{task.time || '-'}</td>
@@ -645,7 +648,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                     <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Owner</span><span className="whitespace-normal break-words">{task.owner || '-'}</span></div>
 		                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Category</span><span className="whitespace-normal break-words">{task.category}</span></div>
 	                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Assignee</span><span className="whitespace-normal break-words">{task.assignee}</span></div>
-		                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Period</span><span className="whitespace-normal break-words">{getFrequencyText(task)}</span></div>
+		                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Period</span><span className="whitespace-pre-line break-words">{getFrequencyText(task)}</span></div>
 		                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Time</span><span className="whitespace-normal break-words">{task.time || '-'}</span></div>
                         <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Goal</span><span className="whitespace-normal break-words">{goalDisplay}</span></div>
                         <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Achieved</span><span className="whitespace-normal break-words">{achievedDisplay}</span></div>
