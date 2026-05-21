@@ -265,7 +265,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'maintaskactionlog' => 'action_logs',
         'vendortaskactionlog' => 'action_logs',
         'recurringtasks' => 'recurring_tasks',
-        'recurringactions' => 'recurring_actions'
+        'recurringactions' => 'recurring_actions',
+        'appsettings' => 'app_settings'
     ];
     $table = $targetTableMap[$target] ?? '';
 
@@ -631,6 +632,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->close();
         if (!$ok) {
             sendJson(['success' => false, 'error' => 'Failed to update user.'], 400);
+        }
+        sendJson(['success' => true]);
+    }
+
+    if ($action === 'updateMaster' && $table === 'app_settings') {
+        $officeTokenId = trim((string)($data['officeTokenId'] ?? ''));
+        $officeTelegramGroupId = trim((string)($data['officeTelegramGroupId'] ?? ''));
+        $whatsappGroupId = trim((string)($data['whatsappGroupId'] ?? ''));
+        $masId = trim((string)($data['masId'] ?? ''));
+        $masPassword = (string)($data['masPassword'] ?? '');
+        $metaAccessToken = trim((string)($data['metaAccessToken'] ?? ''));
+        $metaPhoneNumberId = trim((string)($data['metaPhoneNumberId'] ?? ''));
+        $metaWabaId = trim((string)($data['metaWabaId'] ?? ''));
+        $metaVerifyToken = trim((string)($data['metaVerifyToken'] ?? ''));
+
+        $existing = fetchAllRows($conn, 'app_settings');
+        $existingId = isset($existing[0]['id']) ? (int)$existing[0]['id'] : 0;
+
+        if ($existingId > 0) {
+            $stmt = $conn->prepare("UPDATE app_settings SET officeTokenId=?, officeTelegramGroupId=?, whatsappGroupId=?, masId=?, masPassword=?, metaAccessToken=?, metaPhoneNumberId=?, metaWabaId=?, metaVerifyToken=?, updated_at=NOW() WHERE id=?");
+            if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare settings update query.'], 500);
+            $stmt->bind_param('sssssssssi', $officeTokenId, $officeTelegramGroupId, $whatsappGroupId, $masId, $masPassword, $metaAccessToken, $metaPhoneNumberId, $metaWabaId, $metaVerifyToken, $existingId);
+        } else {
+            $insertId = 1;
+            $stmt = $conn->prepare("INSERT INTO app_settings (id, officeTokenId, officeTelegramGroupId, whatsappGroupId, masId, masPassword, metaAccessToken, metaPhoneNumberId, metaWabaId, metaVerifyToken, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+            if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare settings insert query.'], 500);
+            $stmt->bind_param('isssssssss', $insertId, $officeTokenId, $officeTelegramGroupId, $whatsappGroupId, $masId, $masPassword, $metaAccessToken, $metaPhoneNumberId, $metaWabaId, $metaVerifyToken);
+        }
+
+        $ok = $stmt->execute();
+        $stmtError = $stmt->error;
+        $stmt->close();
+        if (!$ok) {
+            sendJson(['success' => false, 'error' => 'Failed to save settings: ' . $stmtError], 400);
         }
         sendJson(['success' => true]);
     }
