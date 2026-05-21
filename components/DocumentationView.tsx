@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Download, FileText } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Download, FileText, Pause, Play, Square, Volume2 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 
 type DocSection = {
@@ -80,6 +80,96 @@ export const DocumentationView: React.FC = () => {
     ];
   }, []);
 
+  const supportsSpeech = typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+  const synthRef = useRef<SpeechSynthesis | null>(supportsSpeech ? window.speechSynthesis : null);
+  const utterancesRef = useRef<SpeechSynthesisUtterance[]>([]);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+
+  const playbackItems = useMemo(() => {
+    const items: Array<{ key: string; text: string }> = [];
+    sections.forEach((section, sIdx) => {
+      items.push({ key: `s:${sIdx}:title`, text: section.title });
+      section.steps.forEach((step, stepIdx) => {
+        items.push({ key: `s:${sIdx}:step:${stepIdx}`, text: step });
+      });
+    });
+    return items;
+  }, [sections]);
+
+  const stopSpeaking = () => {
+    const synth = synthRef.current;
+    if (!synth) return;
+    synth.cancel();
+    utterancesRef.current = [];
+    setIsSpeaking(false);
+    setIsPaused(false);
+    setActiveKey(null);
+  };
+
+  const startSpeaking = () => {
+    const synth = synthRef.current;
+    if (!synth) return;
+
+    synth.cancel();
+    utterancesRef.current = [];
+    setIsPaused(false);
+
+    const utterances = playbackItems.map((item) => {
+      const u = new SpeechSynthesisUtterance(item.text);
+      u.rate = 1;
+      u.pitch = 1;
+      u.volume = 1;
+      u.onstart = () => {
+        setIsSpeaking(true);
+        setActiveKey(item.key);
+      };
+      u.onend = () => {
+        // Active key will move forward on next onstart; clear if this was last.
+        if (item.key === playbackItems[playbackItems.length - 1]?.key) {
+          setIsSpeaking(false);
+          setIsPaused(false);
+          setActiveKey(null);
+        }
+      };
+      u.onerror = () => {
+        setIsSpeaking(false);
+        setIsPaused(false);
+        setActiveKey(null);
+      };
+      return u;
+    });
+
+    utterancesRef.current = utterances;
+    utterances.forEach((u) => synth.speak(u));
+  };
+
+  const pauseSpeaking = () => {
+    const synth = synthRef.current;
+    if (!synth) return;
+    synth.pause();
+    setIsPaused(true);
+  };
+
+  const resumeSpeaking = () => {
+    const synth = synthRef.current;
+    if (!synth) return;
+    synth.resume();
+    setIsPaused(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      // Avoid speech continuing after navigation.
+      try {
+        synthRef.current?.cancel();
+      } catch {
+        // ignore
+      }
+    };
+  }, []);
+
   const downloadPdf = () => {
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -147,27 +237,85 @@ export const DocumentationView: React.FC = () => {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={downloadPdf}
-          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-sm text-sm font-bold uppercase tracking-wider"
-          title="Download PDF"
-        >
-          <Download size={16} />
-          Download PDF
-        </button>
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <div className="flex items-center gap-2 bg-white border border-indigo-100 rounded-xl p-1 shadow-sm">
+            <button
+              type="button"
+              disabled={!supportsSpeech}
+              onClick={() => {
+                if (!supportsSpeech) return;
+                if (!isSpeaking) startSpeaking();
+                else if (isPaused) resumeSpeaking();
+                else pauseSpeaking();
+              }}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-colors ${
+                supportsSpeech
+                  ? 'text-indigo-700 hover:bg-indigo-50'
+                  : 'text-gray-400 cursor-not-allowed'
+              }`}
+              title={supportsSpeech ? (isSpeaking ? (isPaused ? 'Resume audio' : 'Pause audio') : 'Listen') : 'Audio not supported'}
+            >
+              <Volume2 size={16} />
+              {!isSpeaking ? (
+                <>
+                  <Play size={16} />
+                  Listen
+                </>
+              ) : isPaused ? (
+                <>
+                  <Play size={16} />
+                  Resume
+                </>
+              ) : (
+                <>
+                  <Pause size={16} />
+                  Pause
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              disabled={!supportsSpeech || (!isSpeaking && !isPaused)}
+              onClick={stopSpeaking}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-colors ${
+                supportsSpeech && (isSpeaking || isPaused)
+                  ? 'text-red-700 hover:bg-red-50'
+                  : 'text-gray-400 cursor-not-allowed'
+              }`}
+              title="Stop audio"
+            >
+              <Square size={16} />
+              Stop
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={downloadPdf}
+            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-sm text-sm font-bold uppercase tracking-wider"
+            title="Download PDF"
+          >
+            <Download size={16} />
+            Download PDF
+          </button>
+        </div>
       </div>
 
       <div className="mt-6 space-y-4">
-        {sections.map((section) => (
+        {sections.map((section, sIdx) => (
           <div key={section.title} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-5 py-4 bg-indigo-50 border-b border-indigo-100">
               <h3 className="text-sm font-black text-indigo-700 uppercase tracking-widest">{section.title}</h3>
             </div>
             <div className="p-5">
               <ol className="list-decimal pl-5 space-y-2 text-sm text-gray-800">
-                {section.steps.map((step) => (
-                  <li key={step} className="leading-relaxed">
+                {section.steps.map((step, stepIdx) => (
+                  <li
+                    key={step}
+                    className={`leading-relaxed rounded-lg px-2 py-1 -ml-2 ${
+                      activeKey === `s:${sIdx}:step:${stepIdx}` ? 'bg-yellow-100 ring-2 ring-yellow-300' : ''
+                    }`}
+                  >
                     {step}
                   </li>
                 ))}
@@ -179,4 +327,3 @@ export const DocumentationView: React.FC = () => {
     </div>
   );
 };
-
