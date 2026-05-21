@@ -82,7 +82,12 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 
   const handleDownloadTemplate = () => {
     const templateHeaders = ['Task', 'goal', 'firm', 'owner', 'category', 'assignee', 'startDate', 'time', 'Period', 'frequencyDays', 'Day', 'Month'];
-    const templateCsv = `${templateHeaders.join(',')}\n`;
+    const templateRows = [
+      templateHeaders,
+      ['', '', '', '', '', '', '', '', '', '', '', ''],
+      ['__MASTER_DATA__', '', '', '', '', '', '', '', '', '', '', ''],
+      ['Users', '', '', '', '', '', '', '', '', '', '', ''],
+    ];
 
     const users = Array.from(new Set(tasks.map(task => String(task.assignee || '').trim()).filter(Boolean)));
     const owners = Array.from(new Set(tasks.map(task => String(task.owner || '').trim()).filter(Boolean)));
@@ -91,53 +96,53 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
     const monthOptions = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
     const masterRows = [
-      ['Users'],
-      ...users.map(value => [value]),
-      [''],
-      ['Owners'],
-      ...owners.map(value => [value]),
-      [''],
-      ['Categories'],
-      ...categoryOptions.map(value => [value]),
-      [''],
-      ['Period'],
-      ...periodicityOptions.map(value => [value]),
-      [''],
-      ['Month'],
-      ...monthOptions.map(value => [value]),
-      [''],
-      ['Notes'],
-      ['Day rules: Weekly => 0-6 (Sun-Sat), Monthly => 1-31, Yearly => 1-31 with Month'],
-      ['Date format: YYYY-MM-DD, Time format: HH:MM'],
+      ...users.map(value => [value, '', '', '', '', '', '', '', '', '', '', '']),
+      ['', '', '', '', '', '', '', '', '', '', '', ''],
+      ['Owners', '', '', '', '', '', '', '', '', '', '', ''],
+      ...owners.map(value => [value, '', '', '', '', '', '', '', '', '', '', '']),
+      ['', '', '', '', '', '', '', '', '', '', '', ''],
+      ['Categories', '', '', '', '', '', '', '', '', '', '', ''],
+      ...categoryOptions.map(value => [value, '', '', '', '', '', '', '', '', '', '', '']),
+      ['', '', '', '', '', '', '', '', '', '', '', ''],
+      ['Period', '', '', '', '', '', '', '', '', '', '', ''],
+      ...periodicityOptions.map(value => [value, '', '', '', '', '', '', '', '', '', '', '']),
+      ['', '', '', '', '', '', '', '', '', '', '', ''],
+      ['Month', '', '', '', '', '', '', '', '', '', '', ''],
+      ...monthOptions.map(value => [value, '', '', '', '', '', '', '', '', '', '', '']),
+      ['', '', '', '', '', '', '', '', '', '', '', ''],
+      ['Notes', '', '', '', '', '', '', '', '', '', '', ''],
+      ['Day rules: Weekly => 0-6 (Sun-Sat), Monthly => 1-31, Yearly => 1-31 with Month', '', '', '', '', '', '', '', '', '', '', ''],
+      ['Date format: YYYY-MM-DD, Time format: HH:MM', '', '', '', '', '', '', '', '', '', '', ''],
     ];
-    const masterCsv = masterRows.map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\n');
-
-    const downloadCsv = (filename: string, content: string) => {
-      const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    };
-
-    downloadCsv('RecurringTasksTemplate.csv', templateCsv);
-    setTimeout(() => downloadCsv('RecurringTasksMasterData.csv', masterCsv), 150);
+    const allRows = [...templateRows, ...masterRows];
+    const csv = allRows.map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'RecurringTasksTemplate.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     const text = await file.text();
-    const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
-    if (lines.length <= 1) {
+    const allLines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+    if (allLines.length <= 1) {
       alert('Template is empty.');
       event.target.value = '';
       return;
     }
+    const markerIndex = allLines.findIndex(line => {
+      const row = parseCsvLine(line);
+      return String(row[0] || '').trim() === '__MASTER_DATA__';
+    });
+    const lines = markerIndex >= 0 ? allLines.slice(0, markerIndex) : allLines;
+
     const rawHeaders = parseCsvLine(lines[0]).map(header => header.trim());
     const headerAliases: Record<string, string> = {
       task: 'title',
