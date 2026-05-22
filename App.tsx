@@ -355,8 +355,8 @@ export default function App() {
   // Navigation Logic based on Role
   const filteredNavItems = useMemo(() => {
     if (isAdmin) return resolvedNavItems;
-    // Hide 'Master' items for Employees
-    return resolvedNavItems.filter(item => !masterIds.includes(item.id));
+    // Completely hide 'Master' section items for Employees
+    return resolvedNavItems.filter(item => item.section !== 'Master');
   }, [isAdmin, resolvedNavItems]);
 
   // Data subsets based on user role
