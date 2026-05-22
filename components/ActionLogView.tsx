@@ -6,6 +6,7 @@ import { formatToIndianDate, formatToIndianDateTime, parseToISO } from '../App';
 
 interface ActionLogViewProps {
   logs?: ActionLogEntry[];
+  isAdmin: boolean;
   isVendorView?: boolean;
   onDeleteLog: (logId: number, taskId: number) => void;
   projects?: Project[];
@@ -20,6 +21,7 @@ type SortConfig = {
 
 export const ActionLogView: React.FC<ActionLogViewProps> = ({ 
     logs = [], 
+    isAdmin,
     isVendorView = false, 
     onDeleteLog, 
     projects = [], 
@@ -624,9 +626,11 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
                     <p className="text-[11px] text-blue-800 italic leading-relaxed whitespace-normal break-words">"{log.remarks}"</p>
                 </div>
 
-                <button onClick={() => onDeleteLog(log.id, log.taskId)} className="absolute bottom-4 right-4 p-2 text-red-500 hover:bg-red-50 rounded-lg">
-                    <Trash2 size={16} />
-                </button>
+                {isAdmin && (
+                  <button onClick={() => onDeleteLog(log.id, log.taskId)} className="absolute bottom-4 right-4 p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                      <Trash2 size={16} />
+                  </button>
+                )}
             </div>
         ))}
         {paginatedLogs.length === 0 && <div className="text-center py-10 text-blue-300 font-black uppercase text-xs">No logs found.</div>}
@@ -692,7 +696,11 @@ export const ActionLogView: React.FC<ActionLogViewProps> = ({
                     <td className={`${tdClass} font-bold text-xs uppercase`}>{log.assignees}</td>
                   )}
                   <td className={`${tdClass} text-center`}>
-                    <button onClick={() => onDeleteLog(log.id, log.taskId)} className="p-1.5 text-red-500 hover:bg-red-50 border-2 border-transparent hover:border-red-600 rounded-md transition-all"><Trash2 size={16} /></button>
+                    {isAdmin && (
+                      <button onClick={() => onDeleteLog(log.id, log.taskId)} className="p-1.5 text-red-500 hover:bg-red-50 border-2 border-transparent hover:border-red-600 rounded-md transition-all">
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

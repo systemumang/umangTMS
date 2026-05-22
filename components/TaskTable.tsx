@@ -200,7 +200,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
             <tbody className="divide-y divide-black">
               {tasks.map((task, idx) => {
                 const isSyncing = syncingIds.has(task.id);
-                const canDelete = currentUser?.role === 'Admin' || task.owner.includes(currentUser?.name || '');
+                const canDelete = currentUser?.role === 'Admin';
                 const displayCategory = task.vendor ? (task.vendorCategory || '-') : (task.category || '-');
                 const responsibleParty = task.vendor ? (task.vendor || '-') : (task.assignees || '-');
                 // Row Highlight condition: Last update is today AND status is NOT 'Not Yet Started'
@@ -300,7 +300,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
         {tasks.map((task, idx) => {
           const isSyncing = syncingIds.has(task.id);
           const isExpanded = expandedIds.has(task.id);
-          const canDelete = currentUser?.role === 'Admin' || task.owner.includes(currentUser?.name || '');
+          const canDelete = currentUser?.role === 'Admin';
           const isVendorTask = !!(task.vendor && task.vendor.trim() !== '');
           const priorityBorderColor = task.priority === 'High' ? 'border-red-500' : task.priority === 'Medium' ? 'border-amber-500' : 'border-blue-400';
           const responsiblePartyIcon = isVendorTask ? <Hammer size={12} className="text-orange-500"/> : <Users size={12} className="text-indigo-700"/>;

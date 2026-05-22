@@ -809,13 +809,15 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                         <button onClick={() => onUpdate(task)} className="px-2 py-1 bg-indigo-600 text-white rounded text-[10px] font-bold hover:bg-indigo-700">Update</button>
                         <button onClick={() => onEdit(task)} className="p-1 text-indigo-600 hover:bg-indigo-50 rounded" title="Edit Master"><Edit2 size={16} /></button>
                         <button onClick={() => onViewHistory(task)} className="p-1 text-indigo-500 hover:bg-indigo-50 rounded"><Info size={16} /></button>
-                        <button 
-                          onClick={() => handleDelete(task.id)} 
-                          disabled={deletingIds.has(task.id)}
-                          className="p-1 text-red-600 hover:bg-red-50 rounded disabled:opacity-50"
-                        >
-                          {deletingIds.has(task.id) ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                        </button>
+                        {isAdmin && (
+                          <button 
+                            onClick={() => handleDelete(task.id)} 
+                            disabled={deletingIds.has(task.id)}
+                            className="p-1 text-red-600 hover:bg-red-50 rounded disabled:opacity-50"
+                          >
+                            {deletingIds.has(task.id) ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                          </button>
+                        )}
                       </div>
                     </td>
 	                  </tr>
@@ -882,13 +884,15 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                         <div className="flex gap-1 w-full sm:w-auto justify-end" onDoubleClick={(e) => e.stopPropagation()}>
                             <button onClick={() => onViewHistory(task)} className="p-2 text-indigo-500 hover:bg-gray-100 rounded-full border border-gray-100"><Info size={18} /></button>
                             <button onClick={() => onEdit(task)} className="p-2 text-indigo-600 hover:bg-gray-100 rounded-full border border-gray-100"><Edit2 size={18} /></button>
-                            <button 
-                              onClick={() => handleDelete(task.id)} 
-                              disabled={deletingIds.has(task.id)}
-                              className="p-2 text-red-600 hover:bg-gray-100 rounded-full border border-gray-100 disabled:opacity-50"
-                            >
-                              {deletingIds.has(task.id) ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
-                            </button>
+                            {isAdmin && (
+                              <button 
+                                onClick={() => handleDelete(task.id)} 
+                                disabled={deletingIds.has(task.id)}
+                                className="p-2 text-red-600 hover:bg-gray-100 rounded-full border border-gray-100 disabled:opacity-50"
+                              >
+                                {deletingIds.has(task.id) ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                              </button>
+                            )}
                         </div>
                     </div>
                 </div>

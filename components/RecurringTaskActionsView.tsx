@@ -6,6 +6,7 @@ import { parseToISO } from '../App';
 
 interface RecurringTaskActionsViewProps {
   actions: RecurringTaskAction[];
+  isAdmin: boolean;
   onDeleteAction: (logId: number, taskId: number) => void;
   dashboardFilter?: { type: string; value: string; dateFrom?: string; dateTo?: string } | null;
   onClearDashboardFilter?: () => void;
@@ -18,6 +19,7 @@ type SortConfig = {
 
 export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> = ({ 
 	    actions, 
+      isAdmin,
 	    onDeleteAction, 
 	    dashboardFilter = null,
 	    onClearDashboardFilter 
@@ -313,9 +315,11 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
 	                  </div>
 	                </div>
 
-                <button onClick={() => onDeleteAction(action.id, action.taskId)} className="absolute bottom-4 right-4 p-2 text-red-500 hover:bg-red-50 rounded-lg">
-                    <Trash2 size={16} />
-                </button>
+                {isAdmin && (
+                  <button onClick={() => onDeleteAction(action.id, action.taskId)} className="absolute bottom-4 right-4 p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                      <Trash2 size={16} />
+                  </button>
+                )}
              </div>
         ))}
         {paginatedActions.length === 0 && <div className="text-center py-10 text-blue-300 font-bold uppercase text-xs">No activity history found.</div>}
@@ -382,7 +386,11 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
 	                    )}
 	                  </td>
 		                  <td className={`${tdClass} text-center`}>
-		                    <button onClick={() => onDeleteAction(action.id, action.taskId)} className="p-1.5 text-red-500 hover:bg-red-50 border-2 border-transparent hover:border-red-600 rounded-md transition-all"><Trash2 size={16} /></button>
+		                    {isAdmin && (
+                          <button onClick={() => onDeleteAction(action.id, action.taskId)} className="p-1.5 text-red-500 hover:bg-red-50 border-2 border-transparent hover:border-red-600 rounded-md transition-all">
+                            <Trash2 size={16} />
+                          </button>
+                        )}
 		                  </td>
 		                </tr>
                     );
