@@ -249,30 +249,106 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const dailyKraRows = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const toDate = (v?: string) => {
-      if (!v) return null;
-      const parts = String(v).split('/');
-      if (parts.length === 3) {
-        const d = Number(parts[0]), m = Number(parts[1]), y = Number(parts[2]);
+
+    const parseDDMMYYYY = (value?: string): Date | null => {
+      const raw = String(value || '').trim();
+      if (!raw) return null;
+      const match = raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
+      if (match) {
+        const d = parseInt(match[1], 10);
+        const m = parseInt(match[2], 10);
+        const y = parseInt(match[3], 10);
         const dt = new Date(y, m - 1, d);
-        return isNaN(dt.getTime()) ? null : dt;
+        if (isNaN(dt.getTime())) return null;
+        dt.setHours(0, 0, 0, 0);
+        return dt;
       }
-      const dt = new Date(v);
-      return isNaN(dt.getTime()) ? null : dt;
+      const dt = new Date(raw);
+      if (isNaN(dt.getTime())) return null;
+      dt.setHours(0, 0, 0, 0);
+      return dt;
     };
-    const dueToday = recurringTasks.filter(task => {
-      const start = toDate(task.startDate);
-      if (!start) return false;
-      start.setHours(0, 0, 0, 0);
-      const freq = Number(task.frequencyDays || 1);
-      if (freq <= 0) return false;
-      const diffDays = Math.floor((today.getTime() - start.getTime()) / 86400000);
-      return diffDays >= 0 && diffDays % freq === 0;
+
+    const clampDay = (year: number, monthIndex: number, day: number): Date => {
+      const maxDay = new Date(year, monthIndex + 1, 0).getDate();
+      const safeDay = Math.min(Math.max(day, 1), maxDay);
+      const date = new Date(year, monthIndex, safeDay);
+      date.setHours(0, 0, 0, 0);
+      return date;
+    };
+
+    const getLastCompletionDateStr = (taskId: number, startDate: string): string => {
+      const history = recurringActions
+        .filter(a => Number(a.taskId) === taskId && String(a.status || '') === 'Complete')
+        .sort((a, b) => {
+          const da = parseDDMMYYYY(String(a.updatedOn || ''))?.getTime() || 0;
+          const db = parseDDMMYYYY(String(b.updatedOn || ''))?.getTime() || 0;
+          return db - da;
+        });
+      return history.length > 0 ? String(history[0].updatedOn || '') : startDate;
+    };
+
+    const getNextDueDateObject = (task: any): Date | null => {
+      const periodicity = String(task.periodicity || task.frequencyType || 'Fixed Days').trim() || 'Fixed Days';
+      const taskId = Number(task.id || 0);
+      if (!taskId) return null;
+
+      const anchorStr = getLastCompletionDateStr(taskId, String(task.startDate || ''));
+      const anchor = parseDDMMYYYY(anchorStr);
+      if (!anchor) return null;
+      anchor.setHours(0, 0, 0, 0);
+
+      if (periodicity === 'Fixed Days') {
+        const frequencyDays = Math.max(1, Number(task.frequencyDays || 1));
+        const next = new Date(anchor);
+        next.setDate(anchor.getDate() + frequencyDays);
+        next.setHours(0, 0, 0, 0);
+        return next;
+      }
+
+      if (periodicity === 'Weekly') {
+        const targetDay = typeof task.recurrenceDay === 'number' ? task.recurrenceDay : Number(task.recurrenceDay || 0);
+        let diff = targetDay - anchor.getDay();
+        if (diff <= 0) diff += 7;
+        const next = new Date(anchor);
+        next.setDate(anchor.getDate() + diff);
+        next.setHours(0, 0, 0, 0);
+        return next;
+      }
+
+      if (periodicity === 'Monthly') {
+        const targetDay = typeof task.recurrenceDay === 'number' ? task.recurrenceDay : Number(task.recurrenceDay || 1);
+        let next = clampDay(anchor.getFullYear(), anchor.getMonth(), targetDay);
+        if (next <= anchor) {
+          next = clampDay(anchor.getFullYear(), anchor.getMonth() + 1, targetDay);
+        }
+        return next;
+      }
+
+      if (periodicity === 'Yearly') {
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const targetMonthIdx = Math.max(0, months.indexOf(String(task.recurrenceMonth || 'January')));
+        const targetDay = typeof task.recurrenceDay === 'number' ? task.recurrenceDay : Number(task.recurrenceDay || 1);
+        let next = clampDay(anchor.getFullYear(), targetMonthIdx, targetDay);
+        if (next <= anchor) {
+          next = clampDay(anchor.getFullYear() + 1, targetMonthIdx, targetDay);
+        }
+        return next;
+      }
+
+      return null;
+    };
+
+    const dueTodayOrOverdue = recurringTasks.filter(task => {
+      const nextDue = getNextDueDateObject(task);
+      if (!nextDue) return false;
+      nextDue.setHours(0, 0, 0, 0);
+      return nextDue.getTime() <= today.getTime();
     });
 
     const byEmployee = new Map<string, { goal: number; achieved: number }>();
 
-    dueToday.forEach(task => {
+    dueTodayOrOverdue.forEach(task => {
       const employeeName = String(task.assignee || '-').trim() || '-';
       const rawGoal = Number(task.goal || 0);
       const effectiveGoal = rawGoal > 0 ? rawGoal : 1;
