@@ -277,14 +277,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
       const rawGoal = Number(task.goal || 0);
       const effectiveGoal = rawGoal > 0 ? rawGoal : 1;
 
-      const achievedFromActions = recurringActions
-        .filter(a => Number(a.taskId) === Number(task.id) && parseToISO(a.updatedOn) === isoToday)
-        .reduce((sum, a) => sum + Number(a.goal || 0), 0);
+      const actionsToday = recurringActions.filter(
+        a => Number(a.taskId) === Number(task.id) && parseToISO(a.updatedOn) === isoToday
+      );
+      const achievedFromActions = actionsToday.reduce((sum, a) => sum + Number(a.goal || 0), 0);
 
-      const isCompleted = String(task.status || '').trim().toLowerCase() === 'complete';
-      const effectiveAchieved = achievedFromActions > 0
-        ? achievedFromActions
-        : (rawGoal <= 0 && isCompleted ? 1 : 0);
+      // For tasks without a numeric Goal, treat "Achieved" as 1 only if an update was logged today.
+      const effectiveAchieved = rawGoal > 0 ? achievedFromActions : (actionsToday.length > 0 ? 1 : 0);
 
       if (!byEmployee.has(employeeName)) {
         byEmployee.set(employeeName, { goal: 0, achieved: 0 });
