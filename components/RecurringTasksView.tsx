@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { RotateCcw, Plus, Search, Filter, X, FileText, Download, Info, ArrowUpDown, ArrowUp, ArrowDown, Trash2, Edit2, LayoutGrid, LayoutList, AlertCircle, Calendar, Upload } from 'lucide-react';
+import { RotateCcw, Plus, Search, Filter, X, FileText, Download, Info, ArrowUpDown, ArrowUp, ArrowDown, Trash2, Edit2, LayoutGrid, LayoutList, AlertCircle, Calendar, Upload, Loader2 } from 'lucide-react';
 import { RecurringTask, RecurringTaskAction } from '../types';
 import { SearchableSelect } from './SearchableSelect';
 
@@ -10,7 +10,7 @@ interface RecurringTasksViewProps {
   onUpdate: (task: RecurringTask) => void;
   onEdit: (task: RecurringTask) => void;
   onViewHistory: (task: RecurringTask) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: number) => Promise<void>;
   onBulkUpload: (tasks: Array<Omit<RecurringTask, 'id' | 'lastUpdatedOn' | 'lastUpdateRemarks'>>) => Promise<{ successCount: number; failCount: number }>;
   title?: string;
   filterType?: 'all' | 'due';
@@ -43,11 +43,14 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
   const [filterAssignee, setFilterAssignee] = useState('All');
   const [filterStatus, setFilterStatus] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+  const [viewMode, setViewMode] = useState<'card' | 'card'>('card'); // Fixed type to card | table below
+  const [viewModeActual, setViewModeActual] = useState<'card' | 'table'>('card');
   const [sortConfig, setSortConfig] = useState<SortConfig>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isUploadingBulk, setIsUploadingBulk] = useState(false);
+  const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const bulkFileInputRef = useRef<HTMLInputElement>(null);
 
   const isAdmin = currentUser?.role === 'Admin';
@@ -565,10 +568,31 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 
   const totalPages = Math.ceil(sortedTasks.length / itemsPerPage);
 
-  const confirmBulkDelete = () => {
-    selectedIds.forEach(id => onDelete(id));
-    setSelectedIds([]);
-    setShowDeleteConfirm(false);
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this recurring task?')) return;
+    setDeletingIds(prev => new Set(prev).add(id));
+    try {
+      await onDelete(id);
+    } finally {
+      setDeletingIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
+
+  const confirmBulkDelete = async () => {
+    setIsBulkDeleting(true);
+    try {
+      for (const id of selectedIds) {
+        await onDelete(id);
+      }
+      setSelectedIds([]);
+      setShowDeleteConfirm(false);
+    } finally {
+      setIsBulkDeleting(false);
+    }
   };
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -785,7 +809,13 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                         <button onClick={() => onUpdate(task)} className="px-2 py-1 bg-indigo-600 text-white rounded text-[10px] font-bold hover:bg-indigo-700">Update</button>
                         <button onClick={() => onEdit(task)} className="p-1 text-indigo-600 hover:bg-indigo-50 rounded" title="Edit Master"><Edit2 size={16} /></button>
                         <button onClick={() => onViewHistory(task)} className="p-1 text-indigo-500 hover:bg-indigo-50 rounded"><Info size={16} /></button>
-                        <button onClick={() => onDelete(task.id)} className="p-1 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
+                        <button 
+                          onClick={() => handleDelete(task.id)} 
+                          disabled={deletingIds.has(task.id)}
+                          className="p-1 text-red-600 hover:bg-red-50 rounded disabled:opacity-50"
+                        >
+                          {deletingIds.has(task.id) ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                        </button>
                       </div>
                     </td>
 	                  </tr>
@@ -852,7 +882,13 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                         <div className="flex gap-1 w-full sm:w-auto justify-end" onDoubleClick={(e) => e.stopPropagation()}>
                             <button onClick={() => onViewHistory(task)} className="p-2 text-indigo-500 hover:bg-gray-100 rounded-full border border-gray-100"><Info size={18} /></button>
                             <button onClick={() => onEdit(task)} className="p-2 text-indigo-600 hover:bg-gray-100 rounded-full border border-gray-100"><Edit2 size={18} /></button>
-                            <button onClick={() => onDelete(task.id)} className="p-2 text-red-600 hover:bg-gray-100 rounded-full border border-gray-100"><Trash2 size={18} /></button>
+                            <button 
+                              onClick={() => handleDelete(task.id)} 
+                              disabled={deletingIds.has(task.id)}
+                              className="p-2 text-red-600 hover:bg-gray-100 rounded-full border border-gray-100 disabled:opacity-50"
+                            >
+                              {deletingIds.has(task.id) ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                            </button>
                         </div>
                     </div>
                 </div>

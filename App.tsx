@@ -1275,8 +1275,8 @@ export default function App() {
       case 'pending-vendor-tasks': return <TasksView title="Pending Vendor Tasks" tasks={visibleTasks.filter(t => t.vendor && t.vendor !== '')} {...commonTaskProps} isVendorView={true} filterType="pending" />;
       case 'completed-vendor-tasks': return <TasksView title="Completed Vendor Tasks" tasks={visibleTasks.filter(t => t.vendor && t.vendor !== '')} {...commonTaskProps} isVendorView={true} filterType="completed" />;
       case 'vendor-action-log': return <ActionLogView logs={visibleActionLogs.filter(l => l.vendor && l.vendor !== '')} projects={projects} isVendorView={true} onDeleteLog={(logId, taskId) => handleDeleteLog(logId, taskId, true)} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
-      case 'due-recurring-tasks': return <RecurringTasksView title="Due Recurring Tasks" filterType="due" tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={(id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); apiPost('deleteRecord', { id }, 'RecurringTasks'); }} onBulkUpload={handleBulkAddRecurringTasks} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
-      case 'recurring-tasks': return <RecurringTasksView title="Recurring Tasks" tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={(id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); apiPost('deleteRecord', { id }, 'RecurringTasks'); }} onBulkUpload={handleBulkAddRecurringTasks} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
+      case 'due-recurring-tasks': return <RecurringTasksView title="Due Recurring Tasks" filterType="due" tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={async (id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); await apiPost('deleteRecord', { id }, 'RecurringTasks'); }} onBulkUpload={handleBulkAddRecurringTasks} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
+      case 'recurring-tasks': return <RecurringTasksView title="Recurring Tasks" tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={async (id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); await apiPost('deleteRecord', { id }, 'RecurringTasks'); }} onBulkUpload={handleBulkAddRecurringTasks} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
       case 'recurring-actions': return <RecurringTaskActionsView actions={visibleRecurringActions} onDeleteAction={(logId, taskId) => { if (!confirmDelete('this recurring log')) return; apiPost('deleteRecord', { id: logId, taskId: taskId }, 'RecurringActions'); }} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
       case 'users': if (!isAdmin) return null; return <UsersView users={users} designations={designations} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} onAddUser={(u) => { setUsers(p => [...p, { ...u, id: Date.now(), isActive: true } as any]); apiPost('addMaster', u, 'Users'); }} onEditUser={(u) => { setUsers(p => p.map(x => x.id === u.id ? u : x)); apiPost('updateMaster', u, 'Users'); }} onToggleStatus={(id) => { const user = users.find(u => u.id === id); if (!user) return; const newStatus = !user.isActive; setUsers(prev => prev.map(u => u.id === id ? { ...u, isActive: newStatus } : u)); apiPost('updateMaster', { id, isActive: newStatus ? 'TRUE' : 'FALSE' }, 'Users'); }} onDeleteUser={(id) => { if (!confirmDelete('this user')) return; setUsers(p => p.filter(u => u.id !== id)); apiPost('deleteRecord', { id }, 'Users'); }} onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }} />;
       case 'firms': if (!isAdmin) return null; return <FirmsView firms={firms} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} onAddFirm={() => setIsFirmModalOpen(true)} onDeleteFirm={(id) => { const target = firms.find(f => f.id === id); if (!target) return; if (String(target.name || '').trim().toUpperCase() === 'GENERAL') return; if (!confirmDelete('this firm')) return; setFirms(p => p.filter(f => f.id !== id)); apiPost('deleteRecord', { id }, 'Firms'); }} onEditFirm={(f) => { if (String(f.name || '').trim().toUpperCase() === 'GENERAL') return; setFirms(p => p.map(x => x.id === f.id ? f : x)); apiPost('updateMaster', f, 'Firms'); }} />;
@@ -1494,72 +1494,83 @@ export default function App() {
       
       <TaskHistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} task={selectedTaskForHistory} logs={actionLogs} />
       
-	      <AddRecurringTaskModal
-	        isOpen={isRecurringTaskModalOpen}
-		        onClose={() => setIsRecurringTaskModalOpen(false)}
-	        onSave={async (t) => {
-	          setActiveTab('recurring-tasks');
-	          const createResult = await apiPost('addMaster', t, 'RecurringTasks');
-	          if (!createResult?.success) {
-	            setApiError(createResult?.error || 'Failed to save recurring task.');
-	            return;
-	          }
-	          const createdId = Number(createResult?.data?.id || Date.now());
-	          setRecurringTasks(prev => [{ ...t, id: createdId, status: 'Not Yet Started' } as any, ...prev]);
-	        }}
-		        users={users}
-		        categories={categories}
-            firms={firms}
-		      />
-	      <UpdateRecurringTaskModal
-	        isOpen={isRecurringTaskUpdateModalOpen}
-	        onClose={() => setIsRecurringTaskUpdateModalOpen(false)}
-	        task={selectedRecurringTask}
-		        onSave={(t) => {
-		          const now = new Date();
-		          const updatedOn = now.toLocaleDateString('en-GB');
-		          const timestamp = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-		          const existingTask = recurringTasks.find(x => Number(x.id) === Number(t.id));
-		          const updatedTask = {
-		            ...t,
-		            lastUpdatedOn: updatedOn,
-		            lastUpdateRemarks: t.lastUpdateRemarks,
-		            goal: existingTask?.goal || ''
-		          };
-		          const photos = String((t as any).photos || '');
-		          const pdf = String((t as any).pdf || '');
+      <AddRecurringTaskModal
+        isOpen={isRecurringTaskModalOpen}
+        onClose={() => setIsRecurringTaskModalOpen(false)}
+        onSave={async (t) => {
+          setActiveTab('recurring-tasks');
+          const createResult = await apiPost('addMaster', t, 'RecurringTasks');
+          if (!createResult?.success) {
+            setApiError(createResult?.error || 'Failed to save recurring task.');
+            return;
+          }
+          const createdId = Number(createResult?.data?.id || Date.now());
+          setRecurringTasks(prev => [{ ...t, id: createdId, status: 'Not Yet Started' } as any, ...prev]);
+        }}
+        users={users}
+        categories={categories}
+        firms={firms}
+      />
+      <UpdateRecurringTaskModal
+        isOpen={isRecurringTaskUpdateModalOpen}
+        onClose={() => setIsRecurringTaskUpdateModalOpen(false)}
+        task={selectedRecurringTask}
+        onSave={async (t) => {
+          const now = new Date();
+          const updatedOn = now.toLocaleDateString('en-GB');
+          const timestamp = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+          const existingTask = recurringTasks.find(x => Number(x.id) === Number(t.id));
+          const updatedTask = {
+            ...t,
+            lastUpdatedOn: updatedOn,
+            lastUpdateRemarks: t.lastUpdateRemarks,
+            goal: existingTask?.goal || ''
+          };
+          const photos = String((t as any).photos || '');
+          const pdf = String((t as any).pdf || '');
 
-	          setRecurringTasks(prev => prev.map(x => x.id === t.id ? updatedTask : x));
+          setRecurringTasks(prev => prev.map(x => x.id === t.id ? updatedTask : x));
 
-	          // Only patch fields that are actually updated here so we don't accidentally wipe columns
-	          // (e.g., keep StartDate in the backend sheet unchanged).
-			          apiPost('updateMaster', {
-			            id: t.id,
-			            status: t.status,
-                firm: t.firm || '',
-                owner: t.owner || '',
-			            lastUpdatedOn: updatedOn,
-			            lastUpdateRemarks: t.lastUpdateRemarks || ''
-			          }, 'RecurringTasks');
+          // Only patch fields that are actually updated here so we don't accidentally wipe columns
+          // (e.g., keep StartDate in the backend sheet unchanged).
+          await apiPost('updateMaster', {
+            id: t.id,
+            status: t.status,
+            firm: t.firm || '',
+            owner: t.owner || '',
+            lastUpdatedOn: updatedOn,
+            lastUpdateRemarks: t.lastUpdateRemarks || ''
+          }, 'RecurringTasks');
 
-	          apiPost('addMaster', {
-		            taskId: t.id,
-		            taskTitle: t.title,
-                firm: t.firm || '',
-                owner: t.owner || '',
-		            category: t.category,
-	            assignee: t.assignee,
-	            status: t.status,
-	            updatedOn,
-	            timestamp,
-	            remarks: t.lastUpdateRemarks,
-	            goal: t.goal || '',
-	            photos,
-	            pdf
-	          }, 'RecurringActions');
-	        }}
-	      />
-      <EditRecurringTaskModal isOpen={isEditRecurringTaskModalOpen} onClose={() => setIsEditRecurringTaskModalOpen(false)} task={selectedRecurringTask} onSave={(t) => { setRecurringTasks(prev => prev.map(x => x.id === t.id ? t : x)); apiPost('updateMaster', t, 'RecurringTasks'); }} users={users} categories={categories} firms={firms} />
+          await apiPost('addMaster', {
+            taskId: t.id,
+            taskTitle: t.title,
+            firm: t.firm || '',
+            owner: t.owner || '',
+            category: t.category,
+            assignee: t.assignee,
+            status: t.status,
+            updatedOn,
+            timestamp,
+            remarks: t.lastUpdateRemarks,
+            goal: t.goal || '',
+            photos,
+            pdf
+          }, 'RecurringActions');
+        }}
+      />
+      <EditRecurringTaskModal 
+        isOpen={isEditRecurringTaskModalOpen} 
+        onClose={() => setIsEditRecurringTaskModalOpen(false)} 
+        task={selectedRecurringTask} 
+        onSave={async (t) => { 
+          setRecurringTasks(prev => prev.map(x => x.id === t.id ? t : x)); 
+          await apiPost('updateMaster', t, 'RecurringTasks'); 
+        }} 
+        users={users} 
+        categories={categories} 
+        firms={firms} 
+      />
       <RecurringTaskHistoryModal isOpen={isRecurringHistoryModalOpen} onClose={() => setIsRecurringHistoryModalOpen(false)} task={selectedRecurringTask} actions={recurringActions} />
     </div>
   );

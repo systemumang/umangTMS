@@ -26,7 +26,7 @@ export const FirmsView: React.FC<FirmsViewProps> = ({ firms, onAddFirm, onDelete
     );
   }, [firms, searchTerm]);
   const handleExportExcel = () => {
-    const csv = ['S.No.,Firm Name,Sort Name', ...filtered.map((f, i) => `${i + 1},"${String(f.name || '').replace(/"/g, '""')}","${String(f.sortName || '').replace(/"/g, '""')}"`)].join('\n');
+    const csv = ['S.No.,Firm Name,Short', ...filtered.map((f, i) => `${i + 1},"${String(f.name || '').replace(/"/g, '""')}","${String(f.sortName || '').replace(/"/g, '""')}"`)].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -40,7 +40,7 @@ export const FirmsView: React.FC<FirmsViewProps> = ({ firms, onAddFirm, onDelete
       ]);
 	    const doc = new jsPDF();
 	    doc.text('Firms', 14, 14);
-	    autoTable(doc, { head: [['S.No.', 'Firm Name', 'Sort Name']], body: filtered.map((f, i) => [i + 1, f.name || '-', f.sortName || '-']), startY: 20 });
+	    autoTable(doc, { head: [['S.No.', 'Firm Name', 'Short']], body: filtered.map((f, i) => [i + 1, f.name || '-', f.sortName || '-']), startY: 20 });
 	    doc.save(`Firms_${new Date().toISOString().split('T')[0]}.pdf`);
 	  };
 
@@ -87,7 +87,7 @@ export const FirmsView: React.FC<FirmsViewProps> = ({ firms, onAddFirm, onDelete
               <tr className="bg-indigo-600 border-b border-indigo-700">
                 <th className="px-6 py-4 text-xs font-semibold text-white uppercase tracking-wider border-r border-indigo-500">S.No.</th>
                 <th className="px-6 py-4 text-xs font-semibold text-white uppercase tracking-wider border-r border-indigo-500">Firm Name</th>
-                <th className="px-6 py-4 text-xs font-semibold text-white uppercase tracking-wider border-r border-indigo-500">Sort Name</th>
+                <th className="px-6 py-4 text-xs font-semibold text-white uppercase tracking-wider border-r border-indigo-500">Short</th>
                 <th className="px-6 py-4 text-xs font-semibold text-white uppercase tracking-wider text-center">Actions</th>
               </tr>
             </thead>

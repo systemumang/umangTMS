@@ -29,7 +29,7 @@ export const AddFirmModal: React.FC<AddFirmModalProps> = ({ isOpen, onClose, onS
     const cleanSortName = sortName.trim();
     if (!cleanName) return;
     if (!cleanSortName) {
-      setError('Sort Name is required.');
+      setError('Short is required.');
       return;
     }
 
@@ -70,17 +70,17 @@ export const AddFirmModal: React.FC<AddFirmModalProps> = ({ isOpen, onClose, onS
               {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Sort Name <span className="text-red-500">*</span></label>
+              <label className="text-sm font-medium text-gray-700">Short <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 required
                 value={sortName}
                 onChange={(e) => {
                   setSortName(e.target.value);
-                  if (error === 'Sort Name is required.') setError('');
+                  if (error === 'Short is required.') setError('');
                 }}
-                className={`w-full px-4 py-2.5 bg-white border rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none ${error === 'Sort Name is required.' ? 'border-red-500' : 'border-gray-200'}`}
-                placeholder="Enter sort name"
+                className={`w-full px-4 py-2.5 bg-white border rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none ${error === 'Short is required.' ? 'border-red-500' : 'border-gray-200'}`}
+                placeholder="Enter short"
               />
             </div>
           </div>

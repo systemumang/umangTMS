@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import { User, Category, RecurringTask, Firm } from '../types';
 import { SearchableSelect } from './SearchableSelect';
 
 interface AddRecurringTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (task: Omit<RecurringTask, 'id' | 'lastUpdatedOn' | 'lastUpdateRemarks'>) => void;
+  onSave: (task: Omit<RecurringTask, 'id' | 'lastUpdatedOn' | 'lastUpdateRemarks'>) => Promise<void>;
   users: User[];
   categories: Category[];
   firms: Firm[];
+  initialData?: any;
 }
 
-export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ isOpen, onClose, onSave, users, categories, firms }) => {
+export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ isOpen, onClose, onSave, users, categories, firms, initialData }) => {
 			  const [formData, setFormData] = useState<{
 			    title: string;
 			    goal: number | '';
@@ -27,7 +28,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 		    recurrenceDay: number;
 		    recurrenceMonth: string;
 		  }>({
-			    title: '',
+			    title: initialData?.name || '',
 			    goal: '',
           firm: '',
           owner: '',
@@ -41,6 +42,8 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 		    recurrenceMonth: 'January'
 		  });
 
+  const [isSaving, setIsSaving] = useState(false);
+
   if (!isOpen) return null;
 
   const userOptions = users.map(u => ({ value: u.name, label: u.name }));
@@ -52,7 +55,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
   const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate frequencyDays only for Fixed Days periodicity
@@ -73,7 +76,8 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 		      periodicity: formData.periodicity,
 		      recurrenceDay: formData.recurrenceDay,
 		      // Only include frequencyDays for Fixed Days periodicity
-		      frequencyDays: formData.periodicity === 'Fixed Days' ? Number(formData.frequencyDays) : 0
+		      frequencyDays: formData.periodicity === 'Fixed Days' ? Number(formData.frequencyDays) : 0,
+          status: 'Not Yet Started'
 		    };
 
     // Only include recurrenceMonth for Yearly periodicity
@@ -81,25 +85,32 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
       taskData.recurrenceMonth = formData.recurrenceMonth;
     }
 
-    onSave(taskData);
+    setIsSaving(true);
+    try {
+      await onSave(taskData);
 
-    // Reset form
-			    setFormData({
-			      title: '',
-			      goal: '',
-            firm: '',
-            owner: '',
-		      category: '',
-		      assignee: '',
-		      frequencyDays: '',
-		      startDate: new Date().toISOString().split('T')[0],
-		      time: '',
-		      periodicity: 'Fixed Days',
-		      recurrenceDay: 1,
-		      recurrenceMonth: 'January'
-		    });
-		    onClose();
-		  };
+      // Reset form
+      setFormData({
+        title: '',
+        goal: '',
+        firm: '',
+        owner: '',
+        category: '',
+        assignee: '',
+        frequencyDays: '',
+        startDate: new Date().toISOString().split('T')[0],
+        time: '',
+        periodicity: 'Fixed Days',
+        recurrenceDay: 1,
+        recurrenceMonth: 'January'
+      });
+      onClose();
+    } catch (error) {
+      console.error('Failed to save recurring task:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
 	  const isFormValid = () => {
 	    // Basic required fields validation
@@ -161,7 +172,8 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 	              <input 
 	                type="text"
 	                required
-		                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none appearance-none [-webkit-appearance:none] [-moz-appearance:textfield] [background-image:none] [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none [&::-webkit-calendar-picker-indicator]:opacity-0"
+                  disabled={isSaving}
+		                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none appearance-none [-webkit-appearance:none] [-moz-appearance:textfield] [background-image:none] [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none [&::-webkit-calendar-picker-indicator]:opacity-0 disabled:bg-gray-50"
 	                value={formData.title}
 	                onChange={(e) => setFormData(p => ({ ...p, title: e.target.value }))}
 	                placeholder="Enter task title"
@@ -173,7 +185,8 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 		                type="number"
                     min="0"
                     step="1"
-		                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+                    disabled={isSaving}
+		                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none disabled:bg-gray-50"
 		                value={formData.goal}
 		                onChange={(e) => setFormData(p => ({ ...p, goal: e.target.value === '' ? '' : Number(e.target.value) }))}
 			                placeholder=""
@@ -186,12 +199,13 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
                   <button
                     key={firmOption.value}
                     type="button"
+                    disabled={isSaving}
                     onClick={() => setFormData(p => ({ ...p, firm: firmOption.value }))}
                     className={`px-3 py-2 rounded-lg border text-sm font-semibold transition-colors ${
                       formData.firm === firmOption.value
                         ? 'bg-indigo-600 text-white border-indigo-600'
                         : 'bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50'
-                    }`}
+                    } disabled:opacity-50`}
                   >
                     {firmOption.label}
                   </button>
@@ -205,6 +219,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
               onChange={(val) => setFormData(p => ({ ...p, owner: val }))}
               required
               placeholder="Select owner"
+              disabled={isSaving}
             />
 	            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 	              <SearchableSelect 
@@ -214,6 +229,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
                 onChange={(val) => setFormData(p => ({ ...p, category: val }))}
                 required
                 placeholder="Select category"
+                disabled={isSaving}
               />
               <SearchableSelect 
                 label="Assignee"
@@ -222,6 +238,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
                 onChange={(val) => setFormData(p => ({ ...p, assignee: val }))}
                 required
                 placeholder="Select assignee"
+                disabled={isSaving}
               />
             </div>
 
@@ -237,12 +254,13 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
                   <button
                     key={periodOption.value}
                     type="button"
+                    disabled={isSaving}
                     onClick={() => handlePeriodicityChange(periodOption.value)}
                     className={`px-3 py-2 rounded-lg border text-sm font-semibold transition-colors ${
                       formData.periodicity === periodOption.value
                         ? 'bg-indigo-600 text-white border-indigo-600'
                         : 'bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50'
-                    }`}
+                    } disabled:opacity-50`}
                   >
                     {periodOption.label}
                   </button>
@@ -258,7 +276,8 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
                     type="number"
                     required
                     min="1"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+                    disabled={isSaving}
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none disabled:bg-gray-50"
                     value={formData.frequencyDays}
                     onChange={(e) => setFormData(p => ({ 
                       ...p, 
@@ -274,8 +293,9 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
               <div className="space-y-1">
                 <label className="text-sm font-medium text-black">Day of Week <span className="text-red-500">*</span></label>
                 <select 
-                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none disabled:bg-gray-50"
                   value={formData.recurrenceDay}
+                  disabled={isSaving}
                   onChange={(e) => setFormData(p => ({ 
                     ...p, 
                     recurrenceDay: parseInt(e.target.value) 
@@ -296,7 +316,8 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
                   required
                   min="1"
                   max="31"
-                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+                  disabled={isSaving}
+                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none disabled:bg-gray-50"
                   value={formData.recurrenceDay}
                   onChange={(e) => {
                     const value = parseInt(e.target.value) || 1;
@@ -314,8 +335,9 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-black">Month <span className="text-red-500">*</span></label>
                   <select 
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none disabled:bg-gray-50"
                     value={formData.recurrenceMonth}
+                    disabled={isSaving}
                     onChange={(e) => setFormData(p => ({ 
                       ...p, 
                       recurrenceMonth: e.target.value 
@@ -333,7 +355,8 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
                     required
                     min="1"
                     max="31"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+                    disabled={isSaving}
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none disabled:bg-gray-50"
                     value={formData.recurrenceDay}
                     onChange={(e) => {
                       const value = parseInt(e.target.value) || 1;
@@ -353,7 +376,8 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 	                <input 
 	                  type="date"
 	                  required
-	                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+                    disabled={isSaving}
+	                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none disabled:bg-gray-50"
 	                  value={formData.startDate}
 	                  onChange={(e) => setFormData(p => ({ ...p, startDate: e.target.value }))}
 	                />
@@ -363,7 +387,8 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 		                <label className="text-sm font-medium text-black">Time</label>
 		                <input
 		                  type="time"
-		                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+                      disabled={isSaving}
+		                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none disabled:bg-gray-50"
 		                  value={formData.time}
 		                  onChange={(e) => setFormData(p => ({ ...p, time: e.target.value }))}
 		                />
@@ -374,20 +399,28 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 	            <button 
 	              type="button" 
 	              onClick={onClose} 
-              className="px-6 py-2.5 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                disabled={isSaving}
+              className="px-6 py-2.5 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button 
               type="submit" 
-              disabled={!isFormValid()}
-              className={`px-6 py-2.5 text-sm font-medium rounded-lg shadow-sm transition-colors ${
+              disabled={isSaving || !isFormValid()}
+              className={`px-6 py-2.5 text-sm font-medium rounded-lg shadow-sm transition-colors flex items-center justify-center min-w-[140px] ${
                 isFormValid() 
                   ? 'text-white bg-indigo-600 hover:bg-indigo-700' 
                   : 'text-gray-400 bg-gray-200 cursor-not-allowed'
-              }`}
+              } disabled:opacity-70`}
             >
-              Save Task
+              {isSaving ? (
+                <>
+                  <Loader2 size={16} className="animate-spin mr-2" />
+                  Saving...
+                </>
+              ) : (
+                'Save Task'
+              )}
             </button>
           </div>
         </form>

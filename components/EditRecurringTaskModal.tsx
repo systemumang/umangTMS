@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import { User, Category, RecurringTask, Firm } from '../types';
 import { SearchableSelect } from './SearchableSelect';
 
 interface EditRecurringTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (task: RecurringTask) => void;
+  onSave: (task: RecurringTask) => Promise<void>;
   task: RecurringTask | null;
   users: User[];
   categories: Category[];
@@ -55,6 +55,9 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
 			    recurrenceDay: 1,
 			    recurrenceMonth: 'January'
 			  });
+
+  const [isSaving, setIsSaving] = useState(false);
+
   useEffect(() => {
     if (task && isOpen) {
       setFormData({
@@ -96,16 +99,23 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.frequencyDays === '') return;
 
-    onSave({
-		      ...task,
-		      ...formData,
-      frequencyDays: Number(formData.frequencyDays)
-    });
-    onClose();
+    setIsSaving(true);
+    try {
+      await onSave({
+        ...task,
+        ...formData,
+        frequencyDays: Number(formData.frequencyDays)
+      });
+      onClose();
+    } catch (error) {
+      console.error('Failed to save recurring task:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -124,7 +134,8 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
 	              <input 
 	                type="text"
 	                required
-		                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none appearance-none [-webkit-appearance:none] [-moz-appearance:textfield] [background-image:none] [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none [&::-webkit-calendar-picker-indicator]:opacity-0"
+                  disabled={isSaving}
+		                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none appearance-none [-webkit-appearance:none] [-moz-appearance:textfield] [background-image:none] [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none [&::-webkit-calendar-picker-indicator]:opacity-0 disabled:bg-gray-50"
 	                value={formData.title}
 	                onChange={(e) => setFormData(p => ({ ...p, title: e.target.value }))}
 	              />
@@ -135,7 +146,8 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
 		                type="number"
                     min="0"
                     step="1"
-		                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+                    disabled={isSaving}
+		                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none disabled:bg-gray-50"
 		                value={formData.goal}
 		                onChange={(e) => setFormData(p => ({ ...p, goal: e.target.value === '' ? '' : Number(e.target.value) }))}
 			                placeholder=""
@@ -148,12 +160,13 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
                   <button
                     key={firmOption.value}
                     type="button"
+                    disabled={isSaving}
                     onClick={() => setFormData(p => ({ ...p, firm: firmOption.value }))}
                     className={`px-3 py-2 rounded-lg border text-sm font-semibold transition-colors ${
                       formData.firm === firmOption.value
                         ? 'bg-indigo-600 text-white border-indigo-600'
                         : 'bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50'
-                    }`}
+                    } disabled:opacity-50`}
                   >
                     {firmOption.label}
                   </button>
@@ -167,6 +180,7 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
               onChange={(val) => setFormData(p => ({ ...p, owner: val }))}
               required
               placeholder="Select owner"
+              disabled={isSaving}
             />
 	            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 	              <SearchableSelect 
@@ -175,6 +189,7 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
                 value={formData.category}
                 onChange={(val) => setFormData(p => ({ ...p, category: val }))}
                 required
+                disabled={isSaving}
               />
               <SearchableSelect 
                 label="Assignee"
@@ -182,6 +197,7 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
                 value={formData.assignee}
                 onChange={(val) => setFormData(p => ({ ...p, assignee: val }))}
                 required
+                disabled={isSaving}
               />
             </div>
 
@@ -197,12 +213,13 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
                   <button
                     key={periodOption.value}
                     type="button"
+                    disabled={isSaving}
                     onClick={() => handlePeriodChange(periodOption.value as any)}
                     className={`px-3 py-2 rounded-lg border text-sm font-semibold transition-colors ${
                       formData.periodicity === periodOption.value
                         ? 'bg-indigo-600 text-white border-indigo-600'
                         : 'bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50'
-                    }`}
+                    } disabled:opacity-50`}
                   >
                     {periodOption.label}
                   </button>
@@ -218,7 +235,8 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
                     type="number"
                     required
                     min="1"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+                    disabled={isSaving}
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none disabled:bg-gray-50"
                     value={formData.frequencyDays}
                     onChange={(e) => setFormData(p => ({ ...p, frequencyDays: e.target.value === '' ? '' : parseInt(e.target.value) }))}
                   />
@@ -230,8 +248,9 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
               <div className="space-y-1">
                 <label className="text-sm font-medium text-black">Day of Week <span className="text-red-500">*</span></label>
                 <select 
-                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none disabled:bg-gray-50"
                   value={formData.recurrenceDay}
+                  disabled={isSaving}
                   onChange={(e) => setFormData(p => ({ ...p, recurrenceDay: parseInt(e.target.value) }))}
                 >
                   {weekDays.map((day, idx) => (
@@ -249,7 +268,8 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
                   required
                   min="1"
                   max="31"
-                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+                  disabled={isSaving}
+                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none disabled:bg-gray-50"
                   value={formData.recurrenceDay}
                   onChange={(e) => setFormData(p => ({ ...p, recurrenceDay: Math.min(31, Math.max(1, parseInt(e.target.value) || 1)) }))}
                 />
@@ -261,8 +281,9 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-black">Month <span className="text-red-500">*</span></label>
                   <select 
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none disabled:bg-gray-50"
                     value={formData.recurrenceMonth}
+                    disabled={isSaving}
                     onChange={(e) => setFormData(p => ({ ...p, recurrenceMonth: e.target.value }))}
                   >
                     {months.map(m => (
@@ -277,7 +298,8 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
                     required
                     min="1"
                     max="31"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+                    disabled={isSaving}
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none disabled:bg-gray-50"
                     value={formData.recurrenceDay}
                     onChange={(e) => setFormData(p => ({ ...p, recurrenceDay: Math.min(31, Math.max(1, parseInt(e.target.value) || 1)) }))}
                   />
@@ -291,7 +313,8 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
 	                <input 
 	                  type="date"
 	                  required
-	                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+                    disabled={isSaving}
+	                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none disabled:bg-gray-50"
 	                  value={formData.startDate}
 	                  onChange={(e) => setFormData(p => ({ ...p, startDate: e.target.value }))}
 	                />
@@ -301,7 +324,8 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
 		                <label className="text-sm font-medium text-black">Time</label>
 		                <input
 		                  type="time"
-		                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
+                      disabled={isSaving}
+		                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none disabled:bg-gray-50"
 		                  value={formData.time}
 		                  onChange={(e) => setFormData(p => ({ ...p, time: e.target.value }))}
 		                />
@@ -309,11 +333,25 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
 	            </div>
 	          </div>
 	          <div className="p-6 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end space-x-3">
-	            <button type="button" onClick={onClose} className="px-6 py-2.5 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">Cancel</button>
-	            <button type="submit" className="px-6 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm">Save Changes</button>
+	            <button type="button" disabled={isSaving} onClick={onClose} className="px-6 py-2.5 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors disabled:opacity-50">Cancel</button>
+	            <button 
+                type="submit" 
+                disabled={isSaving}
+                className="px-6 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm flex items-center justify-center min-w-[140px] disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin mr-2" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
+              </button>
 	          </div>
         </form>
       </div>
     </div>
   );
 };
+

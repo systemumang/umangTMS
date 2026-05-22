@@ -1,13 +1,13 @@
 
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import { RecurringTask } from '../types';
 
 interface UpdateRecurringTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   task: RecurringTask | null;
-  onSave: (updatedTask: RecurringTask & { lastUpdateRemarks: string; goal?: string; photos?: string; pdf?: string }) => void;
+  onSave: (updatedTask: RecurringTask & { lastUpdateRemarks: string; goal?: string; photos?: string; pdf?: string }) => Promise<void>;
 }
 
 export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> = ({ isOpen, onClose, task, onSave }) => {
@@ -24,37 +24,45 @@ export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> =
   const [goal, setGoal] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
   const [pdf, setPdf] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   if (!isOpen || !task) return null;
   const hasTaskGoal = String(task.goal ?? '').trim() !== '';
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (hasTaskGoal && goal.trim() === '') {
       alert('Achieved is required when Goal is set.');
       return;
     }
     
-    // Explicitly include title, category, and assignee in the update payload 
-    // to ensure logs correctly identify the task in the spreadsheet.
-    onSave({ 
-      ...task, 
-      status, 
-      lastUpdateRemarks: remarks,
-      goal,
-      photos: JSON.stringify(photos || []),
-      pdf: pdf || '',
-      title: task.title,
-      category: task.category,
-      assignee: task.assignee
-    });
-    
-    setRemarks('');
-    setStatus('Complete');
-    setGoal('');
-    setPhotos([]);
-    setPdf('');
-    onClose();
+    setIsSaving(true);
+    try {
+      // Explicitly include title, category, and assignee in the update payload 
+      // to ensure logs correctly identify the task in the spreadsheet.
+      await onSave({ 
+        ...task, 
+        status, 
+        lastUpdateRemarks: remarks,
+        goal,
+        photos: JSON.stringify(photos || []),
+        pdf: pdf || '',
+        title: task.title,
+        category: task.category,
+        assignee: task.assignee
+      });
+      
+      setRemarks('');
+      setStatus('Complete');
+      setGoal('');
+      setPhotos([]);
+      setPdf('');
+      onClose();
+    } catch (error) {
+      console.error('Failed to update recurring task:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -78,6 +86,7 @@ export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> =
                 onChange={(e) => setStatus(e.target.value as any)}
                 className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none"
                 required
+                disabled={isSaving}
               >
                 <option value="Not Yet Started">Not Yet Started</option>
                 <option value="In Progress">In Progress</option>
@@ -93,6 +102,7 @@ export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> =
                 placeholder="Enter what was done..."
                 value={remarks}
                 onChange={(e) => setRemarks(e.target.value)}
+                disabled={isSaving}
               />
             </div>
             {hasTaskGoal && (
@@ -106,6 +116,7 @@ export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> =
                   placeholder="Enter achieved value"
                   value={goal}
                   onChange={(e) => setGoal(e.target.value.replace(/[^\d.]/g, ''))}
+                  disabled={isSaving}
                 />
               </div>
             )}
@@ -116,6 +127,7 @@ export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> =
                   type="file"
                   accept="image/*"
                   multiple
+                  disabled={isSaving}
                   onChange={async (e) => {
                     const files = Array.from(e.target.files || []);
                     if (files.length > 5) {
@@ -134,6 +146,7 @@ export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> =
                 <input
                   type="file"
                   accept="application/pdf"
+                  disabled={isSaving}
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
@@ -152,8 +165,28 @@ export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> =
             )}
           </div>
           <div className="p-6 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end space-x-3">
-            <button type="button" onClick={onClose} className="px-6 py-2.5 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">Cancel</button>
-            <button type="submit" className="px-6 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm transition-all">Confirm Update</button>
+            <button 
+              type="button" 
+              onClick={onClose} 
+              disabled={isSaving}
+              className="px-6 py-2.5 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              disabled={isSaving}
+              className="px-6 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center min-w-[140px]"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 size={16} className="animate-spin mr-2" />
+                  Updating...
+                </>
+              ) : (
+                'Confirm Update'
+              )}
+            </button>
           </div>
         </form>
       </div>
