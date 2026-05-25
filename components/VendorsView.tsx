@@ -4,6 +4,7 @@ import { Plus, Search, Edit2, Trash2, LayoutGrid, LayoutList, Mail, Phone, MapPi
 import { Vendor } from '../types';
 import { AddVendorModal } from './AddVendorModal';
 import { EditVendorModal } from './EditVendorModal';
+import { useLabels } from '../labelOverrides';
 
 interface VendorsViewProps {
   vendors: Vendor[];
@@ -13,6 +14,7 @@ interface VendorsViewProps {
 }
 
 export const VendorsView: React.FC<VendorsViewProps> = ({ vendors, onAddVendor, onDeleteVendor, onEditVendor }) => {
+  const { getViewLabel } = useLabels();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
@@ -52,7 +54,7 @@ export const VendorsView: React.FC<VendorsViewProps> = ({ vendors, onAddVendor, 
     <div className="space-y-6 pb-10">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-indigo-600">Vendors</h2>
+          <h2 className="text-2xl font-bold text-indigo-600">{getViewLabel('vendors', 'Vendors')}</h2>
           <p className="text-sm text-gray-500 mt-1">Manage vendors and suppliers</p>
         </div>
       </div>

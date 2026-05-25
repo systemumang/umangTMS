@@ -5,6 +5,7 @@ import { Project, Client } from '../types';
 import { AddProjectModal } from './AddProjectModal';
 import { EditProjectModal } from './EditProjectModal';
 import { ConfirmationModal } from './ConfirmationModal';
+import { useLabels } from '../labelOverrides';
 
 interface ProjectsViewProps {
   projects: Project[];
@@ -22,6 +23,7 @@ type SortConfig = {
 } | null;
 
 export const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, clients, onAddProject, onDeleteProject, onEditProject, onAddClient, onNavigateToProjectTasks }) => {
+  const { getViewLabel } = useLabels();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -80,7 +82,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, clients, o
     <div className="space-y-6 pb-10">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-indigo-600">Projects</h2>
+          <h2 className="text-2xl font-bold text-indigo-600">{getViewLabel('projects', 'Projects')}</h2>
           <p className="text-sm text-gray-500 mt-1">Manage client projects and communication channels</p>
         </div>
       </div>

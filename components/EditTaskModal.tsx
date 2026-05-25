@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Plus, Info, AlertTriangle, Clock3 } from 'lucide-react';
 import { Task, User, Category, Project, Vendor, VendorCategory, Firm } from '../types';
 import { SearchableSelect } from './SearchableSelect';
+import { useLabels } from '../labelOverrides';
 
 interface EditTaskModalProps {
   isOpen: boolean;
@@ -45,6 +46,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   lastAddedVendorCategory = '',
   onClearLastAdded
 }) => {
+  const { getFieldLabel } = useLabels();
   const [formData, setFormData] = useState<{
     title: string;
     assignees: string[]; 
@@ -267,7 +269,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                   <input type="text" readOnly value={task.date} className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-black cursor-not-allowed text-center font-medium" />
                 </div>
                 <div className="flex-1">
-                  <label className="text-sm font-medium text-black block mb-1">Task <span className="text-red-500">*</span></label>
+		              <label className="text-sm font-medium text-black block mb-1">{getFieldLabel('task.title', 'Task')} <span className="text-red-500">*</span></label>
                   <input name="title" type="text" required value={formData.title} onChange={handleChange} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none text-black font-medium" />
                 </div>
                 <div className="w-full md:w-56">
@@ -315,13 +317,13 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                   {isVendorMode ? (
                       <>
                         <div className="space-y-1">
-                            <SearchableSelect label="Task Owner" options={userOptions} value={formData.owner} onChange={(val) => setFormData(prev => ({ ...prev, owner: val }))} multiple={false} placeholder="Select Owner..." required />
+	                            <SearchableSelect label="Task Owner" labelKey="task.owner" options={userOptions} value={formData.owner} onChange={(val) => setFormData(prev => ({ ...prev, owner: val }))} multiple={false} placeholder="Select Owner..." required />
                         </div>
                         <div className="space-y-1">
-                            <SearchableSelect label="Vendor" options={vendorOptions} value={formData.vendor} onChange={(val) => setFormData(prev => ({ ...prev, vendor: val }))} placeholder="Select Vendor..." required />
+	                            <SearchableSelect label="Vendor" labelKey="task.vendor" options={vendorOptions} value={formData.vendor} onChange={(val) => setFormData(prev => ({ ...prev, vendor: val }))} placeholder="Select Vendor..." required />
                         </div>
                         <div className="space-y-1">
-                            <label className="text-sm font-medium text-black block mb-1">Vendor Category</label>
+	                            <label className="text-sm font-medium text-black block mb-1">{getFieldLabel('task.vendorCategory', 'Vendor Category')}</label>
                             <div className="flex gap-2">
                                 <div className="flex-1">
                                     <SearchableSelect
@@ -339,13 +341,13 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                   ) : (
                       <>
                         <div className="space-y-1">
-                            <SearchableSelect label="Assignees" options={userOptions} value={formData.assignees} onChange={(val) => setFormData(prev => ({ ...prev, assignees: val }))} multiple={true} placeholder="Select Assignees..." required />
+	                            <SearchableSelect label="Assignees" labelKey="task.assignees" options={userOptions} value={formData.assignees} onChange={(val) => setFormData(prev => ({ ...prev, assignees: val }))} multiple={true} placeholder="Select Assignees..." required />
                         </div>
                         <div className="space-y-1">
-                            <SearchableSelect label="Task Owner" options={userOptions} value={formData.owner} onChange={(val) => setFormData(prev => ({ ...prev, owner: val }))} multiple={false} placeholder="Select Owner..." required />
+	                            <SearchableSelect label="Task Owner" labelKey="task.owner" options={userOptions} value={formData.owner} onChange={(val) => setFormData(prev => ({ ...prev, owner: val }))} multiple={false} placeholder="Select Owner..." required />
                         </div>
                         <div className="space-y-1">
-                            <label className="text-sm font-medium text-black block mb-1">Category <span className="text-red-500">*</span></label>
+	                            <label className="text-sm font-medium text-black block mb-1">{getFieldLabel('task.category', 'Category')} <span className="text-red-500">*</span></label>
                             <div className="flex gap-2">
                                 <div className="flex-1">
                                     <SearchableSelect options={categoryOptions} value={formData.category} onChange={(val) => setFormData(prev => ({ ...prev, category: val }))} placeholder="Select Category..." required />
@@ -365,7 +367,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
               </div>
               
               <div className="space-y-1">
-                <label className="text-sm font-medium text-black block mb-1">Notes</label>
+		              <label className="text-sm font-medium text-black block mb-1">{getFieldLabel('task.remarks', 'Notes')}</label>
                 <textarea name="notes" rows={4} value={formData.notes} onChange={handleChange} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none text-black font-medium resize-none"></textarea>
               </div>
 

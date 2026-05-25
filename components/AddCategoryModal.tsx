@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Category } from '../types';
+import { useLabels } from '../labelOverrides';
 
 interface AddCategoryModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface AddCategoryModalProps {
 }
 
 export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onClose, onSave, initialData, categories }) => {
+  const { getFieldLabel } = useLabels();
   const [formData, setFormData] = useState({
     name: '',
   });
@@ -64,7 +66,7 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-6">
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-600">Name *</label>
+              <label className="text-sm font-medium text-gray-600">{getFieldLabel('category.name', 'Name')} *</label>
               <input 
                 name="name"
                 type="text"

@@ -5,6 +5,7 @@ import { UserTable } from './UserTable';
 import { AddUserModal } from './AddUserModal';
 import { UpdateUserModal } from './UpdateUserModal';
 import { User, Designation } from '../types';
+import { useLabels } from '../labelOverrides';
 
 interface UsersViewProps {
   users: User[];
@@ -18,6 +19,7 @@ interface UsersViewProps {
 }
 
 export const UsersView: React.FC<UsersViewProps> = ({ users, designations, onAddUser, onEditUser, onToggleStatus, onDeleteUser, onAddDesignation, sidebarCollapsed = false }) => {
+  const { getViewLabel } = useLabels();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -82,7 +84,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ users, designations, onAdd
     <div className="space-y-6 pb-10">
       <div className="flex items-center justify-between gap-3 md:gap-4">
         <div className={sidebarCollapsed ? 'pl-14 md:pl-16' : ''}>
-          <h2 className="text-2xl font-bold text-indigo-600">Users</h2>
+          <h2 className="text-2xl font-bold text-indigo-600">{getViewLabel('users', 'Users')}</h2>
         </div>
         <button
           onClick={() => setIsAddModalOpen(true)}

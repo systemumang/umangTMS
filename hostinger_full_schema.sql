@@ -195,6 +195,8 @@ CREATE TABLE IF NOT EXISTS app_settings (
   metaPhoneNumberId VARCHAR(255) DEFAULT '',
   metaWabaId VARCHAR(255) DEFAULT '',
   metaVerifyToken VARCHAR(255) DEFAULT '',
+  viewLabelOverrides TEXT,
+  fieldLabelOverrides TEXT,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { ChevronDown, X, Check, Square, CheckSquare, ListChecks, Eraser, Plus } from 'lucide-react';
+import { useLabels } from '../labelOverrides';
 
 interface Option {
   value: string;
@@ -9,6 +10,7 @@ interface Option {
 
 interface SearchableSelectProps {
   label?: React.ReactNode;
+  labelKey?: string;
   options: Option[];
   value: string | string[]; // Single value or array of values
   onChange: (value: any) => void;
@@ -25,6 +27,7 @@ interface SearchableSelectProps {
 
 export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   label,
+  labelKey,
   options,
   value,
   onChange,
@@ -38,12 +41,20 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   createLabel,
   compact = false
 }) => {
+  const { getFieldLabel } = useLabels();
   const normalizedPlaceholder = placeholderText ? 'Select' : 'Select';
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+	  const wrapperRef = useRef<HTMLDivElement>(null);
+	  const inputRef = useRef<HTMLInputElement>(null);
+	  const dropdownRef = useRef<HTMLDivElement>(null);
+
+	  const resolvedLabel = useMemo(() => {
+	    if (!labelKey) return label;
+	    if (typeof label === 'string') return getFieldLabel(labelKey, label);
+	    // If label is a ReactNode (e.g. contains required * markup), caller should handle overrides manually.
+	    return label;
+	  }, [labelKey, label, getFieldLabel]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -270,11 +281,11 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
 
   return (
     <div className={`space-y-1 relative ${className} ${disabled ? 'opacity-70' : ''}`} ref={wrapperRef}>
-      {label && (
-        <label className="text-xs font-bold text-black uppercase tracking-wider block mb-1">
-          {label} {required && <span className="text-red-500">*</span>}
-        </label>
-      )}
+	      {resolvedLabel && (
+	        <label className="text-xs font-bold text-black uppercase tracking-wider block mb-1">
+	          {resolvedLabel} {required && <span className="text-red-500">*</span>}
+	        </label>
+	      )}
       <div
         className={`w-full ${compact ? 'px-3 py-1.5 min-h-[36px]' : 'px-4 py-2.5 min-h-[44px]'} bg-white border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-500 flex justify-between items-center transition-all ${isOpen ? 'ring-2 ring-indigo-100 border-indigo-500' : ''} ${disabled ? 'bg-white cursor-not-allowed' : 'cursor-pointer'}`}
         onClick={() => !disabled && setIsOpen(!isOpen)}

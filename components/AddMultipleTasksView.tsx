@@ -3,6 +3,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { Plus, Trash2, CheckCircle2, Loader2 } from 'lucide-react';
 import { Project, Task, User, Category } from '../types';
 import { SearchableSelect } from './SearchableSelect';
+import { useLabels } from '../labelOverrides';
 
 interface AddRow {
   id: string;
@@ -35,6 +36,7 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
   onOpenAddProject,
   onOpenAddCategory
 }) => {
+  const { getFieldLabel } = useLabels();
   const [rows, setRows] = useState<AddRow[]>([
     { id: '1', title: '', priority: 'Medium', project: '', assignees: [], owner: currentUser?.name || 'PANKAJ KUMAR JAIN', category: '', dueDate: '', notes: '' }
   ]);
@@ -298,7 +300,7 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
 
               <div className="space-y-3">
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-blue-700 mb-1 block">Task</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-blue-700 mb-1 block">{getFieldLabel('task.title', 'Task')}</label>
                   <input
                     type="text"
                     value={row.title}
@@ -310,7 +312,7 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-blue-700 mb-1 block">Priority</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-blue-700 mb-1 block">{getFieldLabel('task.priority', 'Priority')}</label>
                     <select
                       value={row.priority}
                       onChange={(e) => updateField(row.id, 'priority', e.target.value)}
@@ -322,7 +324,7 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
                     </select>
                   </div>
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-blue-700 mb-1 block">Due Date</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-blue-700 mb-1 block">{getFieldLabel('task.dueDate', 'Due Date')}</label>
                     <input
                       type="date"
                       value={row.dueDate}
@@ -361,7 +363,7 @@ export const AddMultipleTasksView: React.FC<AddMultipleTasksViewProps> = ({
                 />
 
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-blue-700 mb-1 block">Notes</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-blue-700 mb-1 block">{getFieldLabel('task.remarks', 'Notes')}</label>
                   <textarea
                     value={row.notes}
                     onChange={(e) => updateField(row.id, 'notes', e.target.value)}

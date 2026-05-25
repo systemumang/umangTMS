@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Plus, Clock3 } from 'lucide-react';
 import { Task, User, Category, Project, Vendor, VendorCategory, Firm } from '../types';
 import { SearchableSelect } from './SearchableSelect';
+import { useLabels } from '../labelOverrides';
 
 interface AddTaskModalProps {
   isOpen: boolean;
@@ -43,6 +44,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
   lastAddedVendorCategory = '',
   onClearLastAdded
 }) => {
+  const { getFieldLabel } = useLabels();
   const [formData, setFormData] = useState<{
     title: string;
     assignees: string[]; 
@@ -226,9 +228,9 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
         <form onSubmit={handleSubmit}>
           <div className="p-4 md:p-6 space-y-5">
             
-	            <div className="space-y-1">
-	              <label className="text-sm font-medium text-black block mb-1">Task <span className="text-red-500">*</span></label>
-	              <input 
+		            <div className="space-y-1">
+		              <label className="text-sm font-medium text-black block mb-1">{getFieldLabel('task.title', 'Task')} <span className="text-red-500">*</span></label>
+		              <input 
 	                name="title"
 	                type="text"
 	                required
@@ -239,9 +241,9 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
 	              />
 	            </div>
 
-	            <div className="space-y-1">
-	              <label className="text-sm font-medium text-black block mb-1">Notes</label>
-	              <textarea 
+		            <div className="space-y-1">
+		              <label className="text-sm font-medium text-black block mb-1">{getFieldLabel('task.remarks', 'Notes')}</label>
+		              <textarea 
 	                name="notes"
 	                rows={4}
 	                value={formData.notes}
@@ -250,9 +252,9 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
 	              ></textarea>
 	            </div>
 
-	            <div className="flex flex-col md:flex-row gap-4">
-	              <div className="w-full md:w-72">
-	                <label className="text-sm font-medium text-black block mb-1">Priority <span className="text-red-500">*</span></label>
+		            <div className="flex flex-col md:flex-row gap-4">
+		              <div className="w-full md:w-72">
+		                <label className="text-sm font-medium text-black block mb-1">{getFieldLabel('task.priority', 'Priority')} <span className="text-red-500">*</span></label>
                   <div className="grid grid-cols-3 gap-2">
                     {(['High', 'Medium', 'Low'] as const).map((priorityOption) => (
                       <button
@@ -298,6 +300,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
 	                        <div className="space-y-1">
 	                            <SearchableSelect
 	                                label="Task Owner"
+	                                labelKey="task.owner"
 	                                options={userOptions}
 	                                value={formData.owner}
 	                                onChange={(val) => setFormData(prev => ({ ...prev, owner: val }))}
@@ -309,6 +312,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
 	                        <div className="space-y-1">
 	                            <SearchableSelect
 	                                label="Vendor"
+	                                labelKey="task.vendor"
 	                                options={vendorOptions}
 	                                value={formData.vendor}
 	                                onChange={(val) => setFormData(prev => ({ ...prev, vendor: val }))}
@@ -349,6 +353,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
 	                        <div className="space-y-1">
 	                            <SearchableSelect
 	                                label="Assignees"
+	                                labelKey="task.assignees"
 	                                options={userOptions}
 	                                value={formData.assignees}
 	                                onChange={(val) => setFormData(prev => ({ ...prev, assignees: val }))}
@@ -360,6 +365,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
 	                        <div className="space-y-1">
 	                            <SearchableSelect
 	                                label="Task Owner"
+	                                labelKey="task.owner"
 	                                options={userOptions}
 	                                value={formData.owner}
 	                                onChange={(val) => setFormData(prev => ({ ...prev, owner: val }))}

@@ -4,6 +4,7 @@ import { Plus, Search, Edit2, Trash2, LayoutGrid, LayoutList, ArrowUpDown, Arrow
 import { VendorCategory } from '../types';
 import { AddVendorCategoryModal } from './AddVendorCategoryModal';
 import { ConfirmationModal } from './ConfirmationModal';
+import { useLabels } from '../labelOverrides';
 
 interface VendorCategoriesViewProps {
   categories: VendorCategory[];
@@ -18,6 +19,7 @@ type SortConfig = {
 } | null;
 
 export const VendorCategoriesView: React.FC<VendorCategoriesViewProps> = ({ categories, onAddCategory, onDeleteCategory, onEditCategory }) => {
+  const { getViewLabel } = useLabels();
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   const [sortConfig, setSortConfig] = useState<SortConfig>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -74,7 +76,7 @@ export const VendorCategoriesView: React.FC<VendorCategoriesViewProps> = ({ cate
   return (
     <div className="space-y-6 pb-10">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div><h2 className="text-2xl font-bold text-indigo-600">Vendor Task Categories</h2><p className="text-sm text-gray-500 mt-1">Manage vendor task categories</p></div>
+        <div><h2 className="text-2xl font-bold text-indigo-600">{getViewLabel('vendor-categories', 'Vendor Task Categories')}</h2><p className="text-sm text-gray-500 mt-1">Manage vendor task categories</p></div>
       </div>
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-indigo-300 flex flex-col md:flex-row gap-4 items-center justify-between">

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Client } from '../types';
+import { useLabels } from '../labelOverrides';
 
 interface EditClientModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface EditClientModalProps {
 }
 
 export const EditClientModal: React.FC<EditClientModalProps> = ({ isOpen, onClose, onSave, client, clients }) => {
+  const { getFieldLabel } = useLabels();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -89,7 +91,7 @@ export const EditClientModal: React.FC<EditClientModalProps> = ({ isOpen, onClos
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-4">
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-900">Client Name *</label>
+              <label className="text-sm font-medium text-gray-900">{getFieldLabel('client.name', 'Client Name')} *</label>
               <input 
                 name="name"
                 type="text"
@@ -103,7 +105,7 @@ export const EditClientModal: React.FC<EditClientModalProps> = ({ isOpen, onClos
             </div>
 
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-900">GST Number</label>
+              <label className="text-sm font-medium text-gray-900">{getFieldLabel('client.gstNumber', 'GST Number')}</label>
               <input 
                 name="gstNumber"
                 type="text"
@@ -117,7 +119,7 @@ export const EditClientModal: React.FC<EditClientModalProps> = ({ isOpen, onClos
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-900">Email</label>
+                <label className="text-sm font-medium text-gray-900">{getFieldLabel('client.email', 'Email')}</label>
                 <input 
                     name="email"
                     type="text"
@@ -128,7 +130,7 @@ export const EditClientModal: React.FC<EditClientModalProps> = ({ isOpen, onClos
                 />
                 </div>
                 <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-900">Mobile</label>
+                <label className="text-sm font-medium text-gray-900">{getFieldLabel('client.mobile', 'Mobile')}</label>
                 <input 
                     name="mobile"
                     type="text"
@@ -141,7 +143,7 @@ export const EditClientModal: React.FC<EditClientModalProps> = ({ isOpen, onClos
                 </div>
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-900">Address</label>
+              <label className="text-sm font-medium text-gray-900">{getFieldLabel('client.address', 'Address')}</label>
               <textarea 
                 name="address"
                 rows={3}

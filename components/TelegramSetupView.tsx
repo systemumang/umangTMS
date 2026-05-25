@@ -1,8 +1,10 @@
 
 import React from 'react';
 import { Bot, Users, MessageSquare, Plus, Search, Info } from 'lucide-react';
+import { useLabels } from '../labelOverrides';
 
 export const TelegramSetupView: React.FC = () => {
+  const { getViewLabel } = useLabels();
   const commonIconClass = "inline-flex items-center justify-center p-2 bg-indigo-50 rounded-full text-indigo-600 flex-shrink-0";
   const stepTitleClass = "font-semibold text-lg text-indigo-800"; // Removed block and mb-1 for inline usage
   const stepDescriptionClass = "text-sm text-gray-600 font-normal";
@@ -11,7 +13,7 @@ export const TelegramSetupView: React.FC = () => {
     <div className="space-y-8 pb-10 max-w-4xl mx-auto">
       <div className="flex flex-col gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-indigo-600">Telegram Group Setup</h2>
+	          <h2 className="text-2xl font-bold text-indigo-600">{getViewLabel('telegram-setup', 'Telegram Group Setup')}</h2>
           <p className="text-sm text-gray-500 mt-1">
             Follow these steps to find your Telegram Group Chat ID for notifications.
           </p>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { StatusMaster } from '../types';
+import { useLabels } from '../labelOverrides';
 
 interface AddStatusModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface AddStatusModalProps {
 }
 
 export const AddStatusModal: React.FC<AddStatusModalProps> = ({ isOpen, onClose, onSave, initialData, statuses }) => {
+  const { getFieldLabel } = useLabels();
   const [name, setName] = useState('');
   const [error, setError] = useState('');
 
@@ -46,7 +48,7 @@ export const AddStatusModal: React.FC<AddStatusModalProps> = ({ isOpen, onClose,
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-4">
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Status Name <span className="text-red-500">*</span></label>
+              <label className="text-sm font-medium text-gray-700">{getFieldLabel('status.name', 'Status Name')} <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 required
@@ -67,4 +69,3 @@ export const AddStatusModal: React.FC<AddStatusModalProps> = ({ isOpen, onClose,
     </div>
   );
 };
-

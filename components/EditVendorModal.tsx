@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Vendor } from '../types';
+import { useLabels } from '../labelOverrides';
 
 interface EditVendorModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface EditVendorModalProps {
 }
 
 export const EditVendorModal: React.FC<EditVendorModalProps> = ({ isOpen, onClose, onSave, vendor, vendors }) => {
+  const { getFieldLabel } = useLabels();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -108,7 +110,7 @@ export const EditVendorModal: React.FC<EditVendorModalProps> = ({ isOpen, onClos
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-4">
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-900">Vendor Name *</label>
+              <label className="text-sm font-medium text-gray-900">{getFieldLabel('vendor.name', 'Vendor Name')} *</label>
               <input 
                 name="name"
                 type="text"
@@ -123,7 +125,7 @@ export const EditVendorModal: React.FC<EditVendorModalProps> = ({ isOpen, onClos
             
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-900">GST Number</label>
+                    <label className="text-sm font-medium text-gray-900">{getFieldLabel('vendor.gstNumber', 'GST Number')}</label>
                     <input 
                         name="gstNumber"
                         type="text"
@@ -135,7 +137,7 @@ export const EditVendorModal: React.FC<EditVendorModalProps> = ({ isOpen, onClos
                     {errors.gstNumber && <p className="text-xs text-red-500">{errors.gstNumber}</p>}
                 </div>
                 <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-900">Mobile</label>
+                    <label className="text-sm font-medium text-gray-900">{getFieldLabel('vendor.mobile', 'Mobile')}</label>
                     <input 
                         name="mobile"
                         type="text"
@@ -149,7 +151,7 @@ export const EditVendorModal: React.FC<EditVendorModalProps> = ({ isOpen, onClos
             </div>
 
             <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-900">Email</label>
+                <label className="text-sm font-medium text-gray-900">{getFieldLabel('vendor.email', 'Email')}</label>
                 <input 
                     name="email"
                     type="text"
@@ -162,7 +164,7 @@ export const EditVendorModal: React.FC<EditVendorModalProps> = ({ isOpen, onClos
             </div>
 
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-900">Address</label>
+              <label className="text-sm font-medium text-gray-900">{getFieldLabel('vendor.address', 'Address')}</label>
               <textarea 
                 name="address"
                 rows={3}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Plus } from 'lucide-react';
 import { Project, Client } from '../types';
 import { SearchableSelect } from './SearchableSelect';
+import { useLabels } from '../labelOverrides';
 
 interface AddProjectModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface AddProjectModalProps {
 }
 
 export const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClose, onSave, clients, onAddClient, initialName }) => {
+  const { getFieldLabel } = useLabels();
   const [formData, setFormData] = useState({
     name: '',
     client: '',
@@ -57,7 +59,7 @@ export const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClos
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-600 block mb-1">Project Name <span className="text-red-500">*</span></label>
+              <label className="text-sm font-medium text-gray-600 block mb-1">{getFieldLabel('project.name', 'Project Name')} <span className="text-red-500">*</span></label>
               <input 
                 name="name"
                 type="text"
@@ -69,7 +71,7 @@ export const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClos
             </div>
             
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-600 block mb-1">Client Name <span className="text-red-500">*</span></label>
+              <label className="text-sm font-medium text-gray-600 block mb-1">{getFieldLabel('project.client', 'Client Name')} <span className="text-red-500">*</span></label>
               <div className="flex gap-2">
                 <div className="flex-1">
                    <SearchableSelect
@@ -92,7 +94,7 @@ export const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClos
             </div>
 
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-600 block mb-1">Project Email</label>
+              <label className="text-sm font-medium text-gray-600 block mb-1">{getFieldLabel('project.email', 'Project Email')}</label>
               <input 
                 name="projectEmail"
                 type="email"
@@ -105,7 +107,7 @@ export const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClos
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-600 block mb-1">Telegram Group ID</label>
+                    <label className="text-sm font-medium text-gray-600 block mb-1">{getFieldLabel('project.telegramGroupId', 'Telegram Group ID')}</label>
                     <input 
                         name="telegramGroupId"
                         type="text"
@@ -116,7 +118,7 @@ export const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClos
                     />
                 </div>
                 <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-600 block mb-1">WhatsApp Group ID</label>
+                    <label className="text-sm font-medium text-gray-600 block mb-1">{getFieldLabel('project.whatsappGroupId', 'WhatsApp Group ID')}</label>
                     <input 
                         name="whatsappGroupId"
                         type="text"
@@ -129,7 +131,7 @@ export const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClos
             </div>
 
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-600 block mb-1">Status</label>
+              <label className="text-sm font-medium text-gray-600 block mb-1">{getFieldLabel('project.status', 'Status')}</label>
               <div className="relative">
                 <select 
                   name="status"

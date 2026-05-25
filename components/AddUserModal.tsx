@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { X, Plus, Eye, EyeOff } from 'lucide-react';
 import { User, Designation } from '../types';
 import { SearchableSelect } from './SearchableSelect';
+import { useLabels } from '../labelOverrides';
 
 interface AddUserModalProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface AddUserModalProps {
 }
 
 export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onSave, designations, onAddDesignation, users }) => {
+  const { getFieldLabel } = useLabels();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -127,7 +129,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onS
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-4">
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-900">Full Name <span className="text-red-500">*</span></label>
+	              <label className="text-sm font-medium text-gray-900">{getFieldLabel('user.name', 'Full Name')} <span className="text-red-500">*</span></label>
               <input 
                 name="name"
                 type="text"
@@ -142,7 +144,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onS
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-900">Email <span className="text-red-500">*</span></label>
+	                <label className="text-sm font-medium text-gray-900">{getFieldLabel('user.email', 'Email')} <span className="text-red-500">*</span></label>
                 <input 
                     name="email"
                     type="text" 
@@ -155,7 +157,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onS
                 {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
                 </div>
                 <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-900">Mobile Number <span className="text-red-500">*</span></label>
+	                <label className="text-sm font-medium text-gray-900">{getFieldLabel('user.mobile', 'Mobile Number')} <span className="text-red-500">*</span></label>
                 <input 
                     name="mobile"
                     type="text"
@@ -170,7 +172,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onS
             </div>
 
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-900">Telegram User Name</label>
+	              <label className="text-sm font-medium text-gray-900">{getFieldLabel('user.telegramUserName', 'Telegram User Name')}</label>
               <div className="relative">
                   <span className="absolute left-4 top-2.5 text-gray-400">@</span>
                   <input 
@@ -186,7 +188,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onS
             
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-900">Designation</label>
+	                    <label className="text-sm font-medium text-gray-900">{getFieldLabel('user.designation', 'Designation')}</label>
                      <div className="flex gap-2">
                         <div className="flex-1">
                             <SearchableSelect 
@@ -207,7 +209,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onS
                 </div>
 
                 <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-900">Role <span className="text-red-500">*</span></label>
+	                <label className="text-sm font-medium text-gray-900">{getFieldLabel('user.role', 'Role')} <span className="text-red-500">*</span></label>
                 <div className="relative">
                     <select 
                     name="role"
@@ -227,7 +229,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onS
             </div>
 
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-900">Password <span className="text-red-500">*</span></label>
+	              <label className="text-sm font-medium text-gray-900">{getFieldLabel('user.password', 'Password')} <span className="text-red-500">*</span></label>
               <div className="relative">
                 <input 
                   name="password"

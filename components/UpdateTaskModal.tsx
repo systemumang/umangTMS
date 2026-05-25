@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, AlertTriangle, Clock } from 'lucide-react';
 import { Task, User, Vendor } from '../types';
 import { SearchableSelect } from './SearchableSelect';
+import { useLabels } from '../labelOverrides';
 
 interface UpdateTaskModalProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface UpdateTaskModalProps {
 }
 
 export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClose, task, onUpdate, users, vendors = [], statusOptions }) => {
+  const { getFieldLabel } = useLabels();
   const [formData, setFormData] = useState<Partial<Task>>({});
   const [reassignSelection, setReassignSelection] = useState<string | string[]>([]);
   const [remarksInput, setRemarksInput] = useState<string>('');
@@ -176,7 +178,7 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-900 block mb-1">Status <span className="text-red-500">*</span></label>
+	                  <label className="text-sm font-medium text-gray-900 block mb-1">{getFieldLabel('task.status', 'Status')} <span className="text-red-500">*</span></label>
                   <select 
                       name="status"
                       required
@@ -190,7 +192,7 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
                     </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-900 block mb-1">Minutes Logged</label>
+	                  <label className="text-sm font-medium text-gray-900 block mb-1">{getFieldLabel('task.minutesLogged', 'Minutes Logged')}</label>
                   <div className="relative">
                     <input 
                       type="number" 
@@ -206,9 +208,9 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-900 block mb-1">
-                  Update Remark <span className="text-red-500">*</span>
-                </label>
+	                <label className="text-sm font-medium text-gray-900 block mb-1">
+	                  {getFieldLabel('task.lastUpdateRemarks', 'Update Remark')} <span className="text-red-500">*</span>
+	                </label>
                 <textarea 
                   name="remarks"
                   rows={3}
@@ -221,7 +223,7 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
 
               {hasTaskGoal && (
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-900 block mb-1">Achieved <span className="text-red-500">*</span></label>
+	                  <label className="text-sm font-medium text-gray-900 block mb-1">{getFieldLabel('task.achieved', 'Achieved')} <span className="text-red-500">*</span></label>
                   <input
                     type="number"
                     min="0"
@@ -236,7 +238,7 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-900 block mb-1">Photo (Up to 5)</label>
+	                  <label className="text-sm font-medium text-gray-900 block mb-1">{getFieldLabel('task.photos', 'Photo (Up to 5)')}</label>
                   <input
                     type="file"
                     accept="image/*"
@@ -267,7 +269,7 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-900 block mb-1">PDF</label>
+	                  <label className="text-sm font-medium text-gray-900 block mb-1">{getFieldLabel('task.pdf', 'PDF')}</label>
                   <input
                     type="file"
                     accept="application/pdf"
@@ -296,11 +298,12 @@ export const UpdateTaskModal: React.FC<UpdateTaskModalProps> = ({ isOpen, onClos
 
               {(formData.status === 'In Progress' || formData.status === 'Pending for Client' || formData.status === 'Pending for Owner') && (
                 <div className="space-y-1">
-                  <SearchableSelect 
-                      label={isVendorTask ? "Reassign Vendor" : "Reassign User"}
-                      options={isVendorTask ? vendorOptions : userOptions}
-                      value={reassignSelection}
-                      onChange={setReassignSelection}
+	                  <SearchableSelect 
+	                      label={isVendorTask ? "Reassign Vendor" : "Reassign User"}
+	                      labelKey={isVendorTask ? "task.reassignVendor" : "task.reassignUser"}
+	                      options={isVendorTask ? vendorOptions : userOptions}
+	                      value={reassignSelection}
+	                      onChange={setReassignSelection}
                       multiple={!isVendorTask} 
                       placeholder={isVendorTask ? "Select Vendor..." : "Select Assignees..."}
                   />

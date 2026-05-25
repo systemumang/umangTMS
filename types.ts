@@ -195,6 +195,8 @@ export interface AppSettings {
   metaPhoneNumberId: string;
   metaWabaId: string;
   metaVerifyToken: string;
+  viewLabelOverrides?: Record<string, string> | string;
+  fieldLabelOverrides?: Record<string, string> | string;
 }
 
 export interface StatusMaster {

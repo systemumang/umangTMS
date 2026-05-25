@@ -221,18 +221,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         return $u;
     }, fetchAllRows($conn, 'users'));
 
-    $settingsRows = fetchAllRows($conn, 'app_settings');
-    $settings = $settingsRows[0] ?? [
-        'officeTokenId' => '',
-        'officeTelegramGroupId' => '',
-        'whatsappGroupId' => '',
-        'masId' => '',
-        'masPassword' => '',
-        'metaAccessToken' => '',
-        'metaPhoneNumberId' => '',
-        'metaWabaId' => '',
-        'metaVerifyToken' => ''
-    ];
+	    $settingsRows = fetchAllRows($conn, 'app_settings');
+	    $settings = $settingsRows[0] ?? [
+	        'officeTokenId' => '',
+	        'officeTelegramGroupId' => '',
+	        'whatsappGroupId' => '',
+	        'masId' => '',
+	        'masPassword' => '',
+	        'metaAccessToken' => '',
+	        'metaPhoneNumberId' => '',
+	        'metaWabaId' => '',
+	        'metaVerifyToken' => '',
+	        'viewLabelOverrides' => '{}',
+	        'fieldLabelOverrides' => '{}'
+	    ];
+
+	    if (!isset($settings['viewLabelOverrides']) || trim((string)$settings['viewLabelOverrides']) === '') {
+	        $settings['viewLabelOverrides'] = '{}';
+	    }
+	    if (!isset($settings['fieldLabelOverrides']) || trim((string)$settings['fieldLabelOverrides']) === '') {
+	        $settings['fieldLabelOverrides'] = '{}';
+	    }
 
     sendJson([
         'success' => true,
@@ -666,30 +675,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         sendJson(['success' => true]);
     }
 
-    if ($action === 'updateMaster' && $table === 'app_settings') {
-        $officeTokenId = trim((string)($data['officeTokenId'] ?? ''));
-        $officeTelegramGroupId = trim((string)($data['officeTelegramGroupId'] ?? ''));
-        $whatsappGroupId = trim((string)($data['whatsappGroupId'] ?? ''));
-        $masId = trim((string)($data['masId'] ?? ''));
-        $masPassword = (string)($data['masPassword'] ?? '');
-        $metaAccessToken = trim((string)($data['metaAccessToken'] ?? ''));
-        $metaPhoneNumberId = trim((string)($data['metaPhoneNumberId'] ?? ''));
-        $metaWabaId = trim((string)($data['metaWabaId'] ?? ''));
-        $metaVerifyToken = trim((string)($data['metaVerifyToken'] ?? ''));
+	    if ($action === 'updateMaster' && $table === 'app_settings') {
+	        $officeTokenId = trim((string)($data['officeTokenId'] ?? ''));
+	        $officeTelegramGroupId = trim((string)($data['officeTelegramGroupId'] ?? ''));
+	        $whatsappGroupId = trim((string)($data['whatsappGroupId'] ?? ''));
+	        $masId = trim((string)($data['masId'] ?? ''));
+	        $masPassword = (string)($data['masPassword'] ?? '');
+	        $metaAccessToken = trim((string)($data['metaAccessToken'] ?? ''));
+	        $metaPhoneNumberId = trim((string)($data['metaPhoneNumberId'] ?? ''));
+	        $metaWabaId = trim((string)($data['metaWabaId'] ?? ''));
+	        $metaVerifyToken = trim((string)($data['metaVerifyToken'] ?? ''));
 
-        $existing = fetchAllRows($conn, 'app_settings');
-        $existingId = isset($existing[0]['id']) ? (int)$existing[0]['id'] : 0;
+	        $viewLabelOverridesRaw = $data['viewLabelOverrides'] ?? '{}';
+	        $fieldLabelOverridesRaw = $data['fieldLabelOverrides'] ?? '{}';
+	        $viewLabelOverrides = is_array($viewLabelOverridesRaw) ? json_encode($viewLabelOverridesRaw, JSON_UNESCAPED_UNICODE) : trim((string)$viewLabelOverridesRaw);
+	        $fieldLabelOverrides = is_array($fieldLabelOverridesRaw) ? json_encode($fieldLabelOverridesRaw, JSON_UNESCAPED_UNICODE) : trim((string)$fieldLabelOverridesRaw);
+	        if ($viewLabelOverrides === '') $viewLabelOverrides = '{}';
+	        if ($fieldLabelOverrides === '') $fieldLabelOverrides = '{}';
 
-        if ($existingId > 0) {
-            $stmt = $conn->prepare("UPDATE app_settings SET officeTokenId=?, officeTelegramGroupId=?, whatsappGroupId=?, masId=?, masPassword=?, metaAccessToken=?, metaPhoneNumberId=?, metaWabaId=?, metaVerifyToken=?, updated_at=NOW() WHERE id=?");
-            if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare settings update query.'], 500);
-            $stmt->bind_param('sssssssssi', $officeTokenId, $officeTelegramGroupId, $whatsappGroupId, $masId, $masPassword, $metaAccessToken, $metaPhoneNumberId, $metaWabaId, $metaVerifyToken, $existingId);
-        } else {
-            $insertId = 1;
-            $stmt = $conn->prepare("INSERT INTO app_settings (id, officeTokenId, officeTelegramGroupId, whatsappGroupId, masId, masPassword, metaAccessToken, metaPhoneNumberId, metaWabaId, metaVerifyToken, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
-            if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare settings insert query.'], 500);
-            $stmt->bind_param('isssssssss', $insertId, $officeTokenId, $officeTelegramGroupId, $whatsappGroupId, $masId, $masPassword, $metaAccessToken, $metaPhoneNumberId, $metaWabaId, $metaVerifyToken);
-        }
+	        $existing = fetchAllRows($conn, 'app_settings');
+	        $existingId = isset($existing[0]['id']) ? (int)$existing[0]['id'] : 0;
+
+	        if ($existingId > 0) {
+	            $stmt = $conn->prepare("UPDATE app_settings SET officeTokenId=?, officeTelegramGroupId=?, whatsappGroupId=?, masId=?, masPassword=?, metaAccessToken=?, metaPhoneNumberId=?, metaWabaId=?, metaVerifyToken=?, viewLabelOverrides=?, fieldLabelOverrides=?, updated_at=NOW() WHERE id=?");
+	            if ($stmt) {
+	                $stmt->bind_param('sssssssssssi', $officeTokenId, $officeTelegramGroupId, $whatsappGroupId, $masId, $masPassword, $metaAccessToken, $metaPhoneNumberId, $metaWabaId, $metaVerifyToken, $viewLabelOverrides, $fieldLabelOverrides, $existingId);
+	            } else {
+	                // Backward compatible with older schemas where override columns don't exist.
+	                $stmt = $conn->prepare("UPDATE app_settings SET officeTokenId=?, officeTelegramGroupId=?, whatsappGroupId=?, masId=?, masPassword=?, metaAccessToken=?, metaPhoneNumberId=?, metaWabaId=?, metaVerifyToken=?, updated_at=NOW() WHERE id=?");
+	                if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare settings update query.'], 500);
+	                $stmt->bind_param('sssssssssi', $officeTokenId, $officeTelegramGroupId, $whatsappGroupId, $masId, $masPassword, $metaAccessToken, $metaPhoneNumberId, $metaWabaId, $metaVerifyToken, $existingId);
+	            }
+	        } else {
+	            $insertId = 1;
+	            $stmt = $conn->prepare("INSERT INTO app_settings (id, officeTokenId, officeTelegramGroupId, whatsappGroupId, masId, masPassword, metaAccessToken, metaPhoneNumberId, metaWabaId, metaVerifyToken, viewLabelOverrides, fieldLabelOverrides, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+	            if ($stmt) {
+	                $stmt->bind_param('isssssssssss', $insertId, $officeTokenId, $officeTelegramGroupId, $whatsappGroupId, $masId, $masPassword, $metaAccessToken, $metaPhoneNumberId, $metaWabaId, $metaVerifyToken, $viewLabelOverrides, $fieldLabelOverrides);
+	            } else {
+	                // Backward compatible with older schemas where override columns don't exist.
+	                $stmt = $conn->prepare("INSERT INTO app_settings (id, officeTokenId, officeTelegramGroupId, whatsappGroupId, masId, masPassword, metaAccessToken, metaPhoneNumberId, metaWabaId, metaVerifyToken, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+	                if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare settings insert query.'], 500);
+	                $stmt->bind_param('isssssssss', $insertId, $officeTokenId, $officeTelegramGroupId, $whatsappGroupId, $masId, $masPassword, $metaAccessToken, $metaPhoneNumberId, $metaWabaId, $metaVerifyToken);
+	            }
+	        }
 
         $ok = $stmt->execute();
         $stmtError = $stmt->error;

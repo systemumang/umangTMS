@@ -3,6 +3,7 @@ import { Plus, Edit2, Trash2, FileText, Download } from 'lucide-react';
 import { StatusMaster } from '../types';
 import { AddStatusModal } from './AddStatusModal';
 import { ConfirmationModal } from './ConfirmationModal';
+import { useLabels } from '../labelOverrides';
 
 interface StatusesViewProps {
   statuses: StatusMaster[];
@@ -13,6 +14,7 @@ interface StatusesViewProps {
 }
 
 export const StatusesView: React.FC<StatusesViewProps> = ({ statuses, onAddStatus, onEditStatus, onDeleteStatus, sidebarCollapsed = false }) => {
+  const { getViewLabel } = useLabels();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selected, setSelected] = useState<StatusMaster | null>(null);
@@ -43,7 +45,7 @@ export const StatusesView: React.FC<StatusesViewProps> = ({ statuses, onAddStatu
   return (
     <div className="space-y-6 pb-10">
       <div className={`flex items-center justify-between gap-3 md:gap-4 ${sidebarCollapsed ? 'pl-14 md:pl-16' : ''}`}>
-        <h2 className="text-2xl font-bold text-indigo-600">Status</h2>
+        <h2 className="text-2xl font-bold text-indigo-600">{getViewLabel('statuses', 'Status')}</h2>
         <div className="flex items-center gap-2">
           <button onClick={handleExportPDF} title="Export PDF" className="flex items-center justify-center p-2.5 bg-indigo-500 text-white border border-indigo-600 rounded-md hover:bg-indigo-600"><Download size={16} /></button>
           <button onClick={handleExportExcel} title="Export Excel" className="flex items-center justify-center p-2.5 bg-indigo-600 text-white border border-indigo-700 rounded-md hover:bg-indigo-700"><FileText size={16} /></button>

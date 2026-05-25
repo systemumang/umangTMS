@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { RecurringTask } from '../types';
+import { useLabels } from '../labelOverrides';
 
 interface UpdateRecurringTaskModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface UpdateRecurringTaskModalProps {
 }
 
 export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> = ({ isOpen, onClose, task, onSave }) => {
+  const { getFieldLabel } = useLabels();
   const readFileAsDataUrl = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -80,7 +82,7 @@ export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> =
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
             <div className="space-y-1">
-              <label className="text-sm font-medium text-black">Update Status <span className="text-red-500">*</span></label>
+              <label className="text-sm font-medium text-black">{getFieldLabel('recurringAction.status', 'Update Status')} <span className="text-red-500">*</span></label>
               <select 
                 value={status}
                 onChange={(e) => setStatus(e.target.value as any)}
@@ -94,7 +96,7 @@ export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> =
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium text-black">Update Remarks <span className="text-red-500">*</span></label>
+              <label className="text-sm font-medium text-black">{getFieldLabel('recurringAction.remarks', 'Update Remarks')} <span className="text-red-500">*</span></label>
               <textarea 
                 required
                 rows={4}
@@ -107,7 +109,7 @@ export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> =
             </div>
             {hasTaskGoal && (
               <div className="space-y-1">
-                <label className="text-sm font-medium text-black">Achieved <span className="text-red-500">*</span></label>
+                <label className="text-sm font-medium text-black">{getFieldLabel('recurringAction.achieved', 'Achieved')} <span className="text-red-500">*</span></label>
                 <input
                   type="number"
                   min="0"
@@ -122,7 +124,7 @@ export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> =
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-sm font-medium text-black block mb-1">Photo (Up to 5)</label>
+                <label className="text-sm font-medium text-black block mb-1">{getFieldLabel('recurringAction.photos', 'Photo (Up to 5)')}</label>
                 <input
                   type="file"
                   accept="image/*"
@@ -142,7 +144,7 @@ export const UpdateRecurringTaskModal: React.FC<UpdateRecurringTaskModalProps> =
                 <p className="text-xs text-gray-500">{photos.length} photo(s) selected</p>
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium text-black block mb-1">PDF</label>
+                <label className="text-sm font-medium text-black block mb-1">{getFieldLabel('recurringAction.pdf', 'PDF')}</label>
                 <input
                   type="file"
                   accept="application/pdf"

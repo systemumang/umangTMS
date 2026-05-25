@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
 import { Task, User, Vendor, Category } from '../types';
 import { SearchableSelect } from './SearchableSelect';
+import { useLabels } from '../labelOverrides';
 
 interface BulkUpdateModalProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ export const BulkUpdateModal: React.FC<BulkUpdateModalProps> = ({
   isVendorView = false,
   mode
 }) => {
+  const { getFieldLabel } = useLabels();
   const [formData, setFormData] = useState<{status: string; priority: string; remarks: string; category: string}>({
     status: '',
     priority: '',
@@ -154,7 +156,7 @@ export const BulkUpdateModal: React.FC<BulkUpdateModalProps> = ({
 
               {mode === 'status' && (
                   <div className="space-y-1">
-                      <label className="text-sm font-medium text-gray-900 block mb-1">New Status</label>
+                      <label className="text-sm font-medium text-gray-900 block mb-1">{getFieldLabel('task.bulk.newStatus', 'New Status')}</label>
                       <select name="status" value={formData.status} onChange={handleChange} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-100 outline-none">
                           <option value="">Select Status...</option>
                           <option value="Not Yet Started">Not Yet Started</option>
@@ -171,7 +173,7 @@ export const BulkUpdateModal: React.FC<BulkUpdateModalProps> = ({
 
               {mode === 'priority' && (
                   <div className="space-y-1">
-                      <label className="text-sm font-medium text-gray-900 block mb-1">New Priority</label>
+                      <label className="text-sm font-medium text-gray-900 block mb-1">{getFieldLabel('task.bulk.newPriority', 'New Priority')}</label>
                       <select name="priority" value={formData.priority} onChange={handleChange} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-100 outline-none">
                           <option value="">Select Priority...</option>
                           <option value="High">High</option>
@@ -195,10 +197,11 @@ export const BulkUpdateModal: React.FC<BulkUpdateModalProps> = ({
 
               {mode === 'assignee' && (
                   <div className="space-y-1">
-                      <SearchableSelect 
-                          label={isVendorView ? "New Vendor" : "New Assignees"}
-                          options={isVendorView ? vendorOptions : userOptions}
-                          value={reassignSelection}
+	                      <SearchableSelect 
+	                          label={isVendorView ? "New Vendor" : "New Assignees"}
+	                          labelKey={isVendorView ? "task.bulk.newVendor" : "task.bulk.newAssignees"}
+	                          options={isVendorView ? vendorOptions : userOptions}
+	                          value={reassignSelection}
                           onChange={setReassignSelection}
                           multiple={!isVendorView} 
                           placeholder={isVendorView ? "Select Vendor..." : "Select Assignees..."}
@@ -208,9 +211,9 @@ export const BulkUpdateModal: React.FC<BulkUpdateModalProps> = ({
 
               {mode === 'status' && (
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-900 block mb-1">
-                      Update Remark {(formData.status === 'In Progress' || formData.status === 'Pending for Client' || formData.status === 'Pending for Owner' || formData.status === 'Pending for Training' || formData.status === 'Pending for Billing' || formData.status === 'Pending for Payment') && <span className="text-red-500">*</span>}
-                  </label>
+	                  <label className="text-sm font-medium text-gray-900 block mb-1">
+	                      {getFieldLabel('task.bulk.updateRemark', 'Update Remark')} {(formData.status === 'In Progress' || formData.status === 'Pending for Client' || formData.status === 'Pending for Owner' || formData.status === 'Pending for Training' || formData.status === 'Pending for Billing' || formData.status === 'Pending for Payment') && <span className="text-red-500">*</span>}
+	                  </label>
                   <textarea name="remarks" rows={3} placeholder="Details of why this bulk update is being performed..." value={formData.remarks} onChange={handleChange} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-gray-900 resize-none focus:ring-2 focus:ring-indigo-100 outline-none"></textarea>
                 </div>
               )}

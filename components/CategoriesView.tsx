@@ -4,6 +4,7 @@ import { Plus, Search, Edit2, Trash2, LayoutGrid, LayoutList, ArrowUpDown, Arrow
 import { Category } from '../types';
 import { AddCategoryModal } from './AddCategoryModal';
 import { ConfirmationModal } from './ConfirmationModal';
+import { useLabels } from '../labelOverrides';
 
 interface CategoriesViewProps {
   categories: Category[];
@@ -19,6 +20,7 @@ type SortConfig = {
 } | null;
 
 export const CategoriesView: React.FC<CategoriesViewProps> = ({ categories, onAddCategory, onDeleteCategory, onEditCategory, sidebarCollapsed = false }) => {
+  const { getViewLabel } = useLabels();
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   const [sortConfig, setSortConfig] = useState<SortConfig>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -93,7 +95,7 @@ export const CategoriesView: React.FC<CategoriesViewProps> = ({ categories, onAd
   return (
     <div className="space-y-6 pb-10">
       <div className="flex items-center justify-between gap-3 md:gap-4">
-        <div className={sidebarCollapsed ? 'pl-14 md:pl-16' : ''}><h2 className="text-2xl font-bold text-indigo-600">Categories</h2></div>
+        <div className={sidebarCollapsed ? 'pl-14 md:pl-16' : ''}><h2 className="text-2xl font-bold text-indigo-600">{getViewLabel('categories', 'Categories')}</h2></div>
         <button
           onClick={onAddCategory}
           className="md:hidden inline-flex items-center justify-center w-10 h-10 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 shadow-sm"

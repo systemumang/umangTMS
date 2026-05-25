@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Designation } from '../types';
+import { useLabels } from '../labelOverrides';
 
 interface AddDesignationModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface AddDesignationModalProps {
 }
 
 export const AddDesignationModal: React.FC<AddDesignationModalProps> = ({ isOpen, onClose, onSave, initialData, designations }) => {
+  const { getFieldLabel } = useLabels();
   const [formData, setFormData] = useState({
     title: '',
   });
@@ -64,7 +66,7 @@ export const AddDesignationModal: React.FC<AddDesignationModalProps> = ({ isOpen
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-6">
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-600">Title *</label>
+              <label className="text-sm font-medium text-gray-600">{getFieldLabel('designation.title', 'Title')} *</label>
               <input 
                 name="title"
                 type="text"

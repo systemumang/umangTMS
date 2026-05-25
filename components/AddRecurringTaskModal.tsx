@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { User, Category, RecurringTask, Firm } from '../types';
 import { SearchableSelect } from './SearchableSelect';
+import { useLabels } from '../labelOverrides';
 
 interface AddRecurringTaskModalProps {
   isOpen: boolean;
@@ -14,7 +15,8 @@ interface AddRecurringTaskModalProps {
 }
 
 export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ isOpen, onClose, onSave, users, categories, firms, initialData }) => {
-			  const [formData, setFormData] = useState<{
+  const { getFieldLabel } = useLabels();
+				  const [formData, setFormData] = useState<{
 			    title: string;
 			    goal: number | '';
           firm: string;
@@ -168,7 +170,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
 	            <div className="space-y-1">
-	              <label className="text-sm font-medium text-black">Task <span className="text-red-500">*</span></label>
+	              <label className="text-sm font-medium text-black">{getFieldLabel('recurringTask.title', 'Task')} <span className="text-red-500">*</span></label>
 	              <input 
 	                type="text"
 	                required
@@ -180,7 +182,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 	              />
 	            </div>
 		            <div className="space-y-1">
-		              <label className="text-sm font-medium text-black">Goal</label>
+		              <label className="text-sm font-medium text-black">{getFieldLabel('recurringTask.goal', 'Goal')}</label>
 		              <input
 		                type="number"
                     min="0"
@@ -193,7 +195,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 		              />
 		            </div>
             <div className="space-y-1">
-              <label className="text-xs font-bold text-black uppercase tracking-wider block mb-1">Firm <span className="text-red-500">*</span></label>
+              <label className="text-xs font-bold text-black uppercase tracking-wider block mb-1">{getFieldLabel('recurringTask.firm', 'Firm')} <span className="text-red-500">*</span></label>
               <div className="flex flex-wrap gap-2">
                 {firmOptions.map((firmOption) => (
                   <button
@@ -243,7 +245,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
             </div>
 
             <div className="space-y-1">
-              <label className="text-sm font-medium text-black">Period <span className="text-red-500">*</span></label>
+              <label className="text-sm font-medium text-black">{getFieldLabel('recurringTask.period', 'Period')} <span className="text-red-500">*</span></label>
               <div className="flex flex-wrap gap-2">
                 {[
                   { value: 'Fixed Days', label: 'Fixed Interval' },
@@ -271,7 +273,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
             {formData.periodicity === 'Fixed Days' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-black">Frequency (Days) <span className="text-red-500">*</span></label>
+                  <label className="text-sm font-medium text-black">{getFieldLabel('recurringTask.frequencyDays', 'Frequency (Days)')} <span className="text-red-500">*</span></label>
                   <input 
                     type="number"
                     required
@@ -291,7 +293,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 
             {formData.periodicity === 'Weekly' && (
               <div className="space-y-1">
-                <label className="text-sm font-medium text-black">Day of Week <span className="text-red-500">*</span></label>
+                <label className="text-sm font-medium text-black">{getFieldLabel('recurringTask.dayOfWeek', 'Day of Week')} <span className="text-red-500">*</span></label>
                 <select 
                   className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none disabled:bg-gray-50"
                   value={formData.recurrenceDay}
@@ -310,7 +312,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 
             {formData.periodicity === 'Monthly' && (
               <div className="space-y-1">
-                <label className="text-sm font-medium text-black">Day of Month (1-31) <span className="text-red-500">*</span></label>
+                <label className="text-sm font-medium text-black">{getFieldLabel('recurringTask.dayOfMonth', 'Day of Month (1-31)')} <span className="text-red-500">*</span></label>
                 <input 
                   type="number"
                   required
@@ -333,7 +335,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
             {formData.periodicity === 'Yearly' && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-black">Month <span className="text-red-500">*</span></label>
+                  <label className="text-sm font-medium text-black">{getFieldLabel('recurringTask.month', 'Month')} <span className="text-red-500">*</span></label>
                   <select 
                     className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none disabled:bg-gray-50"
                     value={formData.recurrenceMonth}
@@ -349,7 +351,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-black">Day (1-31) <span className="text-red-500">*</span></label>
+                  <label className="text-sm font-medium text-black">{getFieldLabel('recurringTask.day', 'Day (1-31)')} <span className="text-red-500">*</span></label>
                   <input 
                     type="number"
                     required
@@ -372,7 +374,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 
 	            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 	              <div className="space-y-1">
-	                <label className="text-sm font-medium text-black">Start Date <span className="text-red-500">*</span></label>
+	                <label className="text-sm font-medium text-black">{getFieldLabel('recurringTask.startDate', 'Start Date')} <span className="text-red-500">*</span></label>
 	                <input 
 	                  type="date"
 	                  required
@@ -384,7 +386,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 	              </div>
 
 		              <div className="space-y-1">
-		                <label className="text-sm font-medium text-black">Time</label>
+		                <label className="text-sm font-medium text-black">{getFieldLabel('recurringTask.time', 'Time')}</label>
 		                <input
 		                  type="time"
                       disabled={isSaving}

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { Firm } from '../types';
+import { useLabels } from '../labelOverrides';
 
 interface AddFirmModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface AddFirmModalProps {
 }
 
 export const AddFirmModal: React.FC<AddFirmModalProps> = ({ isOpen, onClose, onSave, initialData, firms }) => {
+  const { getFieldLabel } = useLabels();
   const [name, setName] = useState('');
   const [sortName, setSortName] = useState('');
   const [error, setError] = useState('');
@@ -55,7 +57,7 @@ export const AddFirmModal: React.FC<AddFirmModalProps> = ({ isOpen, onClose, onS
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-4">
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Firm Name <span className="text-red-500">*</span></label>
+              <label className="text-sm font-medium text-gray-700">{getFieldLabel('firm.name', 'Firm Name')} <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 required
@@ -70,7 +72,7 @@ export const AddFirmModal: React.FC<AddFirmModalProps> = ({ isOpen, onClose, onS
               {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Short <span className="text-red-500">*</span></label>
+              <label className="text-sm font-medium text-gray-700">{getFieldLabel('firm.sortName', 'Short')} <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 required

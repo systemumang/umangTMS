@@ -38,6 +38,7 @@ import { RecurringTaskHistoryModal } from './components/RecurringTaskHistoryModa
 import { AddRecurringTaskModal } from './components/AddRecurringTaskModal';
 import { UpdateRecurringTaskModal } from './components/UpdateRecurringTaskModal';
 import { EditRecurringTaskModal } from './components/EditRecurringTaskModal';
+import { LabelProvider, buildLabelResolvers } from './labelOverrides';
 import { TelegramSetupView } from './components/TelegramSetupView'; 
 import { DocumentationView } from './components/DocumentationView';
 import { 
@@ -220,6 +221,18 @@ async function safeJsonParse(response: Response, sourceName: string) {
 }
 
 export default function App() {
+  const normalizeSettings = useCallback((incoming: any): AppSettings => {
+    const base: AppSettings = {
+      officeTokenId: '', officeTelegramGroupId: '', whatsappGroupId: '', masId: '',
+      masPassword: '', metaAccessToken: '', metaPhoneNumberId: '', metaWabaId: '', metaVerifyToken: '',
+      viewLabelOverrides: '{}', fieldLabelOverrides: '{}'
+    };
+    if (!incoming || typeof incoming !== 'object') return base;
+    const merged: any = { ...base, ...incoming };
+    if (!merged.viewLabelOverrides || String(merged.viewLabelOverrides).trim() === '') merged.viewLabelOverrides = '{}';
+    if (!merged.fieldLabelOverrides || String(merged.fieldLabelOverrides).trim() === '') merged.fieldLabelOverrides = '{}';
+    return merged as AppSettings;
+  }, []);
   const normalizeStatusName = (value: string) => String(value || '').trim().toLowerCase();
   const makePendingStatusId = (statusName: string) => `pending-status:${encodeURIComponent(normalizeStatusName(statusName))}`;
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -255,12 +268,13 @@ export default function App() {
   const [firms, setFirms] = useState<Firm[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [actionLogs, setActionLogs] = useState<ActionLogEntry[]>([]);
-  const [recurringTasks, setRecurringTasks] = useState<RecurringTask[]>([]);
-  const [recurringActions, setRecurringActions] = useState<RecurringTaskAction[]>([]);
-  const [settings, setSettings] = useState<AppSettings>({
-    officeTokenId: '', officeTelegramGroupId: '', whatsappGroupId: '', masId: '',
-    masPassword: '', metaAccessToken: '', metaPhoneNumberId: '', metaWabaId: '', metaVerifyToken: ''
-  });
+	  const [recurringTasks, setRecurringTasks] = useState<RecurringTask[]>([]);
+	  const [recurringActions, setRecurringActions] = useState<RecurringTaskAction[]>([]);
+	  const [settings, setSettings] = useState<AppSettings>({
+	    officeTokenId: '', officeTelegramGroupId: '', whatsappGroupId: '', masId: '',
+	    masPassword: '', metaAccessToken: '', metaPhoneNumberId: '', metaWabaId: '', metaVerifyToken: '',
+	    viewLabelOverrides: '{}', fieldLabelOverrides: '{}'
+	  });
 
   const CACHE_KEY = 'taskpro_init_cache_v1';
   const hasHydratedCacheRef = useRef(false);
@@ -304,7 +318,7 @@ export default function App() {
       if (Array.isArray(cachedActionLogs)) setActionLogs(cachedActionLogs);
       if (Array.isArray(cachedRecurringTasks)) setRecurringTasks(cachedRecurringTasks);
       if (Array.isArray(cachedRecurringActions)) setRecurringActions(cachedRecurringActions);
-      if (cachedSettings && typeof cachedSettings === 'object') setSettings(cachedSettings);
+      if (cachedSettings && typeof cachedSettings === 'object') setSettings(normalizeSettings(cachedSettings));
       if (cachedAt) setLastSynced(new Date(cachedAt));
 
       hasHydratedCacheRef.current = true;
@@ -402,11 +416,12 @@ export default function App() {
     );
   }, [recurringActions, currentUser, isAdmin]);
 
-  const navItemsWithCounts = useMemo(() => {
-    const employeeTasks = visibleTasks.filter(t => !t.vendor || t.vendor === '');
-    const vendorTasksOnly = visibleTasks.filter(t => t.vendor && t.vendor !== '');
-    const employeeLogs = visibleActionLogs.filter(l => !l.vendor || l.vendor === '');
-    const vendorLogs = visibleActionLogs.filter(l => l.vendor && l.vendor !== '');
+	  const navItemsWithCounts = useMemo(() => {
+	    const { getViewLabel } = buildLabelResolvers(settings);
+	    const employeeTasks = visibleTasks.filter(t => !t.vendor || t.vendor === '');
+	    const vendorTasksOnly = visibleTasks.filter(t => t.vendor && t.vendor !== '');
+	    const employeeLogs = visibleActionLogs.filter(l => !l.vendor || l.vendor === '');
+	    const vendorLogs = visibleActionLogs.filter(l => l.vendor && l.vendor !== '');
 
 	    const counts: Record<string, number> = {
 	      'all-tasks': employeeTasks.length,
@@ -426,12 +441,13 @@ export default function App() {
         counts[item.id] = employeeTasks.filter(t => normalizeStatusName(t.status) === decoded).length;
       });
 
-    return filteredNavItems.map(item => (
-      Object.prototype.hasOwnProperty.call(counts, item.id)
-        ? { ...item, count: counts[item.id] }
-        : item
-    ));
-	  }, [filteredNavItems, visibleTasks, visibleActionLogs, visibleRecurringTasks, visibleRecurringActions, pendingStatusNavItems]);
+	    return filteredNavItems.map(item => {
+	      const withCount = Object.prototype.hasOwnProperty.call(counts, item.id)
+	        ? { ...item, count: counts[item.id] }
+	        : item;
+	      return { ...withCount, label: getViewLabel(item.id, withCount.label) };
+	    });
+		  }, [filteredNavItems, visibleTasks, visibleActionLogs, visibleRecurringTasks, visibleRecurringActions, pendingStatusNavItems, settings]);
 
   const [lastAddedCategory, setLastAddedCategory] = useState<string>('');
   const [lastAddedProject, setLastAddedProject] = useState<string>('');
@@ -759,7 +775,7 @@ export default function App() {
 		          timestamp: formatToHHMM(getCaseInsensitive(a, 'timestamp') || ''),
 		          updatedOn: formatToIndianDate(getCaseInsensitive(a, 'updatedOn') || '')
 		        })));
-		        if (data.settings) setSettings(data.settings);
+		        if (data.settings) setSettings(normalizeSettings(data.settings));
 		        setLastSynced(new Date());
 
             // Cache a trimmed snapshot for faster next load.
@@ -1228,13 +1244,15 @@ export default function App() {
               }
           }
       }
-    };
+	    };
 
-      if (activeTab.startsWith('pending-status:')) {
-        const targetStatus = decodeURIComponent(activeTab.replace('pending-status:', ''));
-        const viewTitle = pendingStatusNavItems.find(x => x.id === activeTab)?.label || 'Pending';
-        return <TasksView title={viewTitle} tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && normalizeStatusName(t.status) === targetStatus)} {...commonTaskProps} filterType="all" />;
-      }
+      const { getViewLabel } = buildLabelResolvers(settings);
+
+	      if (activeTab.startsWith('pending-status:')) {
+	        const targetStatus = decodeURIComponent(activeTab.replace('pending-status:', ''));
+	        const viewTitle = pendingStatusNavItems.find(x => x.id === activeTab)?.label || 'Pending';
+	        return <TasksView title={viewTitle} tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && normalizeStatusName(t.status) === targetStatus)} {...commonTaskProps} filterType="all" />;
+	      }
 
 	    switch (activeTab) {
       case 'dashboard': 
@@ -1250,7 +1268,7 @@ export default function App() {
             }} onFilterChange={handleDashboardFilterChange} onOpenNewTask={() => { setIsTaskModalVendorMode(false); setIsTaskModalOpen(true); }} 
 	          onOpenAddUser={() => setIsUserModalOpen(true)} onOpenAddCategory={() => setIsCategoryModalOpen(true)} onOpenAddProject={() => setIsProjectModalOpen(true)} onOpenAddClient={() => setIsClientModalOpen(true)} onOpenAddVendor={() => setIsVendorModalOpen(true)} 
 	        />;
-      case 'all-tasks': return <TasksView title="All Tasks" tasks={visibleTasks.filter(t => !t.vendor || t.vendor === '')} {...commonTaskProps} filterType="all" />;
+      case 'all-tasks': return <TasksView title={getViewLabel('all-tasks', 'All Tasks')} tasks={visibleTasks.filter(t => !t.vendor || t.vendor === '')} {...commonTaskProps} filterType="all" />;
       case 'add-multiple': return (
         <AddMultipleTasksView
           projects={projects}
@@ -1271,19 +1289,19 @@ export default function App() {
           }}
         />
       );
-      case 'pending': return <TasksView title="Pending Tasks" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status !== 'Completed')} {...commonTaskProps} filterType="pending" />;
-	      case 'completed': return <TasksView title="Completed Tasks" tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Completed')} {...commonTaskProps} filterType="completed" />;
+      case 'pending': return <TasksView title={getViewLabel('pending', 'Pending Tasks')} tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status !== 'Completed')} {...commonTaskProps} filterType="pending" />;
+		      case 'completed': return <TasksView title={getViewLabel('completed', 'Completed Tasks')} tasks={visibleTasks.filter(t => (!t.vendor || t.vendor === '') && t.status === 'Completed')} {...commonTaskProps} filterType="completed" />;
       case 'update-multiple': return <UpdateMultipleView projects={projects} tasks={visibleTasks.filter(t => t.status !== 'Completed')} onUpdateTasks={async (updates) => { for (const u of updates) await handleUpdateTaskOptimistic(u); setActiveTab('pending'); }} />;
       case 'activity-dashboard': return <ActivityDashboardView logs={visibleActionLogs.filter(l => !l.vendor || l.vendor === '')} users={users} currentUser={currentUser} />;
       case 'action-log': return <ActionLogView logs={visibleActionLogs.filter(l => !l.vendor || l.vendor === '')} isAdmin={isAdmin} projects={projects} onDeleteLog={(logId, taskId) => handleDeleteLog(logId, taskId, false)} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
       case 'vendors': if (!isAdmin) return null; return <VendorsView vendors={vendors} onAddVendor={(v) => { setVendors(p => [...p, { ...v, id: Date.now() } as any]); apiPost('addMaster', v, 'Vendors'); }} onDeleteVendor={(id) => { if (!confirmDelete('this vendor')) return; setVendors(p => p.filter(v => v.id !== id)); apiPost('deleteRecord', { id }, 'Vendors'); }} onEditVendor={(v) => { setVendors(p => p.map(x => x.id === v.id ? v : x)); apiPost('updateMaster', v, 'Vendors'); }} />;
       case 'vendor-categories': if (!isAdmin) return null; return <VendorCategoriesView categories={vendorCategories} onAddCategory={() => setIsVendorCategoryModalOpen(true)} onDeleteCategory={(id) => { if (!confirmDelete('this vendor category')) return; setVendorCategories(p => p.filter(c => c.id !== id)); apiPost('deleteRecord', { id }, 'VendorCategories'); }} onEditCategory={(vc) => { setVendorCategories(p => p.map(x => x.id === vc.id ? vc : x)); apiPost('updateMaster', vc, 'VendorCategories'); }} />;
-      case 'vendor-tasks': return <TasksView title="All Vendor Tasks" tasks={visibleTasks.filter(t => t.vendor && t.vendor !== '')} {...commonTaskProps} isVendorView={true} filterType="all" />;
-      case 'pending-vendor-tasks': return <TasksView title="Pending Vendor Tasks" tasks={visibleTasks.filter(t => t.vendor && t.vendor !== '')} {...commonTaskProps} isVendorView={true} filterType="pending" />;
-      case 'completed-vendor-tasks': return <TasksView title="Completed Vendor Tasks" tasks={visibleTasks.filter(t => t.vendor && t.vendor !== '')} {...commonTaskProps} isVendorView={true} filterType="completed" />;
+      case 'vendor-tasks': return <TasksView title={getViewLabel('vendor-tasks', 'All Vendor Tasks')} tasks={visibleTasks.filter(t => t.vendor && t.vendor !== '')} {...commonTaskProps} isVendorView={true} filterType="all" />;
+      case 'pending-vendor-tasks': return <TasksView title={getViewLabel('pending-vendor-tasks', 'Pending Vendor Tasks')} tasks={visibleTasks.filter(t => t.vendor && t.vendor !== '')} {...commonTaskProps} isVendorView={true} filterType="pending" />;
+      case 'completed-vendor-tasks': return <TasksView title={getViewLabel('completed-vendor-tasks', 'Completed Vendor Tasks')} tasks={visibleTasks.filter(t => t.vendor && t.vendor !== '')} {...commonTaskProps} isVendorView={true} filterType="completed" />;
       case 'vendor-action-log': return <ActionLogView logs={visibleActionLogs.filter(l => l.vendor && l.vendor !== '')} isAdmin={isAdmin} projects={projects} isVendorView={true} onDeleteLog={(logId, taskId) => handleDeleteLog(logId, taskId, true)} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
-      case 'due-recurring-tasks': return <RecurringTasksView title="Due Recurring Tasks" filterType="due" tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={async (id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); await apiPost('deleteRecord', { id }, 'RecurringTasks'); }} onBulkUpload={handleBulkAddRecurringTasks} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
-      case 'recurring-tasks': return <RecurringTasksView title="Recurring Tasks" tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={async (id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); await apiPost('deleteRecord', { id }, 'RecurringTasks'); }} onBulkUpload={handleBulkAddRecurringTasks} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
+      case 'due-recurring-tasks': return <RecurringTasksView title={getViewLabel('due-recurring-tasks', 'Due Recurring Tasks')} filterType="due" tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={async (id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); await apiPost('deleteRecord', { id }, 'RecurringTasks'); }} onBulkUpload={handleBulkAddRecurringTasks} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
+      case 'recurring-tasks': return <RecurringTasksView title={getViewLabel('recurring-tasks', 'Recurring Tasks')} tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={async (id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); await apiPost('deleteRecord', { id }, 'RecurringTasks'); }} onBulkUpload={handleBulkAddRecurringTasks} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
       case 'recurring-actions': return <RecurringTaskActionsView actions={visibleRecurringActions} isAdmin={isAdmin} onDeleteAction={(logId, taskId) => { if (!confirmDelete('this recurring log')) return; apiPost('deleteRecord', { id: logId, taskId: taskId }, 'RecurringActions'); }} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
       case 'users': if (!isAdmin) return null; return <UsersView users={users} designations={designations} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} onAddUser={(u) => { setUsers(p => [...p, { ...u, id: Date.now(), isActive: true } as any]); apiPost('addMaster', u, 'Users'); }} onEditUser={(u) => { setUsers(p => p.map(x => x.id === u.id ? u : x)); apiPost('updateMaster', u, 'Users'); }} onToggleStatus={(id) => { const user = users.find(u => u.id === id); if (!user) return; const newStatus = !user.isActive; setUsers(prev => prev.map(u => u.id === id ? { ...u, isActive: newStatus } : u)); apiPost('updateMaster', { id, isActive: newStatus ? 'TRUE' : 'FALSE' }, 'Users'); }} onDeleteUser={(id) => { if (!confirmDelete('this user')) return; setUsers(p => p.filter(u => u.id !== id)); apiPost('deleteRecord', { id }, 'Users'); }} onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }} />;
       case 'firms': if (!isAdmin) return null; return <FirmsView firms={firms} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} onAddFirm={() => setIsFirmModalOpen(true)} onDeleteFirm={(id) => { const target = firms.find(f => f.id === id); if (!target) return; if (String(target.name || '').trim().toUpperCase() === 'GENERAL') return; if (!confirmDelete('this firm')) return; setFirms(p => p.filter(f => f.id !== id)); apiPost('deleteRecord', { id }, 'Firms'); }} onEditFirm={(f) => { if (String(f.name || '').trim().toUpperCase() === 'GENERAL') return; setFirms(p => p.map(x => x.id === f.id ? f : x)); apiPost('updateMaster', f, 'Firms'); }} />;
@@ -1293,7 +1311,7 @@ export default function App() {
       case 'statuses': if (!isAdmin) return null; return <StatusesView statuses={statuses} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} onAddStatus={async (status) => { const tempId = Date.now(); const row = { ...status, id: tempId, is_system: 0 } as StatusMaster; setStatuses(prev => [...prev, row]); await apiPost('addMaster', status, 'Statuses'); }} onEditStatus={async (status) => { setStatuses(prev => prev.map(x => x.id === status.id ? status : x)); await apiPost('updateMaster', status, 'Statuses'); }} onDeleteStatus={async (id) => { if (!confirmDelete('this status')) return; setStatuses(prev => prev.filter(x => x.id !== id)); await apiPost('deleteRecord', { id }, 'Statuses'); }} />;
       case 'designations': if (!isAdmin) return null; return <DesignationsView designations={designations} onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }} onDeleteDesignation={(id) => { if (!confirmDelete('this designation')) return; setDesignations(prev => prev.filter(d => d.id !== id)); apiPost('deleteRecord', { id }, 'Designations'); }} onEditDesignation={(designation) => { setEditingDesignation(designation); setIsDesignationModalOpen(true); }} />;
       case 'settings': if (!isAdmin) return null; return <SettingsView settings={settings} onUpdate={async (s) => {
-        setSettings(s);
+        setSettings(normalizeSettings(s));
         const result = await apiPost('updateMaster', s, 'AppSettings');
         if (!result?.success) {
           throw new Error(result?.error || 'Failed to save settings.');
@@ -1321,14 +1339,14 @@ export default function App() {
     isRecurringHistoryModalOpen ||
     isFirmModalOpen;
 
-  return (
-	    <div className="flex min-h-screen bg-gray-50 overflow-hidden font-inter">
-      {!currentUser ? (
-        <LoginView onLogin={handleLogin} isAuthenticating={isLoading} />
-      ) : (
-        <>
-          {layoutMode === 'side' && (!isSidebarCollapsed || isSidebarOpen) && (
-		            <Sidebar 
+	  return (
+		    <div className="flex min-h-screen bg-gray-50 overflow-hidden font-inter">
+	      {!currentUser ? (
+	        <LoginView onLogin={handleLogin} isAuthenticating={isLoading} />
+	      ) : (
+	        <LabelProvider settings={settings}>
+	          {layoutMode === 'side' && (!isSidebarCollapsed || isSidebarOpen) && (
+			            <Sidebar 
 		              items={navItemsWithCounts} 
 		              activeTab={activeTab} 
 	              onTabChange={setActiveTab} 
@@ -1425,9 +1443,9 @@ export default function App() {
 			            </main>
 			              );
 			            })()}
-	          </div>
-	        </>
-	      )}
+		          </div>
+		        </LabelProvider>
+		      )}
 
       {/* Modals */}
       <AddTaskModal 

@@ -6,6 +6,7 @@ import { AddClientModal } from './AddClientModal';
 import { EditClientModal } from './EditClientModal';
 import { ClientProjectsModal } from './ClientProjectsModal';
 import { ConfirmationModal } from './ConfirmationModal';
+import { useLabels } from '../labelOverrides';
 
 interface ClientsViewProps {
   clients: Client[];
@@ -22,6 +23,7 @@ type SortConfig = {
 } | null;
 
 export const ClientsView: React.FC<ClientsViewProps> = ({ clients, projects, onAddClient, onDeleteClient, onEditClient, onNavigateToProjectTasks }) => {
+  const { getViewLabel } = useLabels();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -86,7 +88,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, projects, onA
     <div className="space-y-6 pb-10">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-indigo-600">Client Master</h2>
+          <h2 className="text-2xl font-bold text-indigo-600">{getViewLabel('clients', 'Client Master')}</h2>
           <p className="text-sm text-gray-500 mt-1">Manage client details, GST, and contacts</p>
         </div>
       </div>

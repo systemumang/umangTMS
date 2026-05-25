@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Plus, Search, Edit2, Trash2, FileText, Download } from 'lucide-react';
 import { Firm } from '../types';
 import { AddFirmModal } from './AddFirmModal';
+import { useLabels } from '../labelOverrides';
 
 interface FirmsViewProps {
   firms: Firm[];
@@ -12,6 +13,7 @@ interface FirmsViewProps {
 }
 
 export const FirmsView: React.FC<FirmsViewProps> = ({ firms, onAddFirm, onDeleteFirm, onEditFirm, sidebarCollapsed = false }) => {
+  const { getViewLabel } = useLabels();
   const [searchTerm, setSearchTerm] = useState('');
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedFirm, setSelectedFirm] = useState<Firm | null>(null);
@@ -48,7 +50,7 @@ export const FirmsView: React.FC<FirmsViewProps> = ({ firms, onAddFirm, onDelete
     <div className="space-y-6 pb-10">
       <div className="flex items-center justify-between gap-3 md:gap-4">
         <div className={sidebarCollapsed ? 'pl-14 md:pl-16' : ''}>
-          <h2 className="text-2xl font-bold text-indigo-600">Firms</h2>
+          <h2 className="text-2xl font-bold text-indigo-600">{getViewLabel('firms', 'Firms')}</h2>
         </div>
         <button
           onClick={onAddFirm}
