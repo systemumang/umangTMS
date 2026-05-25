@@ -120,6 +120,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
     onShowMenu
 			}) => {
 	  const { getFieldLabel } = useLabels();
+	  const categoryLabel = getFieldLabel('task.category', 'Category');
 	  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isBulkUpdateModalOpen, setIsBulkUpdateModalOpen] = useState(false);
@@ -142,13 +143,13 @@ export const TasksView: React.FC<TasksViewProps> = ({
   }, [filterType, filterStatus, filterPriority, filterProject, filterClient, filterOwner, filterAssignee, filterCategory, filterFirm, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, searchTerm]);
 
   // Helper for generating filter summary string for reports
-  const getFilterSummary = () => {
-    const active: string[] = [];
+	  const getFilterSummary = () => {
+	    const active: string[] = [];
     if (filterStatus.length > 0) active.push(`Status: ${filterStatus.join(', ')}`);
     if (filterPriority.length > 0) active.push(`Priority: ${filterPriority.join(', ')}`);
     if (filterProject.length > 0) active.push(`Projects: ${filterProject.length} items`);
     if (filterClient.length > 0) active.push(`Clients: ${filterClient.length} items`);
-    if (filterCategory.length > 0) active.push(`Category: ${filterCategory.join(', ')}`);
+	    if (filterCategory.length > 0) active.push(`${categoryLabel}: ${filterCategory.join(', ')}`);
     if (filterFirm.length > 0) active.push(`Firm: ${filterFirm.join(', ')}`);
     if (filterAssignee.length > 0) active.push(`Assignee: ${filterAssignee.join(', ')}`);
     if (isVendorView && filterVendor.length > 0) active.push(`Vendor: ${filterVendor.join(', ')}`);
@@ -295,7 +296,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
     const filterText = `Applied Filters: ${getFilterSummary()}`;
     const generatedOn = `Generated on: ${new Date().toLocaleString('en-GB')}`;
 
-    const headers = ['Date', 'Task', 'Notes', 'Category', 'Responsible', 'Owner', 'Status', 'Last Update Date', 'Last Update Remark', 'Priority', 'Due Date'];
+    const headers = ['Date', 'Task', 'Notes', categoryLabel, 'Responsible', 'Owner', 'Status', 'Last Update Date', 'Last Update Remark', 'Priority', 'Due Date'];
     
     const csvRows = [
         `"${filterText}"`,
@@ -602,7 +603,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
       const badges: { label: string; clear: () => void }[] = [];
       if (filterStatus.length > 0) badges.push({ label: `Status: ${filterStatus.join(', ')}`, clear: () => setFilterStatus([]) });
       if (filterPriority.length > 0) badges.push({ label: `Priority: ${filterPriority.join(', ')}`, clear: () => setFilterPriority([]) });
-	      if (filterCategory.length > 0) badges.push({ label: `Category: ${filterCategory.join(', ')}`, clear: () => setFilterCategory([]) });
+	      if (filterCategory.length > 0) badges.push({ label: `${categoryLabel}: ${filterCategory.join(', ')}`, clear: () => setFilterCategory([]) });
       if (filterFirm.length > 0) badges.push({ label: `Firm: ${filterFirm.join(', ')}`, clear: () => setFilterFirm([]) });
       if (filterProject.length > 0) badges.push({ label: `Project: ${filterProject.length} selected`, clear: () => setFilterProject([]) });
       if (filterClient.length > 0) badges.push({ label: `Client: ${filterClient.length} selected`, clear: () => setFilterClient([]) });

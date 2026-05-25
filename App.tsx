@@ -1442,19 +1442,20 @@ export default function App() {
 	              )}
 			            </main>
 			              );
-			            })()}
-		          </div>
-		        </LabelProvider>
-		      )}
+				            })()}
+				          </div>
+			        </LabelProvider>
+			      )}
 
-      {/* Modals */}
-      <AddTaskModal 
-        isOpen={isTaskModalOpen} 
-        onClose={() => setIsTaskModalOpen(false)} 
-        onSave={(t) => {
-          setActiveTab('all-tasks');
-          handleAddTaskOptimistic(t, isTaskModalVendorMode);
-        }}
+	      <LabelProvider settings={settings}>
+	      {/* Modals */}
+	      <AddTaskModal 
+	        isOpen={isTaskModalOpen} 
+	        onClose={() => setIsTaskModalOpen(false)} 
+	        onSave={(t) => {
+	          setActiveTab('all-tasks');
+	          handleAddTaskOptimistic(t, isTaskModalVendorMode);
+	        }}
         onAddCategory={() => setIsCategoryModalOpen(true)}
         onAddProject={() => setIsProjectModalOpen(true)}
         onAddVendorCategory={() => setIsVendorCategoryModalOpen(true)}
@@ -1584,20 +1585,21 @@ export default function App() {
           }, 'RecurringActions');
         }}
       />
-      <EditRecurringTaskModal 
-        isOpen={isEditRecurringTaskModalOpen} 
-        onClose={() => setIsEditRecurringTaskModalOpen(false)} 
-        task={selectedRecurringTask} 
-        onSave={async (t) => { 
-          setRecurringTasks(prev => prev.map(x => x.id === t.id ? t : x)); 
-          await apiPost('updateMaster', t, 'RecurringTasks'); 
-        }} 
-        users={users} 
-        categories={categories} 
-        firms={firms} 
-      />
-      <RecurringTaskHistoryModal isOpen={isRecurringHistoryModalOpen} onClose={() => setIsRecurringHistoryModalOpen(false)} task={selectedRecurringTask} actions={recurringActions} />
-    </div>
-  );
+	      <EditRecurringTaskModal 
+	        isOpen={isEditRecurringTaskModalOpen} 
+	        onClose={() => setIsEditRecurringTaskModalOpen(false)} 
+	        task={selectedRecurringTask} 
+	        onSave={async (t) => { 
+	          setRecurringTasks(prev => prev.map(x => x.id === t.id ? t : x)); 
+	          await apiPost('updateMaster', t, 'RecurringTasks'); 
+	        }} 
+	        users={users} 
+	        categories={categories} 
+	        firms={firms} 
+	      />
+	      <RecurringTaskHistoryModal isOpen={isRecurringHistoryModalOpen} onClose={() => setIsRecurringHistoryModalOpen(false)} task={selectedRecurringTask} actions={recurringActions} />
+	      </LabelProvider>
+	    </div>
+	  );
 }
 

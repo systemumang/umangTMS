@@ -3,6 +3,7 @@ import { Search, History, Filter, X, FileText, Download, ArrowUpDown, ArrowUp, A
 import { RecurringTaskAction } from '../types';
 import { SearchableSelect } from './SearchableSelect';
 import { parseToISO } from '../App';
+import { useLabels } from '../labelOverrides';
 
 interface RecurringTaskActionsViewProps {
   actions: RecurringTaskAction[];
@@ -24,7 +25,9 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
 	    dashboardFilter = null,
 	    onClearDashboardFilter 
 	}) => {
-  const [searchTerm, setSearchTerm] = useState('');
+	  const { getFieldLabel } = useLabels();
+	  const categoryLabel = getFieldLabel('recurringTask.category', 'Category');
+	  const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
   const [filterFirm, setFilterFirm] = useState('All');
   const [filterAssignee, setFilterAssignee] = useState('All');
@@ -228,7 +231,7 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
         </div>
         {showFilters && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
-            <SearchableSelect label={<span className="text-[10px] font-black uppercase">Category</span>} options={categories.map(c => ({ value: c, label: c }))} value={filterCategory} onChange={setFilterCategory} />
+	            <SearchableSelect label={<span className="text-[10px] font-black uppercase">{categoryLabel}</span>} options={categories.map(c => ({ value: c, label: c }))} value={filterCategory} onChange={setFilterCategory} />
             <SearchableSelect label={<span className="text-[10px] font-black uppercase">Firm</span>} options={firms.map(f => ({ value: f, label: f }))} value={filterFirm} onChange={setFilterFirm} />
             <SearchableSelect label={<span className="text-[10px] font-black uppercase">Assignee</span>} options={assignees.map(a => ({ value: a, label: a }))} value={filterAssignee} onChange={setFilterAssignee} />
             <div className="space-y-1"><label className="text-[10px] font-black text-blue-600 uppercase block mb-1">Status</label><select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full px-3 py-2 border-2 border-blue-200 rounded-md text-sm">{statuses.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
@@ -269,7 +272,7 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
                         </div>
                     </div>
                     <div className="space-y-0.5">
-                        <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Category</span>
+                        <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">{categoryLabel}</span>
                         <div className="flex items-center gap-1 text-[10px] text-blue-900 font-bold whitespace-normal break-words">
                             <Tag size={10} /> {action.category}
                         </div>
@@ -334,7 +337,7 @@ export const RecurringTaskActionsView: React.FC<RecurringTaskActionsViewProps> =
 	                <th className={thClass} onClick={() => requestSort('taskTitle')}><div className="flex items-center">Task {getSortIcon('taskTitle')}</div></th>
 		                <th className={thClass} onClick={() => requestSort('firm')}><div className="flex items-center">Firm {getSortIcon('firm')}</div></th>
                 <th className={thClass} onClick={() => requestSort('owner' as any)}><div className="flex items-center">Owner {getSortIcon('owner' as any)}</div></th>
-                <th className={thClass} onClick={() => requestSort('category')}><div className="flex items-center">Category {getSortIcon('category')}</div></th>
+	                <th className={thClass} onClick={() => requestSort('category')}><div className="flex items-center">{categoryLabel} {getSortIcon('category')}</div></th>
 	                <th className={thClass} onClick={() => requestSort('assignee')}><div className="flex items-center">Assignee {getSortIcon('assignee')}</div></th>
 	                <th className={thClass} onClick={() => requestSort('status')}><div className="flex items-center">Status {getSortIcon('status')}</div></th>
 	                <th className={thClass} onClick={() => requestSort('updatedOn')}><div className="flex items-center">Date {getSortIcon('updatedOn')}</div></th>
