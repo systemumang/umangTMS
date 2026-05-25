@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { RotateCcw, Plus, Search, Filter, X, FileText, Download, Info, ArrowUpDown, ArrowUp, ArrowDown, Trash2, Edit2, LayoutGrid, LayoutList, AlertCircle, Calendar, Upload, Loader2 } from 'lucide-react';
 import { RecurringTask, RecurringTaskAction } from '../types';
 import { SearchableSelect } from './SearchableSelect';
+import { useLabels } from '../labelOverrides';
 
 interface RecurringTasksViewProps {
   tasks: RecurringTask[];
@@ -37,6 +38,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
     currentUser,
     sidebarCollapsed = false
 }) => {
+  const { getFieldLabel } = useLabels();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
   const [filterFirm, setFilterFirm] = useState('All');
@@ -687,7 +689,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
         </div>
         {showFilters && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
-	            <SearchableSelect label="Category" options={categories.map(c => ({ value: c, label: c }))} value={filterCategory} onChange={setFilterCategory} />
+	            <SearchableSelect label="Category" labelKey="recurringTask.category" options={categories.map(c => ({ value: c, label: c }))} value={filterCategory} onChange={setFilterCategory} />
               <SearchableSelect label="Firm" options={firms.map(f => ({ value: f, label: f }))} value={filterFirm} onChange={setFilterFirm} />
 	            <SearchableSelect label="Assignee" options={assignees.map(a => ({ value: a, label: a }))} value={filterAssignee} onChange={setFilterAssignee} />
 	            <div><label className="text-[10px] font-bold text-indigo-600 uppercase mb-1 block">Status</label><select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full px-3 py-2 border border-indigo-300 rounded-md text-sm">{statuses.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
@@ -717,7 +719,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 		                <th className={thClass} onClick={() => requestSort('title')}><div className="flex items-center">Task {getSortIcon('title')}</div></th>
 	                  <th className={thClass} onClick={() => requestSort('firm')}><div className="flex items-center">Firm {getSortIcon('firm')}</div></th>
 	                  <th className={thClass} onClick={() => requestSort('owner')}><div className="flex items-center">Owner {getSortIcon('owner')}</div></th>
-		                <th className={thClass} onClick={() => requestSort('category')}><div className="flex items-center">Category {getSortIcon('category')}</div></th>
+		                <th className={thClass} onClick={() => requestSort('category')}><div className="flex items-center">{getFieldLabel('recurringTask.category', 'Category')} {getSortIcon('category')}</div></th>
 	                <th className={thClass} onClick={() => requestSort('assignee')}><div className="flex items-center">Assignee {getSortIcon('assignee')}</div></th>
 	                <th className={thClass} onClick={() => requestSort('status')}><div className="flex items-center">Status {getSortIcon('status')}</div></th>
 		                <th className={thClass} onClick={() => requestSort('goal')}><div className="flex items-center">Goal {getSortIcon('goal')}</div></th>
@@ -867,7 +869,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 		                    <div className="grid grid-cols-2 gap-y-2 text-xs text-gray-600 mb-4 bg-gray-50 p-2 rounded">
                     <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Firm</span><span className="whitespace-normal break-words">{task.firm || '-'}</span></div>
                     <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Owner</span><span className="whitespace-normal break-words">{task.owner || '-'}</span></div>
-		                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Category</span><span className="whitespace-normal break-words">{task.category}</span></div>
+		                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">{getFieldLabel('recurringTask.category', 'Category')}</span><span className="whitespace-normal break-words">{task.category}</span></div>
 	                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Assignee</span><span className="whitespace-normal break-words">{task.assignee}</span></div>
 		                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Period</span><span className="whitespace-pre-line break-words">{getFrequencyText(task)}</span></div>
 		                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Time</span><span className="whitespace-normal break-words">{task.time || '-'}</span></div>

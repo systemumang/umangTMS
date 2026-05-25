@@ -54,8 +54,20 @@ export const buildLabelResolvers = (settings: AppSettings | null | undefined) =>
       if (fallback && fallback.trim()) return fallback;
     }
 
-    return defaultLabel;
-  };
+	    // Convenience fallback for recurring task fields: allow overrides like "category" to apply to "recurringtask.category".
+	    if (normalized.startsWith('recurringtask.')) {
+	      const unscoped = normalized.slice('recurringtask.'.length);
+	      const fallback = fieldMap[unscoped];
+	      if (fallback && fallback.trim()) return fallback;
+	    }
+
+	    // Convenience fallback for any label: allow overrides by the default display text itself.
+	    // Example: key "category" applies anywhere default label is "Category".
+	    const byDefaultText = fieldMap[String(defaultLabel || '').trim().toLowerCase()];
+	    if (byDefaultText && byDefaultText.trim()) return byDefaultText;
+
+	    return defaultLabel;
+	  };
 
   return { getViewLabel, getFieldLabel, viewMap, fieldMap };
 };

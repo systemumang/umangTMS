@@ -185,11 +185,12 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
               disabled={isSaving}
             />
 	            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-	              <SearchableSelect 
-	                label="Category"
-	                options={categoryOptions}
-                value={formData.category}
-                onChange={(val) => setFormData(p => ({ ...p, category: val }))}
+		              <SearchableSelect 
+		                label="Category"
+		                labelKey="recurringTask.category"
+		                options={categoryOptions}
+	                value={formData.category}
+	                onChange={(val) => setFormData(p => ({ ...p, category: val }))}
                 required
                 disabled={isSaving}
               />

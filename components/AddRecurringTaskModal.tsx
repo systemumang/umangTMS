@@ -224,11 +224,12 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
               disabled={isSaving}
             />
 	            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-	              <SearchableSelect 
-	                label="Category"
-	                options={categoryOptions}
-	                value={formData.category}
-                onChange={(val) => setFormData(p => ({ ...p, category: val }))}
+		              <SearchableSelect 
+		                label="Category"
+		                labelKey="recurringTask.category"
+		                options={categoryOptions}
+		                value={formData.category}
+	                onChange={(val) => setFormData(p => ({ ...p, category: val }))}
                 required
                 placeholder="Select category"
                 disabled={isSaving}
