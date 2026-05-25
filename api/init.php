@@ -692,6 +692,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	        $fieldLabelOverrides = is_array($fieldLabelOverridesRaw) ? json_encode($fieldLabelOverridesRaw, JSON_UNESCAPED_UNICODE) : trim((string)$fieldLabelOverridesRaw);
 	        if ($viewLabelOverrides === '') $viewLabelOverrides = '{}';
 	        if ($fieldLabelOverrides === '') $fieldLabelOverrides = '{}';
+	        $hasLabelOverrides = trim($viewLabelOverrides) !== '{}' || trim($fieldLabelOverrides) !== '{}';
 
 	        $existing = fetchAllRows($conn, 'app_settings');
 	        $existingId = isset($existing[0]['id']) ? (int)$existing[0]['id'] : 0;
@@ -701,6 +702,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	            if ($stmt) {
 	                $stmt->bind_param('sssssssssssi', $officeTokenId, $officeTelegramGroupId, $whatsappGroupId, $masId, $masPassword, $metaAccessToken, $metaPhoneNumberId, $metaWabaId, $metaVerifyToken, $viewLabelOverrides, $fieldLabelOverrides, $existingId);
 	            } else {
+	                if ($hasLabelOverrides) {
+	                    sendJson([
+	                        'success' => false,
+	                        'error' => 'Display-name overrides could not be saved because the database schema is missing columns. Please run: ALTER TABLE app_settings ADD COLUMN viewLabelOverrides TEXT, ADD COLUMN fieldLabelOverrides TEXT;'
+	                    ], 400);
+	                }
 	                // Backward compatible with older schemas where override columns don't exist.
 	                $stmt = $conn->prepare("UPDATE app_settings SET officeTokenId=?, officeTelegramGroupId=?, whatsappGroupId=?, masId=?, masPassword=?, metaAccessToken=?, metaPhoneNumberId=?, metaWabaId=?, metaVerifyToken=?, updated_at=NOW() WHERE id=?");
 	                if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare settings update query.'], 500);
@@ -712,6 +719,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	            if ($stmt) {
 	                $stmt->bind_param('isssssssssss', $insertId, $officeTokenId, $officeTelegramGroupId, $whatsappGroupId, $masId, $masPassword, $metaAccessToken, $metaPhoneNumberId, $metaWabaId, $metaVerifyToken, $viewLabelOverrides, $fieldLabelOverrides);
 	            } else {
+	                if ($hasLabelOverrides) {
+	                    sendJson([
+	                        'success' => false,
+	                        'error' => 'Display-name overrides could not be saved because the database schema is missing columns. Please run: ALTER TABLE app_settings ADD COLUMN viewLabelOverrides TEXT, ADD COLUMN fieldLabelOverrides TEXT;'
+	                    ], 400);
+	                }
 	                // Backward compatible with older schemas where override columns don't exist.
 	                $stmt = $conn->prepare("INSERT INTO app_settings (id, officeTokenId, officeTelegramGroupId, whatsappGroupId, masId, masPassword, metaAccessToken, metaPhoneNumberId, metaWabaId, metaVerifyToken, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
 	                if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare settings insert query.'], 500);
