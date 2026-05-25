@@ -321,7 +321,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
 	                            />
 	                        </div>
 	                        <div className="space-y-1">
-	                            <label className="text-sm font-medium text-black block mb-1">Vendor Category <span className="text-red-500">*</span></label>
+	                            <label className="text-sm font-medium text-black block mb-1">{getFieldLabel('task.vendorCategory', 'Vendor Category')} <span className="text-red-500">*</span></label>
 	                            <div className="flex gap-2">
 	                                <div className="flex-1">
 	                                    <SearchableSelect
@@ -375,7 +375,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
 	                            />
 	                        </div>
 	                        <div className="space-y-1">
-	                            <label className="text-sm font-medium text-black block mb-1">Category <span className="text-red-500">*</span></label>
+	                            <label className="text-sm font-medium text-black block mb-1">{getFieldLabel('task.category', 'Category')} <span className="text-red-500">*</span></label>
 	                            <div className="flex gap-2">
 	                                <div className="flex-1">
 	                                    <SearchableSelect

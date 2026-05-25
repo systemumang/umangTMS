@@ -52,7 +52,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate }
     const seen = new Set<string>();
 
     for (const r of rows) {
-      const key = String(r.key || '').trim();
+      const key = String(r.key || '').trim().toLowerCase();
       const label = String(r.label || '').trim();
       if (!key && !label) continue;
       if (!key) { errors.push('Key cannot be empty.'); continue; }

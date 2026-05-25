@@ -22,11 +22,13 @@ const normalizeLabelMap = (value: unknown): LabelOverrideMap => {
   const rec = value as Record<string, unknown>;
   const out: LabelOverrideMap = {};
   for (const key of Object.keys(rec)) {
+    const normalizedKey = String(key || '').trim().toLowerCase();
+    if (!normalizedKey) continue;
     const raw = rec[key];
     if (typeof raw !== 'string') continue;
     const label = raw.trim();
     if (!label) continue;
-    out[key] = label;
+    out[normalizedKey] = label;
   }
   return out;
 };
@@ -36,13 +38,23 @@ export const buildLabelResolvers = (settings: AppSettings | null | undefined) =>
   const fieldMap = normalizeLabelMap(settings?.fieldLabelOverrides);
 
   const getViewLabel = (viewId: string, defaultLabel: string) => {
-    const override = viewMap[viewId];
+    const override = viewMap[String(viewId || '').trim().toLowerCase()];
     return override && override.trim() ? override : defaultLabel;
   };
 
   const getFieldLabel = (fieldKey: string, defaultLabel: string) => {
-    const override = fieldMap[fieldKey];
-    return override && override.trim() ? override : defaultLabel;
+    const normalized = String(fieldKey || '').trim().toLowerCase();
+    const direct = fieldMap[normalized];
+    if (direct && direct.trim()) return direct;
+
+    // Convenience fallback for task fields: allow overrides like "category" to apply to "task.category".
+    if (normalized.startsWith('task.')) {
+      const unscoped = normalized.slice('task.'.length);
+      const fallback = fieldMap[unscoped];
+      if (fallback && fallback.trim()) return fallback;
+    }
+
+    return defaultLabel;
   };
 
   return { getViewLabel, getFieldLabel, viewMap, fieldMap };
@@ -60,4 +72,3 @@ export const LabelProvider: React.FC<{ settings: AppSettings | null | undefined;
 };
 
 export const useLabels = () => React.useContext(LabelContext);
-
