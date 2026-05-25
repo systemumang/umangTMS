@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Task, Project, User as UserType } from '../types';
 import { Edit2, Info, Calendar, Clock, User, Users, ArrowUpDown, ArrowUp, ArrowDown, Loader2, Trash2, Tag, Layout, Building2, AlertTriangle, ChevronDown, ChevronUp, Hammer, X } from 'lucide-react';
 import { formatToIndianDate } from '../App';
+import { useLabels } from '../labelOverrides';
 
 interface TaskTableProps {
   tasks: Task[];
@@ -42,6 +43,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
   onSort,
   startIndex
 }) => {
+  const { getFieldLabel } = useLabels();
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
   const [photoViewer, setPhotoViewer] = useState<{ photos: string[]; index: number } | null>(null);
 
@@ -179,7 +181,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
 	                <th className={thClass} style={{ width: '320px' }} onClick={() => requestSort('remarks')}><div className="flex items-center">Notes {getSortIcon('remarks')}</div></th>
 	                <th className={thClass} style={{ width: '120px' }} onClick={() => requestSort('date')}><div className="flex items-center">Date {getSortIcon('date')}</div></th>
                     <th className={thClass} style={{ width: '160px' }} onClick={() => requestSort('firm')}><div className="flex items-center">Firm {getSortIcon('firm')}</div></th>
-		                <th className={thClass} style={{ width: '150px' }} onClick={() => requestSort('category')}><div className="flex items-center">Category {getSortIcon('category')}</div></th>
+		                <th className={thClass} style={{ width: '150px' }} onClick={() => requestSort('category')}><div className="flex items-center">{getFieldLabel('task.category', 'Category')} {getSortIcon('category')}</div></th>
 	                <th className={thClass} style={{ width: '100px' }} onClick={() => requestSort('priority')}><div className="flex items-center">Priority {getSortIcon('priority')}</div></th>
 	                <th className={thClass} style={{ width: '100px' }} onClick={() => requestSort('time')}><div className="flex items-center">Time {getSortIcon('time')}</div></th>
 	                <th className={thClass} style={{ width: '120px' }}><div className="flex items-center">Photo</div></th>
@@ -365,7 +367,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                         </div>
                         
                         <div className="space-y-1">
-                            <span className="text-[10px] uppercase font-black text-blue-900/60">Category</span>
+                            <span className="text-[10px] uppercase font-black text-blue-900/60">{getFieldLabel('task.category', 'Category')}</span>
                             <div className="flex items-center gap-1.5 text-xs text-black font-bold uppercase whitespace-normal break-words"><Tag size={12} className="text-green-600" /> {displayCategory}</div>
                         </div>
                         <div className="space-y-1">

@@ -8,6 +8,7 @@ import { BulkUpdateModal } from './BulkUpdateModal';
 import { Task, User, Project, Category, Vendor, VendorCategory, Firm } from '../types';
 import { SearchableSelect } from './SearchableSelect';
 import { parseToISO, formatToIndianDate } from '../App';
+import { useLabels } from '../labelOverrides';
 
 interface TasksViewProps {
 	  title: string;
@@ -117,8 +118,9 @@ export const TasksView: React.FC<TasksViewProps> = ({
 	  sidebarCollapsed = false,
     showCollapsedMenuButton = false,
     onShowMenu
-		}) => {
-  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+			}) => {
+	  const { getFieldLabel } = useLabels();
+	  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isBulkUpdateModalOpen, setIsBulkUpdateModalOpen] = useState(false);
   const [bulkMode, setBulkMode] = useState<'status' | 'priority' | 'assignee' | 'category'>('status');
@@ -646,7 +648,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
                     <AlertTriangle size={16} /><span>Priority</span>
                 </button>
                 <button onClick={() => openBulkUpdate('category')} className="flex items-center space-x-1 px-4 py-2 bg-indigo-50 text-indigo-700 border-2 border-indigo-200 rounded-md hover:bg-indigo-100 text-sm font-bold shadow-sm transition-colors uppercase tracking-wider">
-                    <Tags size={16} /><span>Category</span>
+                    <Tags size={16} /><span>{getFieldLabel('task.category', 'Category')}</span>
                 </button>
                 <button onClick={() => openBulkUpdate('assignee')} className="flex items-center space-x-1 px-4 py-2 bg-indigo-50 text-indigo-700 border-2 border-indigo-200 rounded-md hover:bg-indigo-100 text-sm font-bold shadow-sm transition-colors uppercase tracking-wider">
                     <Users size={16} /><span>Assignee</span>
@@ -695,7 +697,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
         <div className={`${showFilters ? 'grid' : 'hidden'} grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end`}>
              <SearchableSelect label="Status" options={statusOptions} value={filterStatus} onChange={setFilterStatus} multiple={true} placeholder="All Statuses" className="text-sm"/>
 	             <SearchableSelect label="Priority" options={priorityOptions} value={filterPriority} onChange={setFilterPriority} multiple={true} placeholder="All Priorities" className="text-sm"/>
-	             <SearchableSelect label="Category" options={categoryOptions} value={filterCategory} onChange={setFilterCategory} multiple={true} placeholder="All Categories" className="text-sm"/>
+	             <SearchableSelect label="Category" labelKey="task.category" options={categoryOptions} value={filterCategory} onChange={setFilterCategory} multiple={true} placeholder="All Categories" className="text-sm"/>
                <SearchableSelect label="Firm" options={firmOptions} value={filterFirm} onChange={setFilterFirm} multiple={true} placeholder="All Firms" className="text-sm"/>
              <SearchableSelect label="Owner" options={ownerOptions} value={filterOwner} onChange={setFilterOwner} multiple={true} placeholder="All Owners" className="text-sm"/>
              {!isVendorView && <SearchableSelect label="Assignee" options={assigneeOptions} value={filterAssignee} onChange={setFilterAssignee} multiple={true} placeholder="All Assignees" className="text-sm"/>}
