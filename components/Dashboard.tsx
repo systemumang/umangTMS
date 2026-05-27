@@ -12,6 +12,7 @@ const VENDOR_MODULE_ENABLED = false;
 interface DashboardProps {
   isAdmin: boolean;
   onOpenNewTask: () => void;
+  onOpenNewRecurringTask: () => void;
   onOpenAddUser: () => void;
   onOpenAddCategory: () => void;
   onOpenAddProject: () => void;
@@ -32,6 +33,7 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({
   isAdmin,
   onOpenNewTask, 
+  onOpenNewRecurringTask,
   onOpenAddUser,
   onOpenAddCategory,
   onOpenAddProject,
@@ -402,7 +404,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
 	        <div className="bg-sky-50 p-6 rounded-2xl shadow-md border-2 border-blue-300">
 	          <SectionHeader title="Quick Control" icon={<LayoutList size={20}/>} />
 	          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-	            <QuickAction label="New Task" icon={<Plus size={18} />} colorClass="bg-blue-600 hover:bg-blue-700 text-white" onClick={onOpenNewTask}/>
+		            <QuickAction label="Simple Task" icon={<Plus size={18} />} colorClass="bg-blue-600 hover:bg-blue-700 text-white" onClick={onOpenNewTask}/>
+		            <QuickAction label="New Recurring Task" icon={<RotateCcw size={18} />} colorClass="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={onOpenNewRecurringTask}/>
 	            <QuickAction label="Add User" icon={<UserPlus size={18} />} colorClass="bg-indigo-500 hover:bg-indigo-600 text-white" onClick={onOpenAddUser}/>
               <QuickAction label={`Add ${categoryLabel}`} icon={<Tags size={18} />} colorClass="bg-violet-500 hover:bg-violet-600 text-white" onClick={onOpenAddCategory}/>
 	            {VENDOR_MODULE_ENABLED && (

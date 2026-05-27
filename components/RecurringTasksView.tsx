@@ -631,6 +631,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 
   const thClass = "px-4 py-3 text-[10px] font-bold text-white uppercase tracking-wider border-r border-indigo-500 last:border-r-0 cursor-pointer hover:bg-indigo-700 transition-colors select-none whitespace-normal";
   const tdClass = "px-4 py-3 text-xs text-black border-r border-black last:border-r-0 align-top whitespace-normal break-words";
+  const taskColumnClass = "min-w-[280px] w-[280px] max-w-[360px]";
 
   const startEntry = sortedTasks.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
   const endEntry = Math.min(currentPage * itemsPerPage, sortedTasks.length);
@@ -700,7 +701,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 
       <div className={`bg-white rounded-lg border border-black shadow-sm overflow-hidden ${viewMode === 'card' ? 'hidden md:block' : 'block'}`}>
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+	          <table className="w-full min-w-max text-left border-collapse">
             <thead>
               <tr className="bg-indigo-600">
                 {isAdmin && (
@@ -716,7 +717,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 	                <th className="px-4 py-3 text-[10px] font-bold text-white uppercase tracking-wider border-r border-indigo-500 w-16 text-center whitespace-nowrap">S.No.</th>
 		                <th className={thClass} onClick={() => requestSort('frequencyDays')}><div className="flex items-center">Period {getSortIcon('frequencyDays')}</div></th>
 			                <th className={thClass} onClick={() => requestSort('time')}><div className="flex items-center">Time {getSortIcon('time')}</div></th>
-		                <th className={thClass} onClick={() => requestSort('title')}><div className="flex items-center">Task {getSortIcon('title')}</div></th>
+			                <th className={`${thClass} ${taskColumnClass}`} onClick={() => requestSort('title')}><div className="flex items-center">Task {getSortIcon('title')}</div></th>
 	                  <th className={thClass} onClick={() => requestSort('firm')}><div className="flex items-center">Firm {getSortIcon('firm')}</div></th>
 	                  <th className={thClass} onClick={() => requestSort('owner')}><div className="flex items-center">Owner {getSortIcon('owner')}</div></th>
 		                <th className={thClass} onClick={() => requestSort('category')}><div className="flex items-center">{getFieldLabel('recurringTask.category', 'Category')} {getSortIcon('category')}</div></th>
@@ -788,7 +789,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 	                      </div>
 	                    </td>
 	                    <td className={tdClass}>{task.time || '-'}</td>
-		                    <td className={`${tdClass} font-medium`}>{task.title}</td>
+			                    <td className={`${tdClass} ${taskColumnClass} font-medium`}>{task.title}</td>
 	                      <td className={tdClass}>{task.firm || '-'}</td>
 	                      <td className={tdClass}>{task.owner || '-'}</td>
 		                    <td className={tdClass}>{task.category}</td>

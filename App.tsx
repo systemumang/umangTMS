@@ -1265,7 +1265,7 @@ export default function App() {
               else if (tab === 'pending-billing') setActiveTab(makePendingStatusId('Pending for Billing'));
               else if (tab === 'pending-payment') setActiveTab(makePendingStatusId('Pending for Payment'));
               else setActiveTab(tab);
-            }} onFilterChange={handleDashboardFilterChange} onOpenNewTask={() => { setIsTaskModalVendorMode(false); setIsTaskModalOpen(true); }} 
+	            }} onFilterChange={handleDashboardFilterChange} onOpenNewTask={() => { setIsTaskModalVendorMode(false); setIsTaskModalOpen(true); }} onOpenNewRecurringTask={() => setIsRecurringTaskModalOpen(true)}
 	          onOpenAddUser={() => setIsUserModalOpen(true)} onOpenAddCategory={() => setIsCategoryModalOpen(true)} onOpenAddProject={() => setIsProjectModalOpen(true)} onOpenAddClient={() => setIsClientModalOpen(true)} onOpenAddVendor={() => setIsVendorModalOpen(true)} 
 	        />;
       case 'all-tasks': return <TasksView title={getViewLabel('all-tasks', 'All Tasks')} tasks={visibleTasks.filter(t => !t.vendor || t.vendor === '')} {...commonTaskProps} filterType="all" />;
