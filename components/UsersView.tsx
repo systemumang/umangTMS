@@ -1,11 +1,12 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Search, LayoutGrid, LayoutList, FileText, Download } from 'lucide-react';
+import { Plus, Search, LayoutGrid, LayoutList, FileText, Download, Filter, X } from 'lucide-react';
 import { UserTable } from './UserTable';
 import { AddUserModal } from './AddUserModal';
 import { UpdateUserModal } from './UpdateUserModal';
 import { User, Designation, Department } from '../types';
 import { useLabels } from '../labelOverrides';
+import { SearchableSelect } from './SearchableSelect';
 
 interface UsersViewProps {
   users: User[];
@@ -27,6 +28,13 @@ export const UsersView: React.FC<UsersViewProps> = ({ users, designations, depar
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [mobileViewMode, setMobileViewMode] = useState<'card' | 'table'>('card');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Filter States
+  const [filterName, setFilterName] = useState<string[]>([]);
+  const [filterDesignation, setFilterDesignation] = useState<string[]>([]);
+  const [filterDepartment, setFilterDepartment] = useState<string[]>([]);
+  const [filterRole, setFilterRole] = useState<string[]>([]);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -34,16 +42,40 @@ export const UsersView: React.FC<UsersViewProps> = ({ users, designations, depar
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, filterName, filterDesignation, filterDepartment, filterRole]);
+
+  const doesUserMatchAllFilters = (u: User, excludeKey?: string) => {
+    // Search term
+    if (searchTerm) {
+      const lowerTerm = searchTerm.toLowerCase();
+      const matchesSearch = 
+        u.name.toLowerCase().includes(lowerTerm) || 
+        u.email.toLowerCase().includes(lowerTerm) ||
+        (u.employeeId && u.employeeId.toLowerCase().includes(lowerTerm)) ||
+        (u.department && u.department.toLowerCase().includes(lowerTerm)) ||
+        (u.designation && u.designation.toLowerCase().includes(lowerTerm)) ||
+        (u.role && u.role.toLowerCase().includes(lowerTerm));
+      if (!matchesSearch) return false;
+    }
+
+    // Name filter
+    if (excludeKey !== 'name' && filterName.length > 0 && !filterName.includes(u.name)) return false;
+
+    // Designation filter
+    if (excludeKey !== 'designation' && filterDesignation.length > 0 && !filterDesignation.includes(u.designation || '')) return false;
+
+    // Department filter
+    if (excludeKey !== 'department' && filterDepartment.length > 0 && !filterDepartment.includes(u.department || '')) return false;
+
+    // Role filter
+    if (excludeKey !== 'role' && filterRole.length > 0 && !filterRole.includes(u.role)) return false;
+
+    return true;
+  };
 
   const filteredUsers = useMemo(() => {
-    return users.filter(u => 
-      u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (u.employeeId && u.employeeId.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (u.department && u.department.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  }, [users, searchTerm]);
+    return users.filter(u => doesUserMatchAllFilters(u));
+  }, [users, searchTerm, filterName, filterDesignation, filterDepartment, filterRole]);
 
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const paginatedUsers = useMemo(() => {
@@ -55,6 +87,43 @@ export const UsersView: React.FC<UsersViewProps> = ({ users, designations, depar
     setSelectedUser(user);
     setIsEditModalOpen(true);
   };
+
+  const handleClearFilters = () => {
+    setFilterName([]);
+    setFilterDesignation([]);
+    setFilterDepartment([]);
+    setFilterRole([]);
+    setSearchTerm('');
+  };
+
+  const nameOptions = useMemo(() => {
+    const matchedUsers = users.filter(u => doesUserMatchAllFilters(u, 'name'));
+    return Array.from(new Set(matchedUsers.map(u => u.name))).sort().map(name => ({ value: name, label: name }));
+  }, [users, searchTerm, filterDesignation, filterDepartment, filterRole]);
+
+  const designationOptions = useMemo(() => {
+    const matchedUsers = users.filter(u => doesUserMatchAllFilters(u, 'designation'));
+    return Array.from(new Set(matchedUsers.map(u => u.designation || '').filter(Boolean))).sort().map(d => ({ value: d, label: d }));
+  }, [users, searchTerm, filterName, filterDepartment, filterRole]);
+
+  const departmentOptions = useMemo(() => {
+    const matchedUsers = users.filter(u => doesUserMatchAllFilters(u, 'department'));
+    return Array.from(new Set(matchedUsers.map(u => u.department || '').filter(Boolean))).sort().map(d => ({ value: d, label: d }));
+  }, [users, searchTerm, filterName, filterDesignation, filterRole]);
+
+  const roleOptions = useMemo(() => {
+    const matchedUsers = users.filter(u => doesUserMatchAllFilters(u, 'role'));
+    return Array.from(new Set(matchedUsers.map(u => u.role))).sort().map(role => ({ value: role, label: role }));
+  }, [users, searchTerm, filterName, filterDesignation, filterDepartment]);
+
+  const activeFilterBadges = useMemo(() => {
+    const badges: { label: string; clear: () => void }[] = [];
+    if (filterName.length > 0) badges.push({ label: `Name: ${filterName.join(', ')}`, clear: () => setFilterName([]) });
+    if (filterDesignation.length > 0) badges.push({ label: `Designation: ${filterDesignation.join(', ')}`, clear: () => setFilterDesignation([]) });
+    if (filterDepartment.length > 0) badges.push({ label: `Department: ${filterDepartment.join(', ')}`, clear: () => setFilterDepartment([]) });
+    if (filterRole.length > 0) badges.push({ label: `Role: ${filterRole.join(', ')}`, clear: () => setFilterRole([]) });
+    return badges;
+  }, [filterName, filterDesignation, filterDepartment, filterRole]);
 
   const startEntry = filteredUsers.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
   const endEntry = Math.min(currentPage * itemsPerPage, filteredUsers.length);
@@ -90,52 +159,91 @@ export const UsersView: React.FC<UsersViewProps> = ({ users, designations, depar
         <div className={sidebarCollapsed ? 'pl-14 md:pl-16' : ''}>
           <h2 className="text-2xl font-bold text-indigo-600">{getViewLabel('users', 'Users')}</h2>
         </div>
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="md:hidden inline-flex items-center justify-center w-10 h-10 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 shadow-sm"
-          title="Add User"
-        >
-          <Plus size={18} />
-        </button>
+        <div className="flex gap-2">
+            <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="md:hidden inline-flex items-center justify-center w-10 h-10 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 shadow-sm"
+            title="Add User"
+            >
+            <Plus size={18} />
+            </button>
+            <button 
+                onClick={() => setShowFilters(!showFilters)} 
+                className={`flex items-center justify-center w-10 h-10 border rounded-md shadow-sm transition-all duration-200 ${showFilters ? 'bg-indigo-600 border-indigo-700 text-white ring-2 ring-indigo-200' : 'bg-indigo-50 border-indigo-300 text-indigo-600 hover:bg-indigo-100'}`} 
+                title="Toggle Filters"
+            >
+                <Filter size={18} />
+            </button>
+        </div>
       </div>
 
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-indigo-200 flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="relative flex-1 w-full md:max-w-xl">
-          <Search className="absolute left-3 top-2.5 text-indigo-600" size={18} />
-          <input 
-            type="text" 
-            placeholder="Search users by name, email or employee id..."
-            className="w-full pl-10 pr-4 py-2 border border-indigo-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 text-sm text-indigo-700"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        
-        <div className="flex gap-3 w-full md:w-auto">
-            <div className="flex bg-gray-100 p-1 rounded-lg md:hidden">
-                <button
-                onClick={() => setMobileViewMode('card')}
-                className={`p-1.5 rounded-md transition-all ${mobileViewMode === 'card' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}
-                >
-                <LayoutGrid size={18} />
-                </button>
-                <button
-                onClick={() => setMobileViewMode('table')}
-                className={`p-1.5 rounded-md transition-all ${mobileViewMode === 'table' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}
-                >
-                <LayoutList size={18} />
-                </button>
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-indigo-200 space-y-4">
+        {activeFilterBadges.length > 0 && (
+            <div className="flex flex-wrap gap-2 pb-2">
+                {activeFilterBadges.map((badge, idx) => (
+                    <span key={idx} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 text-red-600 text-xs font-bold border border-indigo-200">
+                        {badge.label}
+                        <button onClick={badge.clear} className="p-0.5 hover:bg-indigo-200 rounded-full transition-colors"><X size={10} className="text-red-600" /></button>
+                    </span>
+                ))}
             </div>
+        )}
 
-            <button 
-            onClick={() => setIsAddModalOpen(true)}
-            className="hidden md:flex flex-1 md:flex-none items-center justify-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium shadow-sm transition-colors whitespace-nowrap"
-            >
-            <Plus size={16} />
-            <span>Add User</span>
-            </button>
-            <button onClick={handleExportPDF} title="Export PDF" className="hidden md:flex items-center justify-center p-2.5 bg-indigo-500 text-white border border-indigo-600 rounded-md hover:bg-indigo-600"><Download size={16} /></button>
-            <button onClick={handleExportExcel} title="Export Excel" className="hidden md:flex items-center justify-center p-2.5 bg-indigo-600 text-white border border-indigo-700 rounded-md hover:bg-indigo-700"><FileText size={16} /></button>
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="relative flex-1 w-full">
+            <Search className="absolute left-3 top-2.5 text-indigo-600" size={18} />
+            <input 
+                type="text" 
+                placeholder="Search users by name, email, employee id, department, designation, or role..."
+                className={`w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-100 text-sm transition-colors ${searchTerm ? 'bg-indigo-50 border-indigo-500 text-indigo-700 font-medium' : 'border-indigo-300 text-indigo-700'}`}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            </div>
+            
+            <div className="flex gap-3 w-full md:w-auto">
+                <div className="flex bg-gray-100 p-1 rounded-lg md:hidden">
+                    <button
+                    onClick={() => setMobileViewMode('card')}
+                    className={`p-1.5 rounded-md transition-all ${mobileViewMode === 'card' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}
+                    >
+                    <LayoutGrid size={18} />
+                    </button>
+                    <button
+                    onClick={() => setMobileViewMode('table')}
+                    className={`p-1.5 rounded-md transition-all ${mobileViewMode === 'table' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}
+                    >
+                    <LayoutList size={18} />
+                    </button>
+                </div>
+
+                <button 
+                onClick={() => setIsAddModalOpen(true)}
+                className="hidden md:flex flex-1 md:flex-none items-center justify-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium shadow-sm transition-colors whitespace-nowrap"
+                >
+                <Plus size={16} />
+                <span>Add User</span>
+                </button>
+                <button 
+                    onClick={() => setShowFilters(!showFilters)} 
+                    className={`hidden md:flex items-center space-x-1 px-3 py-2 border rounded-md text-sm font-medium shadow-sm transition-all duration-200 ${showFilters ? 'bg-indigo-600 border-indigo-700 text-white ring-2 ring-indigo-200' : 'bg-indigo-50 border-indigo-300 text-indigo-600 hover:bg-indigo-100'}`} 
+                    title="Toggle Filters"
+                >
+                    <Filter size={16} />
+                </button>
+                <button onClick={handleExportPDF} title="Export PDF" className="hidden md:flex items-center justify-center p-2.5 bg-indigo-500 text-white border border-indigo-600 rounded-md hover:bg-indigo-600"><Download size={16} /></button>
+                <button onClick={handleExportExcel} title="Export Excel" className="hidden md:flex items-center justify-center p-2.5 bg-indigo-600 text-white border border-indigo-700 rounded-md hover:bg-indigo-700"><FileText size={16} /></button>
+            </div>
+        </div>
+
+        <div className={`${showFilters ? 'grid' : 'hidden'} grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end`}>
+            <SearchableSelect label="Name" options={nameOptions} value={filterName} onChange={setFilterName} multiple={true} placeholder="All Names" className="text-sm"/>
+            <SearchableSelect label="Designation" options={designationOptions} value={filterDesignation} onChange={setFilterDesignation} multiple={true} placeholder="All Designations" className="text-sm"/>
+            <SearchableSelect label="Department" options={departmentOptions} value={filterDepartment} onChange={setFilterDepartment} multiple={true} placeholder="All Departments" className="text-sm"/>
+            <SearchableSelect label="Role" options={roleOptions} value={filterRole} onChange={setFilterRole} multiple={true} placeholder="All Roles" className="text-sm"/>
+            <div className="col-span-1">
+                <button onClick={handleClearFilters} className="w-full px-3 py-2 bg-red-600 text-white border border-red-700 rounded-md hover:bg-red-700 text-sm font-medium transition-colors h-[38px] flex items-center justify-center" title="Clear Filters">Clear Filters</button>
+            </div>
         </div>
       </div>
 
