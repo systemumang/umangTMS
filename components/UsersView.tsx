@@ -167,13 +167,6 @@ export const UsersView: React.FC<UsersViewProps> = ({ users, designations, depar
             >
             <Plus size={18} />
             </button>
-            <button 
-                onClick={() => setShowFilters(!showFilters)} 
-                className={`flex items-center justify-center w-10 h-10 border rounded-md shadow-sm transition-all duration-200 ${showFilters ? 'bg-indigo-600 border-indigo-700 text-white ring-2 ring-indigo-200' : 'bg-indigo-50 border-indigo-300 text-indigo-600 hover:bg-indigo-100'}`} 
-                title="Toggle Filters"
-            >
-                <Filter size={18} />
-            </button>
         </div>
       </div>
 
@@ -283,6 +276,25 @@ export const UsersView: React.FC<UsersViewProps> = ({ users, designations, depar
         designations={designations}
         departments={departments}
         onAddDesignation={onAddDesignation}
+        onAddDepartment={onAddDepartment}
+        users={users} 
+      />
+      <UpdateUserModal 
+        isOpen={isEditModalOpen} 
+        onClose={() => setIsEditModalOpen(false)} 
+        user={selectedUser} 
+        onUpdate={onEditUser} 
+        designations={designations}
+        departments={departments}
+        onAddDesignation={onAddDesignation}
+        onAddDepartment={onAddDepartment}
+        users={users}
+      />
+
+    </div>
+  );
+};
+n={onAddDesignation}
         onAddDepartment={onAddDepartment}
         users={users} 
       />
