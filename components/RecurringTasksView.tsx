@@ -183,7 +183,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
           : (recurrenceDay ? toNumberOrDefault(recurrenceDay, 1) : 1);
       return {
         title: get('title'),
-        goal: get('goal'),
+        goal: toNumberOrDefault(get('goal'), 0),
         firm: get('firm'),
         owner: get('owner'),
         category: get('category'),

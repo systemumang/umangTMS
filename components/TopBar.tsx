@@ -136,8 +136,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   };
 
   const renderTasksDropdown = () => {
-    const taskItems = groupedItems['Tasks'] || [];
-    const itemMap = new Map(taskItems.map(item => [item.id, item]));
+    const taskItems: NavItem[] = (groupedItems['Tasks'] || []) as NavItem[];
+    const itemMap = new Map<string, NavItem>(taskItems.map(item => [item.id, item]));
     const topLevelItems = taskItems.filter(item => !pendingChildIds.includes(item.id));
     const pendingGroupItem = itemMap.get('pending-group');
 

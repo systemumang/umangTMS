@@ -6,6 +6,7 @@ export interface NavItem {
   label: string;
   icon: React.ReactNode;
   section?: string;
+  count?: number;
 }
 
 export interface StatCardProps {

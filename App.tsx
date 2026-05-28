@@ -71,7 +71,7 @@ import {
   IndianRupee,
   Wallet
 } from 'lucide-react';
-import { NavItem, Task, User, Designation, Category, Project, Client, ActionLogEntry, Vendor, VendorCategory, RecurringTask, RecurringTaskAction, AppSettings, Firm, StatusMaster } from './types';
+import { NavItem, Task, User, Designation, Department, Category, Project, Client, ActionLogEntry, Vendor, VendorCategory, RecurringTask, RecurringTaskAction, AppSettings, Firm, StatusMaster } from './types';
 
 const AUTO_SYNC_INTERVAL = 120000;
 const VENDOR_MODULE_ENABLED = false;
