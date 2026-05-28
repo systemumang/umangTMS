@@ -11,11 +11,13 @@ interface UpdateUserModalProps {
   user: User | null;
   onUpdate: (user: User) => void;
   designations: Designation[];
+  departments: Department[];
   onAddDesignation: () => void;
+  onAddDepartment: () => void;
   users: User[];
 }
 
-export const UpdateUserModal: React.FC<UpdateUserModalProps> = ({ isOpen, onClose, user, onUpdate, designations, onAddDesignation, users }) => {
+export const UpdateUserModal: React.FC<UpdateUserModalProps> = ({ isOpen, onClose, user, onUpdate, designations, departments, onAddDesignation, onAddDepartment, users }) => {
   const { getFieldLabel } = useLabels();
   const [formData, setFormData] = useState({
     name: '',
@@ -23,6 +25,7 @@ export const UpdateUserModal: React.FC<UpdateUserModalProps> = ({ isOpen, onClos
     employeeId: '',
     mobile: '',
     designation: '',
+    department: '',
     role: 'Employee',
     telegramUserName: '',
     password: ''
@@ -38,6 +41,7 @@ export const UpdateUserModal: React.FC<UpdateUserModalProps> = ({ isOpen, onClos
         employeeId: user.employeeId || '',
         mobile: user.mobile,
         designation: user.designation,
+        department: user.department || '',
         role: user.role,
         telegramUserName: user.telegramUserName || '',
         password: user.password || ''
@@ -117,6 +121,7 @@ export const UpdateUserModal: React.FC<UpdateUserModalProps> = ({ isOpen, onClos
       employeeId: formData.employeeId,
       mobile: formData.mobile,
       designation: formData.designation,
+      department: formData.department,
       role: formData.role,
       telegramUserName: formData.telegramUserName,
       password: formData.password
@@ -125,6 +130,7 @@ export const UpdateUserModal: React.FC<UpdateUserModalProps> = ({ isOpen, onClos
   };
 
   const designationOptions = designations.map(d => ({ value: d.title, label: d.title }));
+  const departmentOptions = departments.map(d => ({ value: d.name, label: d.name }));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-opacity">
@@ -237,6 +243,28 @@ export const UpdateUserModal: React.FC<UpdateUserModalProps> = ({ isOpen, onClos
                 </div>
 
                 <div className="space-y-1">
+                 <label className="text-sm font-medium text-gray-900">{getFieldLabel('user.department', 'Department')}</label>
+                 <div className="flex gap-2">
+                    <div className="flex-1">
+                         <SearchableSelect 
+                            options={departmentOptions}
+                            value={formData.department}
+                            onChange={(val) => setFormData(prev => ({...prev, department: val}))}
+                            placeholder="Select..."
+                        />
+                    </div>
+                     <button 
+                        type="button" 
+                        onClick={onAddDepartment}
+                        className="px-3 py-2 text-gray-500 hover:text-indigo-600 border border-gray-200 hover:bg-indigo-50 rounded-lg transition-colors h-[42px]"
+                        >
+                            <Plus size={18} />
+                        </button>
+                 </div>
+                </div>
+            </div>
+
+            <div className="space-y-1">
                 <label className="text-sm font-medium text-gray-900">{getFieldLabel('user.role', 'Role')}</label>
                 <div className="relative">
                     <select 

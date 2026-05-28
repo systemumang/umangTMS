@@ -71,6 +71,19 @@ function add_employee_id_column_if_missing(mysqli $conn): void {
     }
 }
 
+function add_department_column_if_missing(mysqli $conn): void {
+    if (!hasColumn($conn, 'users', 'department')) {
+        $conn->query("ALTER TABLE `users` ADD COLUMN `department` VARCHAR(100) DEFAULT NULL AFTER `designation`");
+    }
+}
+
+function ensure_departments_table(mysqli $conn): void {
+    $conn->query("CREATE TABLE IF NOT EXISTS `departments` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `name` VARCHAR(100) NOT NULL UNIQUE
+    )");
+}
+
 function add_notes_column_if_missing(mysqli $conn): void {
     if (!hasColumn($conn, 'recurring_tasks', 'notes')) {
         $conn->query("ALTER TABLE `recurring_tasks` ADD COLUMN `notes` LONGTEXT DEFAULT NULL AFTER `title`");
@@ -233,6 +246,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     // Ensure database columns exist
     add_employee_id_column_if_missing($conn);
+    add_department_column_if_missing($conn);
+    ensure_departments_table($conn);
     add_notes_column_if_missing($conn);
 
     $users = array_map(static function(array $u): array {
@@ -270,6 +285,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'vendorTasks' => fetchAllRows($conn, 'vendor_tasks'),
             'users' => $users,
             'designations' => fetchAllRows($conn, 'designations', 'name'),
+            'departments' => fetchAllRows($conn, 'departments', 'name'),
             'categories' => fetchAllRows($conn, 'categories', 'name'),
             'statuses' => fetchAllRows($conn, 'status_master', 'name'),
             'vendorCategories' => fetchAllRows($conn, 'vendor_categories', 'name'),
@@ -307,6 +323,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'statuses' => 'status_master',
         'vendorcategories' => 'vendor_categories',
         'designations' => 'designations',
+        'departments' => 'departments',
         'maintasks' => 'main_tasks',
         'vendortasks' => 'vendor_tasks',
         'maintaskactionlog' => 'action_logs',
@@ -328,6 +345,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $mobile = trim((string)($data['mobile'] ?? ''));
         $role = trim((string)($data['role'] ?? 'Employee'));
         $designation = trim((string)($data['designation'] ?? ''));
+        $department = trim((string)($data['department'] ?? ''));
         $password = (string)($data['password'] ?? '');
         $isActiveRaw = strtolower((string)($data['isActive'] ?? 'true'));
         $isActive = in_array($isActiveRaw, ['1', 'true', 'yes'], true) ? 1 : 0;
@@ -337,12 +355,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $stmt = $conn->prepare(
-            "INSERT INTO users (name, email, employee_id, mobile, role, designation, password, isActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+            "INSERT INTO users (name, email, employee_id, mobile, role, designation, department, password, isActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
         );
         if (!$stmt) {
             sendJson(['success' => false, 'error' => 'Failed to prepare insert query.'], 500);
         }
-        $stmt->bind_param('sssssssi', $name, $email, $employee_id, $mobile, $role, $designation, $password, $isActive);
+        $stmt->bind_param('ssssssssi', $name, $email, $employee_id, $mobile, $role, $designation, $department, $password, $isActive);
         $ok = $stmt->execute();
         $insertId = (int)$stmt->insert_id;
         $stmt->close();
@@ -547,6 +565,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         sendJson(['success' => true, 'data' => ['id' => $insertId]]);
     }
 
+    if ($action === 'addMaster' && $table === 'departments') {
+        $name = trim((string)($data['name'] ?? ''));
+        if ($name === '') sendJson(['success' => false, 'error' => 'Department name is required.'], 400);
+        $stmt = $conn->prepare("INSERT INTO departments (name) VALUES (?)");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare department insert.'], 500);
+        $stmt->bind_param('s', $name);
+        $ok = $stmt->execute();
+        $insertId = (int)$stmt->insert_id;
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to add department.'], 400);
+        sendJson(['success' => true, 'data' => ['id' => $insertId]]);
+    }
+
     if ($action === 'addMaster' && $table === 'recurring_tasks') {
         $id = (int)($data['id'] ?? 0);
         if ($id <= 0) {
@@ -672,22 +703,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $mobile = trim((string)($data['mobile'] ?? ''));
         $role = trim((string)($data['role'] ?? 'Employee'));
         $designation = trim((string)($data['designation'] ?? ''));
+        $department = trim((string)($data['department'] ?? ''));
         $password = (string)($data['password'] ?? '');
         $isActiveRaw = strtolower((string)($data['isActive'] ?? 'true'));
         $isActive = in_array($isActiveRaw, ['1', 'true', 'yes'], true) ? 1 : 0;
 
         if ($password !== '') {
             $stmt = $conn->prepare(
-                "UPDATE users SET name=?, email=?, employee_id=?, mobile=?, role=?, designation=?, password=?, isActive=? WHERE id=?"
+                "UPDATE users SET name=?, email=?, employee_id=?, mobile=?, role=?, designation=?, department=?, password=?, isActive=? WHERE id=?"
             );
             if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare update query.'], 500);
-            $stmt->bind_param('sssssssii', $name, $email, $employee_id, $mobile, $role, $designation, $password, $isActive, $id);
+            $stmt->bind_param('ssssssssii', $name, $email, $employee_id, $mobile, $role, $designation, $department, $password, $isActive, $id);
         } else {
             $stmt = $conn->prepare(
-                "UPDATE users SET name=?, email=?, employee_id=?, mobile=?, role=?, designation=?, isActive=? WHERE id=?"
+                "UPDATE users SET name=?, email=?, employee_id=?, mobile=?, role=?, designation=?, department=?, isActive=? WHERE id=?"
             );
             if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare update query.'], 500);
-            $stmt->bind_param('ssssssii', $name, $email, $employee_id, $mobile, $role, $designation, $isActive, $id);
+            $stmt->bind_param('sssssssii', $name, $email, $employee_id, $mobile, $role, $designation, $department, $isActive, $id);
         }
 
         $ok = $stmt->execute();
@@ -997,6 +1029,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         sendJson(['success' => true]);
     }
 
+    if ($action === 'updateMaster' && $table === 'departments') {
+        $id = (int)($data['id'] ?? 0);
+        if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid department id.'], 400);
+        $name = trim((string)($data['name'] ?? ''));
+        $stmt = $conn->prepare("UPDATE departments SET name=? WHERE id=?");
+        if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare department update.'], 500);
+        $stmt->bind_param('si', $name, $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to update department.'], 400);
+        sendJson(['success' => true]);
+    }
+
     if ($action === 'updateMaster' && $table === 'recurring_tasks') {
         $id = (int)($data['id'] ?? 0);
         if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid recurring task id.'], 400);
@@ -1105,7 +1150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         sendJson(['success' => true]);
     }
 
-    if ($action === 'deleteRecord' && in_array($table, ['clients', 'projects', 'firms', 'vendors', 'categories', 'vendor_categories', 'designations', 'status_master'], true)) {
+    if ($action === 'deleteRecord' && in_array($table, ['clients', 'projects', 'firms', 'vendors', 'categories', 'vendor_categories', 'designations', 'departments', 'status_master'], true)) {
         $id = (int)($data['id'] ?? 0);
         if ($id <= 0) sendJson(['success' => false, 'error' => 'Invalid id.'], 400);
         if ($table === 'status_master') {

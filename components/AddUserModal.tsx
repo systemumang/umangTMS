@@ -10,11 +10,13 @@ interface AddUserModalProps {
   onClose: () => void;
   onSave: (user: Omit<User, 'id' | 'isActive'>) => void;
   designations: Designation[];
+  departments: Department[];
   onAddDesignation: () => void;
+  onAddDepartment: () => void;
   users: User[];
 }
 
-export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onSave, designations, onAddDesignation, users }) => {
+export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onSave, designations, departments, onAddDesignation, onAddDepartment, users }) => {
   const { getFieldLabel } = useLabels();
   const [formData, setFormData] = useState({
     name: '',
@@ -22,6 +24,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onS
     employeeId: '',
     mobile: '',
     designation: '',
+    department: '',
     role: 'Employee',
     telegramUserName: '',
     password: ''
@@ -99,6 +102,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onS
       employeeId: formData.employeeId,
       mobile: formData.mobile,
       designation: formData.designation,
+      department: formData.department,
       role: formData.role,
       telegramUserName: formData.telegramUserName,
       password: formData.password
@@ -109,6 +113,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onS
       employeeId: '',
       mobile: '',
       designation: '',
+      department: '',
       role: 'Employee',
       telegramUserName: '',
       password: ''
@@ -117,6 +122,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onS
   };
 
   const designationOptions = designations.map(d => ({ value: d.title, label: d.title }));
+  const departmentOptions = departments.map(d => ({ value: d.name, label: d.name }));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-opacity">
@@ -229,6 +235,28 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onS
                 </div>
 
                 <div className="space-y-1">
+	                    <label className="text-sm font-medium text-gray-900">{getFieldLabel('user.department', 'Department')}</label>
+                     <div className="flex gap-2">
+                        <div className="flex-1">
+                            <SearchableSelect 
+                                options={departmentOptions}
+                                value={formData.department}
+                                onChange={(val) => setFormData(prev => ({...prev, department: val}))}
+                                placeholder="Select..."
+                            />
+                        </div>
+                        <button 
+                        type="button" 
+                        onClick={onAddDepartment}
+                        className="px-3 py-2 text-gray-500 hover:text-indigo-600 border border-gray-200 hover:bg-indigo-50 rounded-lg transition-colors h-[42px]"
+                        >
+                            <Plus size={18} />
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div className="space-y-1">
 	                <label className="text-sm font-medium text-gray-900">{getFieldLabel('user.role', 'Role')} <span className="text-red-500">*</span></label>
                 <div className="relative">
                     <select 
@@ -244,7 +272,6 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onS
                     <div className="absolute right-3 top-3 pointer-events-none">
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                     </div>
-                </div>
                 </div>
             </div>
 

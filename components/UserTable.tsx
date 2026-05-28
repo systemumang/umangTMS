@@ -78,6 +78,9 @@ export const UserTable: React.FC<UserTableProps> = ({ users, onToggleStatus, onD
               <th className={thClass} onClick={() => requestSort('designation')}>
                 <div className="flex items-center">Designation {getSortIcon('designation')}</div>
               </th>
+              <th className={thClass} onClick={() => requestSort('department' as any)}>
+                <div className="flex items-center">Department {getSortIcon('department' as any)}</div>
+              </th>
               <th className={thClass} onClick={() => requestSort('role')}>
                 <div className="flex items-center">Role {getSortIcon('role')}</div>
               </th>
@@ -107,6 +110,7 @@ export const UserTable: React.FC<UserTableProps> = ({ users, onToggleStatus, onD
                    ) : '-'}
                 </td>
                 <td className={tdClass}>{user.designation || ''}</td>
+                <td className={tdClass}>{user.department || '-'}</td>
                 <td className={tdClass}>{user.role}</td>
                 <td className={tdClass}>{user.password || '-'}</td>
                 <td className={`${tdClass} text-center`}>
@@ -156,7 +160,7 @@ export const UserTable: React.FC<UserTableProps> = ({ users, onToggleStatus, onD
                 <div className="space-y-2 text-sm text-gray-600 mb-4">
                      <div className="flex items-center gap-2 whitespace-normal break-words"><Mail size={14} className="text-gray-400" /><span>{user.email}</span></div>
                      <div className="flex items-center gap-2 whitespace-normal break-words"><Phone size={14} className="text-gray-400" /><span>{user.mobile}</span></div>
-                     <div className="flex items-center gap-2 whitespace-normal break-words"><Briefcase size={14} className="text-gray-400" /><span>{user.designation || 'N/A'}</span></div>
+                     <div className="flex items-center gap-2 whitespace-normal break-words"><Briefcase size={14} className="text-gray-400" /><span>{user.designation || 'N/A'}{user.department ? ` (${user.department})` : ''}</span></div>
                      {user.telegramUserName && <div className="flex items-center gap-2 whitespace-normal break-words"><Send size={14} className="text-blue-400" /><span>@{user.telegramUserName}</span></div>}
                      <div className="flex items-center gap-2 font-mono text-xs bg-gray-50 p-1 rounded whitespace-normal break-words"><span className="text-gray-400 uppercase font-bold text-[10px]">Pass:</span> <span>{user.password || '-'}</span></div>
                 </div>

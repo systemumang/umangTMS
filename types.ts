@@ -108,6 +108,7 @@ export interface User {
   employeeId?: string;
   mobile: string;
   designation: string;
+  department?: string;
   role: string;
   isActive: boolean;
   telegramUserName?: string;
@@ -115,11 +116,15 @@ export interface User {
 }
 
 export interface Designation {
-    id: number;
-    title: string;
-    description: string;
+  id: number;
+  title: string;
+  description: string;
 }
 
+export interface Department {
+  id: number;
+  name: string;
+}
 export interface Category {
     id: number;
     name: string;

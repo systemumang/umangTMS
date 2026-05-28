@@ -6,6 +6,7 @@ import { Dashboard } from './components/Dashboard';
 import { TasksView } from './components/TasksView';
 import { UsersView } from './components/UsersView';
 import { DesignationsView } from './components/DesignationsView';
+import { DepartmentsView } from './components/DepartmentsView';
 import { CategoriesView } from './components/CategoriesView';
 import { StatusesView } from './components/StatusesView';
 import { VendorCategoriesView } from './components/VendorCategoriesView';
@@ -29,6 +30,7 @@ import { AddUserModal } from './components/AddUserModal';
 import { AddClientModal } from './components/AddClientModal';
 import { AddVendorModal } from './components/AddVendorModal';
 import { AddDesignationModal } from './components/AddDesignationModal';
+import { AddDepartmentModal } from './components/AddDepartmentModal';
 import { AddFirmModal } from './components/AddFirmModal';
 import { EditProjectModal } from './components/EditProjectModal';
 import { EditClientModal } from './components/EditClientModal';
@@ -104,6 +106,7 @@ const navItems: NavItem[] = [
   { id: 'categories', label: 'Categories', icon: <Tags size={20} />, section: 'Master' },
   { id: 'statuses', label: 'Status', icon: <Tags size={20} />, section: 'Master' },
   { id: 'designations', label: 'Designation', icon: <Briefcase size={20} />, section: 'Master' },
+  { id: 'departments', label: 'Department', icon: <Building2 size={20} />, section: 'Master' },
 	  ...(VENDOR_MODULE_ENABLED ? ([
 	    { id: 'vendor-categories', label: 'Vendor Categories', icon: <Tags size={20} />, section: 'Master' },
 	    { id: 'vendors', label: 'Vendors', icon: <Truck size={20} />, section: 'Master' },
@@ -260,6 +263,7 @@ export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [designations, setDesignations] = useState<Designation[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [statuses, setStatuses] = useState<StatusMaster[]>([]);
   const [vendorCategories, setVendorCategories] = useState<VendorCategory[]>([]);
@@ -298,6 +302,7 @@ export default function App() {
         statuses: cachedStatuses,
         vendorCategories: cachedVendorCategories,
         designations: cachedDesignations,
+        departments: cachedDepartments,
         tasks: cachedTasks,
         actionLogs: cachedActionLogs,
         recurringTasks: cachedRecurringTasks,
@@ -337,7 +342,7 @@ export default function App() {
   }, []);
 
   // Master item IDs for filtering
-  const masterIds = ['users', 'firms', 'categories', 'statuses', ...(VENDOR_MODULE_ENABLED ? ['vendor-categories', 'vendors'] : []), 'settings', 'telegram-setup'];
+  const masterIds = ['users', 'firms', 'categories', 'statuses', 'designations', 'departments', ...(VENDOR_MODULE_ENABLED ? ['vendor-categories', 'vendors'] : []), 'settings', 'telegram-setup'];
   const pendingStatusNavItems = useMemo<NavItem[]>(() => {
     return statuses
       .map(s => String(s.name || '').trim())
@@ -483,6 +488,8 @@ export default function App() {
   const [isVendorCategoryModalOpen, setIsVendorCategoryModalOpen] = useState(false);
   const [isDesignationModalOpen, setIsDesignationModalOpen] = useState(false);
   const [editingDesignation, setEditingDesignation] = useState<Designation | null>(null);
+  const [isDepartmentModalOpen, setIsDepartmentModalOpen] = useState(false);
+  const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
   const [isFirmModalOpen, setIsFirmModalOpen] = useState(false);
   const [isRecurringTaskModalOpen, setIsRecurringTaskModalOpen] = useState(false);
   const [isRecurringTaskUpdateModalOpen, setIsRecurringTaskUpdateModalOpen] = useState(false);
@@ -694,6 +701,10 @@ export default function App() {
           id: Number(d.id),
           title: String(d.title || d.name || ''),
           description: String(d.description || '')
+        })));
+        setDepartments((data.departments || []).map((d: any) => ({
+          id: Number(d.id),
+          name: String(d.name || '')
         })));
         const normalizedLogs = (data.actionLogs || []).map((l: any) => {
             const rawProject = String(l.project || l.Project || '').trim();
@@ -1136,6 +1147,13 @@ export default function App() {
     await apiPost('addMaster', firm, 'Firms');
   };
 
+  const handleInstantAddDepartment = async (dept: Omit<Department, 'id'>) => {
+    const tempId = Date.now();
+    const newDept = { ...dept, id: tempId } as Department;
+    setDepartments(prev => [...prev, newDept]);
+    await apiPost('addMaster', dept, 'Departments');
+  };
+
   const renderContent = () => {
     const handleExportExcel = (tasksToExport: Task[]) => {
       const activeFilters: string[] = [];
@@ -1304,13 +1322,13 @@ export default function App() {
       case 'due-recurring-tasks': return <RecurringTasksView title={getViewLabel('due-recurring-tasks', 'Due Recurring Tasks')} filterType="due" tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={async (id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); await apiPost('deleteRecord', { id }, 'RecurringTasks'); }} onBulkUpload={handleBulkAddRecurringTasks} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
       case 'recurring-tasks': return <RecurringTasksView title={getViewLabel('recurring-tasks', 'Recurring Tasks')} tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={async (id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); await apiPost('deleteRecord', { id }, 'RecurringTasks'); }} onBulkUpload={handleBulkAddRecurringTasks} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
       case 'recurring-actions': return <RecurringTaskActionsView actions={visibleRecurringActions} isAdmin={isAdmin} onDeleteAction={(logId, taskId) => { if (!confirmDelete('this recurring log')) return; apiPost('deleteRecord', { id: logId, taskId: taskId }, 'RecurringActions'); }} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
-      case 'users': if (!isAdmin) return null; return <UsersView users={users} designations={designations} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} onAddUser={(u) => { setUsers(p => [...p, { ...u, id: Date.now(), isActive: true } as any]); apiPost('addMaster', u, 'Users'); }} onEditUser={(u) => { setUsers(p => p.map(x => x.id === u.id ? u : x)); apiPost('updateMaster', u, 'Users'); }} onToggleStatus={(id) => { const user = users.find(u => u.id === id); if (!user) return; const newStatus = !user.isActive; setUsers(prev => prev.map(u => u.id === id ? { ...u, isActive: newStatus } : u)); apiPost('updateMaster', { id, isActive: newStatus ? 'TRUE' : 'FALSE' }, 'Users'); }} onDeleteUser={(id) => { if (!confirmDelete('this user')) return; setUsers(p => p.filter(u => u.id !== id)); apiPost('deleteRecord', { id }, 'Users'); }} onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }} />;
+      case 'users': if (!isAdmin) return null; return <UsersView users={users} designations={designations} departments={departments} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} onAddUser={(u) => { setUsers(p => [...p, { ...u, id: Date.now(), isActive: true } as any]); apiPost('addMaster', u, 'Users'); }} onEditUser={(u) => { setUsers(p => p.map(x => x.id === u.id ? u : x)); apiPost('updateMaster', u, 'Users'); }} onToggleStatus={(id) => { const user = users.find(u => u.id === id); if (!user) return; const newStatus = !user.isActive; setUsers(prev => prev.map(u => u.id === id ? { ...u, isActive: newStatus } : u)); apiPost('updateMaster', { id, isActive: newStatus ? 'TRUE' : 'FALSE' }, 'Users'); }} onDeleteUser={(id) => { if (!confirmDelete('this user')) return; setUsers(p => p.filter(u => u.id !== id)); apiPost('deleteRecord', { id }, 'Users'); }} onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }} onAddDepartment={() => { setEditingDepartment(null); setIsDepartmentModalOpen(true); }} />;
+      case 'departments': if (!isAdmin) return null; return <DepartmentsView departments={departments} onAddDepartment={() => { setEditingDepartment(null); setIsDepartmentModalOpen(true); }} onDeleteDepartment={(id) => { if (!confirmDelete('this department')) return; setDepartments(prev => prev.filter(d => d.id !== id)); apiPost('deleteRecord', { id }, 'Departments'); }} onEditDepartment={(dept) => { setEditingDepartment(dept); setIsDepartmentModalOpen(true); }} />;
       case 'firms': if (!isAdmin) return null; return <FirmsView firms={firms} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} onAddFirm={() => setIsFirmModalOpen(true)} onDeleteFirm={(id) => { const target = firms.find(f => f.id === id); if (!target) return; if (String(target.name || '').trim().toUpperCase() === 'GENERAL') return; if (!confirmDelete('this firm')) return; setFirms(p => p.filter(f => f.id !== id)); apiPost('deleteRecord', { id }, 'Firms'); }} onEditFirm={(f) => { if (String(f.name || '').trim().toUpperCase() === 'GENERAL') return; setFirms(p => p.map(x => x.id === f.id ? f : x)); apiPost('updateMaster', f, 'Firms'); }} />;
       case 'clients': if (!isAdmin) return null; return <ClientsView clients={clients} projects={projects} onAddClient={handleInstantAddClient} onDeleteClient={(id) => { if (!confirmDelete('this client')) return; setClients(p => p.filter(c => c.id !== id)); apiPost('deleteRecord', { id }, 'Clients'); }} onEditClient={(c) => { setClients(p => p.map(x => x.id === c.id ? c : x)); apiPost('updateMaster', c, 'Clients'); }} onNavigateToProjectTasks={handleDashboardFilterChange.bind(null, 'project')} />;
       case 'projects': if (!isAdmin) return null; return <ProjectsView projects={projects} clients={clients} onAddProject={handleInstantAddProject} onDeleteProject={(id) => { if (!confirmDelete('this project')) return; setProjects(p => p.filter(x => x.id !== id)); apiPost('deleteRecord', { id }, 'Projects'); }} onEditProject={(p) => { setProjects(prev => prev.map(x => x.id === p.id ? p : x)); apiPost('updateMaster', p, 'Projects'); }} onAddClient={() => setIsClientModalOpen(true)} onNavigateToProjectTasks={handleDashboardFilterChange.bind(null, 'project')} />;
       case 'categories': if (!isAdmin) return null; return <CategoriesView categories={categories} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} onAddCategory={() => setIsCategoryModalOpen(true)} onDeleteCategory={(id) => { if (!confirmDelete('this category')) return; setCategories(p => p.filter(c => c.id !== id)); apiPost('deleteRecord', { id }, 'Categories'); }} onEditCategory={(c) => { setCategories(p => p.map(x => x.id === c.id ? c : x)); apiPost('updateMaster', c, 'Categories'); }} />;
       case 'statuses': if (!isAdmin) return null; return <StatusesView statuses={statuses} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} onAddStatus={async (status) => { const tempId = Date.now(); const row = { ...status, id: tempId, is_system: 0 } as StatusMaster; setStatuses(prev => [...prev, row]); await apiPost('addMaster', status, 'Statuses'); }} onEditStatus={async (status) => { setStatuses(prev => prev.map(x => x.id === status.id ? status : x)); await apiPost('updateMaster', status, 'Statuses'); }} onDeleteStatus={async (id) => { if (!confirmDelete('this status')) return; setStatuses(prev => prev.filter(x => x.id !== id)); await apiPost('deleteRecord', { id }, 'Statuses'); }} />;
-      case 'designations': if (!isAdmin) return null; return <DesignationsView designations={designations} onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }} onDeleteDesignation={(id) => { if (!confirmDelete('this designation')) return; setDesignations(prev => prev.filter(d => d.id !== id)); apiPost('deleteRecord', { id }, 'Designations'); }} onEditDesignation={(designation) => { setEditingDesignation(designation); setIsDesignationModalOpen(true); }} />;
       case 'settings': if (!isAdmin) return null; return <SettingsView settings={settings} onUpdate={async (s) => {
         setSettings(normalizeSettings(s));
         const result = await apiPost('updateMaster', s, 'AppSettings');
@@ -1495,7 +1513,7 @@ export default function App() {
         initialName={projectModalInitialName}
       />
       <AddClientModal isOpen={isClientModalOpen} onClose={() => setIsClientModalOpen(false)} onSave={handleInstantAddClient} clients={clients} />
-      <AddUserModal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} onSave={(u) => { setUsers(p => [...p, { ...u, id: Date.now(), isActive: true } as any]); apiPost('addMaster', u, 'Users'); }} designations={designations} onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }} users={users} />
+      <AddUserModal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} onSave={(u) => { setUsers(p => [...p, { ...u, id: Date.now(), isActive: true } as any]); apiPost('addMaster', u, 'Users'); }} designations={designations} departments={departments} onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }} onAddDepartment={() => { setEditingDepartment(null); setIsDepartmentModalOpen(true); }} users={users} />
       <AddDesignationModal isOpen={isDesignationModalOpen} onClose={() => { setIsDesignationModalOpen(false); setEditingDesignation(null); }} initialData={editingDesignation} onSave={async (d) => {
         const designationPayload = { name: d.title };
         if (editingDesignation) {
@@ -1516,6 +1534,25 @@ export default function App() {
           setDesignations(prev => [...prev, { ...d, id: newId } as any]);
         }
       }} designations={designations} />
+      <AddDepartmentModal isOpen={isDepartmentModalOpen} onClose={() => { setIsDepartmentModalOpen(false); setEditingDepartment(null); }} initialData={editingDepartment} onSave={async (dept) => {
+        if (editingDepartment) {
+          const updated = { ...editingDepartment, ...dept };
+          const result = await apiPost('updateMaster', { id: updated.id, name: updated.name }, 'Departments');
+          if (!result?.success) {
+            alert(result?.error || 'Failed to update department.');
+            return;
+          }
+          setDepartments(prev => prev.map(x => x.id === updated.id ? updated : x));
+        } else {
+          const result = await apiPost('addMaster', { name: dept.name }, 'Departments');
+          if (!result?.success) {
+            alert(result?.error || 'Failed to add department.');
+            return;
+          }
+          const newId = Number(result?.data?.id || Date.now());
+          setDepartments(prev => [...prev, { ...dept, id: newId } as any]);
+        }
+      }} departments={departments} />
       <AddVendorModal isOpen={isVendorModalOpen} onClose={() => setIsVendorModalOpen(false)} onSave={(v) => { setVendors(p => [...p, { ...v, id: Date.now() } as any]); apiPost('addMaster', v, 'Vendors'); }} vendors={vendors} />
       <AddFirmModal isOpen={isFirmModalOpen} onClose={() => setIsFirmModalOpen(false)} onSave={handleInstantAddFirm} firms={firms} />
       
