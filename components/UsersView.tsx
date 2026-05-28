@@ -278,14 +278,22 @@ export const UsersView: React.FC<UsersViewProps> = ({ users, designations, depar
         onAddDesignation={onAddDesignation}
         onAddDepartment={onAddDepartment}
         users={users} 
-      />
-      <UpdateUserModal 
-        isOpen={isEditModalOpen} 
-        onClose={() => setIsEditModalOpen(false)} 
-        user={selectedUser} 
-        onUpdate={onEditUser} 
+      <UpdateUserModal
+        isOpen={isUpdateModalOpen}
+        onClose={() => setIsUpdateModalOpen(false)}
+        user={selectedUser}
+        onSave={(u, tasks) => {
+          onEditUser(u);
+          const apiPost = (window as any).taskProApiPost;
+          if (apiPost) apiPost('updateMaster', { ...u, templateTasks: tasks }, 'Users');
+        }}
         designations={designations}
         departments={departments}
+        templates={(window as any).taskProTemplates || []}
+        templateTasks={(window as any).taskProTemplateTasks || []}
+        firms={(window as any).taskProFirms || []}
+        categories={(window as any).taskProCategories || []}
+      />
         onAddDesignation={onAddDesignation}
         onAddDepartment={onAddDepartment}
         users={users}

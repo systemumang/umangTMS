@@ -96,6 +96,31 @@ function add_notes_column_if_missing(mysqli $conn): void {
     }
 }
 
+function ensure_template_tables(mysqli $conn): void {
+    $conn->query("CREATE TABLE IF NOT EXISTS `template_master` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `name` VARCHAR(190) NOT NULL UNIQUE,
+        `type` VARCHAR(120) DEFAULT '',
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+    $conn->query("CREATE TABLE IF NOT EXISTS `template_tasks` (
+        `id` BIGINT PRIMARY KEY,
+        `templateId` INT NOT NULL,
+        `title` VARCHAR(255) NOT NULL,
+        `notes` TEXT,
+        `firm` VARCHAR(190) DEFAULT '',
+        `category` VARCHAR(190) DEFAULT '',
+        `frequencyType` VARCHAR(50) DEFAULT 'Monthly',
+        `frequencyDays` INT DEFAULT 30,
+        `recurrenceDay` INT DEFAULT 0,
+        `recurrenceMonth` VARCHAR(50) DEFAULT '',
+        `time` VARCHAR(10) DEFAULT '',
+        `goal` VARCHAR(255) DEFAULT '',
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        KEY idx_template_tasks_template (templateId)
+    )");
+}
+
 function sendJson(array $payload, int $statusCode = 200): void {
     http_response_code($statusCode);
     echo json_encode($payload);
@@ -698,6 +723,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 	        sendJson(['success' => true, 'data' => ['id' => $id]]);
 	    }
+
+    if ($action === 'deleteMaster') {
+        $id = $data['id'] ?? 0;
+        if ($table === 'template_master') {
+            $conn->query("DELETE FROM template_tasks WHERE templateId=" . (int)$id);
+            $stmt = $conn->prepare("DELETE FROM template_master WHERE id=?");
+            $stmt->bind_param('i', $id);
+            $ok = $stmt->execute();
+            $stmt->close();
+        } else {
+            $stmt = $conn->prepare("DELETE FROM `{$table}` WHERE id=?");
+            $stmt->bind_param('s', $id);
+            $ok = $stmt->execute();
+            $stmt->close();
+        }
+        if (!$ok) sendJson(['success' => false, 'error' => 'Failed to delete.'], 400);
+        sendJson(['success' => true]);
+    }
 
     if ($action === 'updateMaster' && $table === 'users') {
         $id = (int)($data['id'] ?? 0);

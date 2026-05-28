@@ -43,6 +43,7 @@ import { EditRecurringTaskModal } from './components/EditRecurringTaskModal';
 import { LabelProvider, buildLabelResolvers } from './labelOverrides';
 import { TelegramSetupView } from './components/TelegramSetupView'; 
 import { DocumentationView } from './components/DocumentationView';
+import { TemplatesView } from './components/TemplatesView';
 import { 
   LayoutDashboard, 
   CheckSquare, 
@@ -71,7 +72,7 @@ import {
   IndianRupee,
   Wallet
 } from 'lucide-react';
-import { NavItem, Task, User, Designation, Department, Category, Project, Client, ActionLogEntry, Vendor, VendorCategory, RecurringTask, RecurringTaskAction, AppSettings, Firm, StatusMaster } from './types';
+import { NavItem, Task, User, Designation, Department, Category, Project, Client, ActionLogEntry, Vendor, VendorCategory, RecurringTask, RecurringTaskAction, AppSettings, Firm, StatusMaster, Template, TemplateTask } from './types';
 
 const AUTO_SYNC_INTERVAL = 120000;
 const VENDOR_MODULE_ENABLED = false;
@@ -271,9 +272,11 @@ export default function App() {
   const [firms, setFirms] = useState<Firm[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [actionLogs, setActionLogs] = useState<ActionLogEntry[]>([]);
-	  const [recurringTasks, setRecurringTasks] = useState<RecurringTask[]>([]);
-	  const [recurringActions, setRecurringActions] = useState<RecurringTaskAction[]>([]);
-	  const [settings, setSettings] = useState<AppSettings>({
+  const [recurringTasks, setRecurringTasks] = useState<RecurringTask[]>([]);
+  const [recurringActions, setRecurringActions] = useState<RecurringTaskAction[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [templateTasks, setTemplateTasks] = useState<TemplateTask[]>([]);
+  const [settings, setSettings] = useState<AppSettings>({
 	    officeTokenId: '', officeTelegramGroupId: '', whatsappGroupId: '', masId: '',
 	    masPassword: '', metaAccessToken: '', metaPhoneNumberId: '', metaWabaId: '', metaVerifyToken: '',
 	    viewLabelOverrides: '{}', fieldLabelOverrides: '{}'
@@ -1336,6 +1339,21 @@ export default function App() {
       }} />;
       case 'telegram-setup': if (!isAdmin) return null; return <TelegramSetupView />;
       case 'documentation': return <DocumentationView />;
+      case 'templates': if (!isAdmin) return null; return (
+        <TemplatesView 
+          templates={templates} 
+          templateTasks={templateTasks} 
+          firms={firms} 
+          categories={categories}
+          onAddTemplate={(t) => apiPost('addMaster', t, 'TemplateMaster')}
+          onUpdateTemplate={(t) => apiPost('updateMaster', t, 'TemplateMaster')}
+          onDeleteTemplate={(id) => { if (!confirmDelete('this template')) return; apiPost('deleteMaster', { id }, 'TemplateMaster'); setTemplates(prev => prev.filter(x => x.id !== id)); }}
+          onAddTemplateTask={(t) => apiPost('addMaster', t, 'TemplateTasks')}
+          onUpdateTemplateTask={(t) => apiPost('updateMaster', t, 'TemplateTasks')}
+          onDeleteTemplateTask={(id) => { if (!confirmDelete('this task')) return; apiPost('deleteMaster', { id }, 'TemplateTasks'); setTemplateTasks(prev => prev.filter(x => x.id !== id)); }}
+          onBulkAddTasks={(templateId, tasks) => apiPost('bulkAddTemplateTasks', { templateId, tasks })}
+        />
+      );
       default: return null;
     }
   };
@@ -1511,7 +1529,23 @@ export default function App() {
         initialName={projectModalInitialName}
       />
       <AddClientModal isOpen={isClientModalOpen} onClose={() => setIsClientModalOpen(false)} onSave={handleInstantAddClient} clients={clients} />
-      <AddUserModal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} onSave={(u) => { setUsers(p => [...p, { ...u, id: Date.now(), isActive: true } as any]); apiPost('addMaster', u, 'Users'); }} designations={designations} departments={departments} onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }} onAddDepartment={() => { setEditingDepartment(null); setIsDepartmentModalOpen(true); }} users={users} />
+      <AddUserModal 
+        isOpen={isUserModalOpen} 
+        onClose={() => setIsUserModalOpen(false)} 
+        onSave={(u, tasks) => { 
+          setUsers(p => [...p, { ...u, id: Date.now(), isActive: true } as any]); 
+          apiPost('addMaster', { ...u, templateTasks: tasks }, 'Users'); 
+        }} 
+        designations={designations} 
+        departments={departments} 
+        onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }} 
+        onAddDepartment={() => { setEditingDepartment(null); setIsDepartmentModalOpen(true); }} 
+        users={users}
+        templates={templates}
+        templateTasks={templateTasks}
+        firms={firms}
+        categories={categories}
+      />
       <AddDesignationModal isOpen={isDesignationModalOpen} onClose={() => { setIsDesignationModalOpen(false); setEditingDesignation(null); }} initialData={editingDesignation} onSave={async (d) => {
         const designationPayload = { name: d.title };
         if (editingDesignation) {

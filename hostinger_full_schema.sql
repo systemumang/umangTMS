@@ -187,6 +187,30 @@ CREATE TABLE IF NOT EXISTS recurring_actions (
   KEY idx_recurring_actions_task (taskId)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS template_master (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(190) NOT NULL UNIQUE,
+  type VARCHAR(120) DEFAULT '',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS template_tasks (
+  id BIGINT PRIMARY KEY,
+  templateId INT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  notes TEXT,
+  firm VARCHAR(190) DEFAULT '',
+  category VARCHAR(190) DEFAULT '',
+  frequencyType VARCHAR(50) DEFAULT 'Monthly',
+  frequencyDays INT DEFAULT 30,
+  recurrenceDay INT DEFAULT 0,
+  recurrenceMonth VARCHAR(50) DEFAULT '',
+  time VARCHAR(10) DEFAULT '',
+  goal VARCHAR(255) DEFAULT '',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_template_tasks_template (templateId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS app_settings (
   id INT PRIMARY KEY DEFAULT 1,
   officeTokenId VARCHAR(255) DEFAULT '',

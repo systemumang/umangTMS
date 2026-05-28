@@ -207,6 +207,28 @@ export interface AppSettings {
   fieldLabelOverrides?: Record<string, string> | string;
 }
 
+export interface Template {
+  id: number;
+  name: string;
+  type: string;
+  created_at?: string;
+}
+
+export interface TemplateTask {
+  id: number;
+  templateId: number;
+  title: string;
+  notes?: string;
+  firm?: string;
+  category?: string;
+  frequencyType: 'Fixed Days' | 'Weekly' | 'Monthly' | 'Yearly';
+  frequencyDays?: number;
+  recurrenceDay?: number;
+  recurrenceMonth?: string;
+  time?: string;
+  goal?: number;
+}
+
 export interface StatusMaster {
   id: number;
   name: string;
