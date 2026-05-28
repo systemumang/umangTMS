@@ -84,6 +84,12 @@ function ensure_departments_table(mysqli $conn): void {
     )");
 }
 
+function add_telegram_user_name_column_if_missing(mysqli $conn): void {
+    if (!hasColumn($conn, 'users', 'telegram_user_name')) {
+        $conn->query("ALTER TABLE `users` ADD COLUMN `telegram_user_name` VARCHAR(120) DEFAULT NULL AFTER `department`");
+    }
+}
+
 function add_notes_column_if_missing(mysqli $conn): void {
     if (!hasColumn($conn, 'recurring_tasks', 'notes')) {
         $conn->query("ALTER TABLE `recurring_tasks` ADD COLUMN `notes` LONGTEXT DEFAULT NULL AFTER `title`");
@@ -247,6 +253,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // Ensure database columns exist
     add_employee_id_column_if_missing($conn);
     add_department_column_if_missing($conn);
+    add_telegram_user_name_column_if_missing($conn);
     ensure_departments_table($conn);
     add_notes_column_if_missing($conn);
 
@@ -346,6 +353,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $role = trim((string)($data['role'] ?? 'Employee'));
         $designation = trim((string)($data['designation'] ?? ''));
         $department = trim((string)($data['department'] ?? ''));
+        $telegram_user_name = trim((string)($data['telegramUserName'] ?? $data['telegram_user_name'] ?? ''));
         $password = (string)($data['password'] ?? '');
         $isActiveRaw = strtolower((string)($data['isActive'] ?? 'true'));
         $isActive = in_array($isActiveRaw, ['1', 'true', 'yes'], true) ? 1 : 0;
@@ -355,12 +363,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $stmt = $conn->prepare(
-            "INSERT INTO users (name, email, employee_id, mobile, role, designation, department, password, isActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            "INSERT INTO users (name, email, employee_id, mobile, role, designation, department, telegram_user_name, password, isActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         );
         if (!$stmt) {
             sendJson(['success' => false, 'error' => 'Failed to prepare insert query.'], 500);
         }
-        $stmt->bind_param('ssssssssi', $name, $email, $employee_id, $mobile, $role, $designation, $department, $password, $isActive);
+        $stmt->bind_param('sssssssssi', $name, $email, $employee_id, $mobile, $role, $designation, $department, $telegram_user_name, $password, $isActive);
         $ok = $stmt->execute();
         $insertId = (int)$stmt->insert_id;
         $stmt->close();
@@ -704,22 +712,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $role = trim((string)($data['role'] ?? 'Employee'));
         $designation = trim((string)($data['designation'] ?? ''));
         $department = trim((string)($data['department'] ?? ''));
+        $telegram_user_name = trim((string)($data['telegramUserName'] ?? $data['telegram_user_name'] ?? ''));
         $password = (string)($data['password'] ?? '');
         $isActiveRaw = strtolower((string)($data['isActive'] ?? 'true'));
         $isActive = in_array($isActiveRaw, ['1', 'true', 'yes'], true) ? 1 : 0;
 
         if ($password !== '') {
             $stmt = $conn->prepare(
-                "UPDATE users SET name=?, email=?, employee_id=?, mobile=?, role=?, designation=?, department=?, password=?, isActive=? WHERE id=?"
+                "UPDATE users SET name=?, email=?, employee_id=?, mobile=?, role=?, designation=?, department=?, telegram_user_name=?, password=?, isActive=? WHERE id=?"
             );
             if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare update query.'], 500);
-            $stmt->bind_param('ssssssssii', $name, $email, $employee_id, $mobile, $role, $designation, $department, $password, $isActive, $id);
+            $stmt->bind_param('sssssssssii', $name, $email, $employee_id, $mobile, $role, $designation, $department, $telegram_user_name, $password, $isActive, $id);
         } else {
             $stmt = $conn->prepare(
-                "UPDATE users SET name=?, email=?, employee_id=?, mobile=?, role=?, designation=?, department=?, isActive=? WHERE id=?"
+                "UPDATE users SET name=?, email=?, employee_id=?, mobile=?, role=?, designation=?, department=?, telegram_user_name=?, isActive=? WHERE id=?"
             );
             if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare update query.'], 500);
-            $stmt->bind_param('sssssssii', $name, $email, $employee_id, $mobile, $role, $designation, $department, $isActive, $id);
+            $stmt->bind_param('ssssssssii', $name, $email, $employee_id, $mobile, $role, $designation, $department, $telegram_user_name, $isActive, $id);
         }
 
         $ok = $stmt->execute();

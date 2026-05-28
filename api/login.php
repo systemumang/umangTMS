@@ -21,7 +21,7 @@ if ($email === '' || $password === '') {
     exit;
 }
 
-$sql = "SELECT id, name, email, role, password, isActive FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1";
+$sql = "SELECT id, name, email, role, designation, department, employee_id, telegram_user_name, password, isActive FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1";
 $stmt = $conn->prepare($sql);
 
 if (!$stmt) {
@@ -65,7 +65,11 @@ echo json_encode([
         'id' => (int)$user['id'],
         'name' => (string)($user['name'] ?? ''),
         'email' => (string)$user['email'],
+        'employeeId' => (string)($user['employee_id'] ?? ''),
         'role' => (string)($user['role'] ?? 'Employee'),
+        'designation' => (string)($user['designation'] ?? ''),
+        'department' => (string)($user['department'] ?? ''),
+        'telegramUserName' => (string)($user['telegram_user_name'] ?? ''),
         'isActive' => true
     ]
 ]);

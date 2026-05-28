@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { X, Plus, Eye, EyeOff } from 'lucide-react';
-import { User, Designation } from '../types';
+import { User, Designation, Department } from '../types';
 import { SearchableSelect } from './SearchableSelect';
 import { useLabels } from '../labelOverrides';
 

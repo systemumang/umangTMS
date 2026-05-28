@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { User } from '../types';
-import { Edit2, Trash2, Phone, Mail, Shield, Briefcase, Send, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Edit2, Trash2, Phone, Mail, Shield, Briefcase, Send, ArrowUpDown, ArrowUp, ArrowDown, Building2 } from 'lucide-react';
 
 interface UserTableProps {
   users: User[];
@@ -63,8 +63,8 @@ export const UserTable: React.FC<UserTableProps> = ({ users, onToggleStatus, onD
               <th className={thClass} onClick={() => requestSort('name')}>
                 <div className="flex items-center">Name {getSortIcon('name')}</div>
               </th>
-              <th className={thClass} onClick={() => requestSort('employeeId' as any)}>
-                <div className="flex items-center">Employee Id {getSortIcon('employeeId' as any)}</div>
+              <th className={thClass} onClick={() => requestSort('employeeId')}>
+                <div className="flex items-center">Employee Id {getSortIcon('employeeId')}</div>
               </th>
               <th className={thClass} onClick={() => requestSort('email')}>
                 <div className="flex items-center">Email {getSortIcon('email')}</div>
@@ -78,8 +78,8 @@ export const UserTable: React.FC<UserTableProps> = ({ users, onToggleStatus, onD
               <th className={thClass} onClick={() => requestSort('designation')}>
                 <div className="flex items-center">Designation {getSortIcon('designation')}</div>
               </th>
-              <th className={thClass} onClick={() => requestSort('department' as any)}>
-                <div className="flex items-center">Department {getSortIcon('department' as any)}</div>
+              <th className={thClass} onClick={() => requestSort('department')}>
+                <div className="flex items-center">Department {getSortIcon('department')}</div>
               </th>
               <th className={thClass} onClick={() => requestSort('role')}>
                 <div className="flex items-center">Role {getSortIcon('role')}</div>
@@ -160,7 +160,8 @@ export const UserTable: React.FC<UserTableProps> = ({ users, onToggleStatus, onD
                 <div className="space-y-2 text-sm text-gray-600 mb-4">
                      <div className="flex items-center gap-2 whitespace-normal break-words"><Mail size={14} className="text-gray-400" /><span>{user.email}</span></div>
                      <div className="flex items-center gap-2 whitespace-normal break-words"><Phone size={14} className="text-gray-400" /><span>{user.mobile}</span></div>
-                     <div className="flex items-center gap-2 whitespace-normal break-words"><Briefcase size={14} className="text-gray-400" /><span>{user.designation || 'N/A'}{user.department ? ` (${user.department})` : ''}</span></div>
+                     <div className="flex items-center gap-2 whitespace-normal break-words"><Briefcase size={14} className="text-gray-400" /><span>{user.designation || 'N/A'}</span></div>
+                     <div className="flex items-center gap-2 whitespace-normal break-words"><Building2 size={14} className="text-gray-400" /><span>{user.department || 'N/A'}</span></div>
                      {user.telegramUserName && <div className="flex items-center gap-2 whitespace-normal break-words"><Send size={14} className="text-blue-400" /><span>@{user.telegramUserName}</span></div>}
                      <div className="flex items-center gap-2 font-mono text-xs bg-gray-50 p-1 rounded whitespace-normal break-words"><span className="text-gray-400 uppercase font-bold text-[10px]">Pass:</span> <span>{user.password || '-'}</span></div>
                 </div>
