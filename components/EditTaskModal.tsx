@@ -238,7 +238,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-opacity">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-200 border-2 border-indigo-400">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl animate-in fade-in zoom-in duration-200 border-2 border-indigo-400">
         
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <h2 className="text-xl font-bold text-indigo-600">{isConfirming ? 'Confirm Changes' : (isVendorMode ? 'Edit Vendor Task' : 'Edit Task')}</h2>
@@ -262,7 +262,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
           </div>
         ) : (
           <form onSubmit={handlePreSubmit}>
-            <div className="p-6 space-y-5">
+            <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="w-full md:w-32">
                   <label className="text-sm font-medium text-black block mb-1">Date</label>

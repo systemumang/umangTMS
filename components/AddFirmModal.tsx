@@ -55,7 +55,7 @@ export const AddFirmModal: React.FC<AddFirmModalProps> = ({ isOpen, onClose, onS
           </button>
         </div>
         <form onSubmit={handleSubmit}>
-          <div className="p-6 space-y-4">
+          <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700">{getFieldLabel('firm.name', 'Firm Name')} <span className="text-red-500">*</span></label>
               <input

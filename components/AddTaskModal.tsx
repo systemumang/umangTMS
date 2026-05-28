@@ -212,7 +212,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-opacity">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-200">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl animate-in fade-in zoom-in duration-200">
         
         <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-100">
           <h2 className="text-xl font-bold text-indigo-600">{isVendorView ? 'Add Vendor Task' : 'Add Task'}</h2>
@@ -226,7 +226,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="p-4 md:p-6 space-y-5">
+          <div className="p-4 md:p-6 space-y-5 max-h-[70vh] overflow-y-auto">
             
 		            <div className="space-y-1">
 		              <label className="text-sm font-medium text-black block mb-1">{getFieldLabel('task.title', 'Task')} <span className="text-red-500">*</span></label>

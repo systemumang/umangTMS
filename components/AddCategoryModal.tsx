@@ -64,7 +64,7 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
           </button>
         </div>
         <form onSubmit={handleSubmit}>
-          <div className="p-6 space-y-6">
+          <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-600">{getFieldLabel('category.name', 'Name')} *</label>
               <input 
