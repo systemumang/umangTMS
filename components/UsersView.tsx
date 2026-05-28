@@ -37,7 +37,8 @@ export const UsersView: React.FC<UsersViewProps> = ({ users, designations, onAdd
   const filteredUsers = useMemo(() => {
     return users.filter(u => 
       u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      u.email.toLowerCase().includes(searchTerm.toLowerCase())
+      u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.employeeId && u.employeeId.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [users, searchTerm]);
 
@@ -56,8 +57,8 @@ export const UsersView: React.FC<UsersViewProps> = ({ users, designations, onAdd
   const endEntry = Math.min(currentPage * itemsPerPage, filteredUsers.length);
   const handleExportExcel = () => {
     const csv = [
-      'S.No.,Name,Email,Mobile,Designation,Role,Status',
-      ...filteredUsers.map((u, i) => `${i + 1},"${String(u.name || '').replace(/"/g, '""')}","${String(u.email || '').replace(/"/g, '""')}","${String(u.mobile || '').replace(/"/g, '""')}","${String(u.designation || '').replace(/"/g, '""')}","${String(u.role || '').replace(/"/g, '""')}","${u.isActive ? 'Active' : 'Inactive'}"`)
+      'S.No.,Name,Employee Id,Email,Mobile,Designation,Role,Status',
+      ...filteredUsers.map((u, i) => `${i + 1},"${String(u.name || '').replace(/"/g, '""')}","${String(u.employeeId || '').replace(/"/g, '""')}","${String(u.email || '').replace(/"/g, '""')}","${String(u.mobile || '').replace(/"/g, '""')}","${String(u.designation || '').replace(/"/g, '""')}","${String(u.role || '').replace(/"/g, '""')}","${u.isActive ? 'Active' : 'Inactive'}"`)
     ].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -73,8 +74,8 @@ export const UsersView: React.FC<UsersViewProps> = ({ users, designations, onAdd
 	    const doc = new jsPDF('l', 'mm', 'a4');
 	    doc.text('Users', 14, 14);
 	    autoTable(doc, {
-	      head: [['S.No.', 'Name', 'Email', 'Mobile', 'Designation', 'Role', 'Status']],
-	      body: filteredUsers.map((u, i) => [i + 1, u.name || '-', u.email || '-', u.mobile || '-', u.designation || '-', u.role || '-', u.isActive ? 'Active' : 'Inactive']),
+	      head: [['S.No.', 'Name', 'Employee Id', 'Email', 'Mobile', 'Designation', 'Role', 'Status']],
+	      body: filteredUsers.map((u, i) => [i + 1, u.name || '-', u.employeeId || '-', u.email || '-', u.mobile || '-', u.designation || '-', u.role || '-', u.isActive ? 'Active' : 'Inactive']),
 	      startY: 20
 	    });
 	    doc.save(`Users_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -100,7 +101,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ users, designations, onAdd
           <Search className="absolute left-3 top-2.5 text-indigo-600" size={18} />
           <input 
             type="text" 
-            placeholder="Search users..."
+            placeholder="Search users by name, email or employee id..."
             className="w-full pl-10 pr-4 py-2 border border-indigo-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 text-sm text-indigo-700"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -141,6 +142,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ users, designations, onAdd
         onDeleteUser={onDeleteUser} 
         onEditUser={handleEditClick}
         viewMode={mobileViewMode}
+        startIndex={startEntry}
       />
       
        <div className="flex justify-between items-center text-xs text-indigo-600 font-bold px-1 uppercase tracking-wider">

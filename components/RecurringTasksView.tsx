@@ -525,6 +525,17 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
     });
   }, [tasks, actions, searchTerm, filterCategory, filterFirm, filterAssignee, filterStatus, filterType]);
 
+  const getLatestActionTimestamp = (taskId: number) => {
+    const taskActions = actions
+      .filter(a => Number(a.taskId) === taskId)
+      .sort((a, b) => {
+        // Since timestamp is formatted as DD/MM/YYYY HH:MM:SS, we need a way to compare
+        // But they are already sorted by ID DESC from backend, so first one is latest
+        return 0; // The filter maintains relative order, and actions are newest first from API
+      });
+    return taskActions.length > 0 ? (taskActions[0].timestamp || taskActions[0].updatedOn) : null;
+  };
+
   const sortedTasks = useMemo(() => {
     let sortableItems = [...filteredTasks];
     if (sortConfig !== null) {
@@ -556,6 +567,11 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
         const periodB = String(getFrequencyText(b) || '');
         const periodCompare = periodA.localeCompare(periodB, undefined, { sensitivity: 'base' });
         if (periodCompare !== 0) return periodCompare;
+
+        const timeA = a.time || '99:99';
+        const timeB = b.time || '99:99';
+        const timeCompare = timeA.localeCompare(timeB);
+        if (timeCompare !== 0) return timeCompare;
 
         return String(a.title || '').localeCompare(String(b.title || ''), undefined, { sensitivity: 'base' });
       });
@@ -718,6 +734,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 		                <th className={thClass} onClick={() => requestSort('frequencyDays')}><div className="flex items-center">Period {getSortIcon('frequencyDays')}</div></th>
 			                <th className={thClass} onClick={() => requestSort('time')}><div className="flex items-center">Time {getSortIcon('time')}</div></th>
 			                <th className={`${thClass} ${taskColumnClass}`} onClick={() => requestSort('title')}><div className="flex items-center">Task {getSortIcon('title')}</div></th>
+                <th className={thClass} onClick={() => requestSort('notes' as any)}><div className="flex items-center">Notes {getSortIcon('notes' as any)}</div></th>
 	                  <th className={thClass} onClick={() => requestSort('firm')}><div className="flex items-center">Firm {getSortIcon('firm')}</div></th>
 	                  <th className={thClass} onClick={() => requestSort('owner')}><div className="flex items-center">Owner {getSortIcon('owner')}</div></th>
 		                <th className={thClass} onClick={() => requestSort('category')}><div className="flex items-center">{getFieldLabel('recurringTask.category', 'Category')} {getSortIcon('category')}</div></th>
@@ -790,6 +807,11 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 	                    </td>
 	                    <td className={tdClass}>{task.time || '-'}</td>
 			                    <td className={`${tdClass} ${taskColumnClass} font-medium`}>{task.title}</td>
+                      <td className={tdClass}>
+                        <div className="max-h-16 overflow-y-auto scrollbar-thin scrollbar-thumb-indigo-200">
+                          {task.notes || '-'}
+                        </div>
+                      </td>
 	                      <td className={tdClass}>{task.firm || '-'}</td>
 	                      <td className={tdClass}>{task.owner || '-'}</td>
 		                    <td className={tdClass}>{task.category}</td>
@@ -802,7 +824,16 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 			                    <td className={`${tdClass} bg-yellow-700 text-white font-semibold`}>{goalDisplay}</td>
 			                    <td className={`${tdClass} bg-yellow-700 text-white font-semibold`}>{achievedDisplay}</td>
 			                    <td className={`${tdClass} bg-yellow-700 text-white font-semibold`}>{getAchievedPercent(goalDisplay, achievedDisplay)}</td>
-		                    <td className={tdClass}>{task.lastUpdatedOn || '-'}</td>
+		                    <td className={tdClass}>
+                          <div className="flex flex-col">
+                            <span>{task.lastUpdatedOn || '-'}</span>
+                            {getLatestActionTimestamp(task.id) && (
+                              <span className="text-[9px] text-gray-500 italic">
+                                {String(getLatestActionTimestamp(task.id)).split(' ').slice(1).join(' ')}
+                              </span>
+                            )}
+                          </div>
+                        </td>
 	                    <td className={`${tdClass}`}>{task.lastUpdateRemarks || '-'}</td>
 	                    <td className={`${tdClass} font-bold ${isOverdue ? 'text-red-600 animate-pulse' : 'text-indigo-600'}`}>
 	                        {nextDueStr}
@@ -881,6 +912,18 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 		                        <span className="text-indigo-500 font-bold uppercase text-[9px] block">Next Due</span>
 	                        <span className={`font-bold ${isOverdue ? 'text-red-600' : 'text-indigo-600'} whitespace-normal break-words`}>{nextDueStr}</span>
 	                    </div>
+                      <div className="col-span-2 mt-1 pt-1 border-t border-gray-100">
+                        <span className="text-gray-400 font-bold uppercase text-[9px] block">Notes</span>
+                        <div className="text-[10px] text-gray-600 whitespace-normal break-words line-clamp-3">
+                          {task.notes || '-'}
+                        </div>
+                      </div>
+                      <div className="col-span-2 mt-1 pt-1 border-t border-gray-100">
+                        <span className="text-gray-400 font-bold uppercase text-[9px] block">Last Activity</span>
+                        <div className="text-[10px] text-gray-600">
+                          {task.lastUpdatedOn || '-'} {getLatestActionTimestamp(task.id) ? `(${String(getLatestActionTimestamp(task.id)).split(' ').slice(1).join(' ')})` : ''}
+                        </div>
+                      </div>
 	                    </div>
                     <div className="flex gap-2 pt-3 border-t border-gray-100 flex-wrap">
                         <button onClick={() => onUpdate(task)} className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm whitespace-normal break-words"><RotateCcw size={14} />Update</button>

@@ -18,6 +18,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
   const { getFieldLabel } = useLabels();
 				  const [formData, setFormData] = useState<{
 			    title: string;
+          notes: string;
 			    goal: number | '';
           firm: string;
           owner: string;
@@ -31,6 +32,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 		    recurrenceMonth: string;
 		  }>({
 			    title: initialData?.name || '',
+          notes: '',
 			    goal: '',
           firm: '',
           owner: '',
@@ -68,6 +70,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
     // Prepare task data based on periodicity
 			    const taskData: any = {
 			      title: formData.title,
+            notes: formData.notes,
 			      goal: formData.goal,
             firm: formData.firm,
             owner: formData.owner,
@@ -94,6 +97,7 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
       // Reset form
       setFormData({
         title: '',
+        notes: '',
         goal: '',
         firm: '',
         owner: '',
@@ -181,6 +185,16 @@ export const AddRecurringTaskModal: React.FC<AddRecurringTaskModalProps> = ({ is
 	                placeholder="Enter task title"
 	              />
 	            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-black">{getFieldLabel('recurringTask.notes', 'Notes')}</label>
+              <textarea 
+                disabled={isSaving}
+                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none min-h-[100px] disabled:bg-gray-50"
+                value={formData.notes}
+                onChange={(e) => setFormData(p => ({ ...p, notes: e.target.value }))}
+                placeholder="Enter more details..."
+              />
+            </div>
 		            <div className="space-y-1">
 		              <label className="text-sm font-medium text-black">{getFieldLabel('recurringTask.goal', 'Goal')}</label>
 		              <input

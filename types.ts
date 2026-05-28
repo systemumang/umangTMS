@@ -66,6 +66,7 @@ export interface Task {
 export interface RecurringTask {
 			  id: number;
 			  title: string;
+        notes?: string;
 			  firm?: string;
         owner?: string;
 			  category: string;
@@ -104,6 +105,7 @@ export interface User {
   id: number;
   name: string;
   email: string;
+  employeeId?: string;
   mobile: string;
   designation: string;
   role: string;

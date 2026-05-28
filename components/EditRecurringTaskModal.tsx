@@ -30,6 +30,7 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
 	  // Fix: Explicitly define periodicity type to avoid 'Fixed Days' narrowing
 			  const [formData, setFormData] = useState<{
 			    title: string;
+          notes: string;
 			    goal: number | '';
 			    firm: string;
           owner: string;
@@ -44,6 +45,7 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
 			    recurrenceMonth: string;
 			  }>({
 			    title: '',
+          notes: '',
 			    goal: '',
 			    firm: '',
           owner: '',
@@ -64,6 +66,7 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
     if (task && isOpen) {
       setFormData({
         title: task.title,
+        notes: task.notes || '',
         goal: (task.goal as any) || '',
         firm: task.firm || '',
         owner: task.owner || '',
@@ -142,6 +145,16 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
 	                onChange={(e) => setFormData(p => ({ ...p, title: e.target.value }))}
 	              />
 	            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-black">{getFieldLabel('recurringTask.notes', 'Notes')}</label>
+              <textarea 
+                disabled={isSaving}
+                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 outline-none min-h-[100px] disabled:bg-gray-50"
+                value={formData.notes}
+                onChange={(e) => setFormData(p => ({ ...p, notes: e.target.value }))}
+                placeholder="Enter more details..."
+              />
+            </div>
 		            <div className="space-y-1">
 		              <label className="text-sm font-medium text-black">{getFieldLabel('recurringTask.goal', 'Goal')}</label>
 		              <input

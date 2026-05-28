@@ -9,6 +9,7 @@ interface UserTableProps {
   onDeleteUser: (id: number) => void;
   onEditUser: (user: User) => void;
   viewMode?: 'card' | 'table';
+  startIndex?: number;
 }
 
 type SortConfig = {
@@ -16,7 +17,7 @@ type SortConfig = {
   direction: 'asc' | 'desc';
 } | null;
 
-export const UserTable: React.FC<UserTableProps> = ({ users, onToggleStatus, onDeleteUser, onEditUser, viewMode = 'card' }) => {
+export const UserTable: React.FC<UserTableProps> = ({ users, onToggleStatus, onDeleteUser, onEditUser, viewMode = 'card', startIndex = 1 }) => {
   const [sortConfig, setSortConfig] = useState<SortConfig>(null);
 
   const requestSort = (key: keyof User) => {
@@ -62,6 +63,9 @@ export const UserTable: React.FC<UserTableProps> = ({ users, onToggleStatus, onD
               <th className={thClass} onClick={() => requestSort('name')}>
                 <div className="flex items-center">Name {getSortIcon('name')}</div>
               </th>
+              <th className={thClass} onClick={() => requestSort('employeeId' as any)}>
+                <div className="flex items-center">Employee Id {getSortIcon('employeeId' as any)}</div>
+              </th>
               <th className={thClass} onClick={() => requestSort('email')}>
                 <div className="flex items-center">Email {getSortIcon('email')}</div>
               </th>
@@ -89,8 +93,9 @@ export const UserTable: React.FC<UserTableProps> = ({ users, onToggleStatus, onD
           <tbody className="divide-y divide-black">
             {sortedUsers.map((user, index) => (
               <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                <td className={tdClass}>{index + 1}</td>
+                <td className={tdClass}>{startIndex + index}</td>
                 <td className={`${tdClass} font-medium`}>{user.name}</td>
+                <td className={tdClass}>{user.employeeId || '-'}</td>
                 <td className={tdClass}>{user.email}</td>
                 <td className={tdClass}>{user.mobile}</td>
                 <td className={tdClass}>
@@ -140,6 +145,7 @@ export const UserTable: React.FC<UserTableProps> = ({ users, onToggleStatus, onD
                             <div className="flex items-center gap-1 text-xs text-gray-500 whitespace-normal break-words">
                                 <Shield size={12} />
                                 <span>{user.role}</span>
+                                {user.employeeId && <span> • ID: {user.employeeId}</span>}
                             </div>
                         </div>
                     </div>

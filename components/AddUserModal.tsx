@@ -19,6 +19,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onS
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    employeeId: '',
     mobile: '',
     designation: '',
     role: 'Employee',
@@ -26,7 +27,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onS
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<{name?: string, email?: string, mobile?: string}>({});
+  const [errors, setErrors] = useState<{name?: string, email?: string, mobile?: string, employeeId?: string}>({});
 
   if (!isOpen) return null;
 
@@ -64,10 +65,14 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onS
   };
 
   const validate = () => {
-      const newErrors: {name?: string, email?: string, mobile?: string} = {};
+      const newErrors: {name?: string, email?: string, mobile?: string, employeeId?: string} = {};
       
       if (users.some(u => u.name.toLowerCase().trim() === formData.name.toLowerCase().trim())) {
           newErrors.name = "This user name already exists.";
+      }
+
+      if (formData.employeeId && users.some(u => u.employeeId?.toLowerCase().trim() === formData.employeeId.toLowerCase().trim())) {
+          newErrors.employeeId = "This Employee ID already exists.";
       }
 
       const emailError = validateEmail(formData.email);
@@ -91,6 +96,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onS
     onSave({
       name: formData.name,
       email: formData.email,
+      employeeId: formData.employeeId,
       mobile: formData.mobile,
       designation: formData.designation,
       role: formData.role,
@@ -100,6 +106,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onS
     setFormData({
       name: '',
       email: '',
+      employeeId: '',
       mobile: '',
       designation: '',
       role: 'Employee',
@@ -157,6 +164,20 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onS
                 {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
                 </div>
                 <div className="space-y-1">
+	                <label className="text-sm font-medium text-gray-900">{getFieldLabel('user.employeeId', 'Employee Id')}</label>
+                <input 
+                    name="employeeId"
+                    type="text"
+                    placeholder="Enter employee ID"
+                    value={formData.employeeId}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-2.5 bg-white border rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none text-gray-900 placeholder-gray-400 ${errors.employeeId ? 'border-red-500' : 'border-gray-200'}`}
+                />
+                {errors.employeeId && <p className="text-xs text-red-500">{errors.employeeId}</p>}
+                </div>
+            </div>
+
+            <div className="space-y-1">
 	                <label className="text-sm font-medium text-gray-900">{getFieldLabel('user.mobile', 'Mobile Number')} <span className="text-red-500">*</span></label>
                 <input 
                     name="mobile"
@@ -168,7 +189,6 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onS
                     className={`w-full px-4 py-2.5 bg-white border rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none text-gray-900 placeholder-gray-400 ${errors.mobile ? 'border-red-500' : 'border-gray-200'}`}
                 />
                 {errors.mobile && <p className="text-xs text-red-500">{errors.mobile}</p>}
-                </div>
             </div>
 
             <div className="space-y-1">
