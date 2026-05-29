@@ -275,14 +275,12 @@ export const UsersView: React.FC<UsersViewProps> = ({
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         user={selectedUser}
-        onSave={onEditUser}
+        onUpdate={onEditUser}
         designations={designations}
         departments={departments}
         onAddDesignation={onAddDesignation}
         onAddDepartment={onAddDepartment}
         users={users}
-        firms={firms}
-        categories={categories}
       />
     </div>
   );
