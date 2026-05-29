@@ -4,7 +4,7 @@ import { Plus, Search, LayoutGrid, LayoutList, FileText, Download, Filter, X } f
 import { UserTable } from './UserTable';
 import { AddUserModal } from './AddUserModal';
 import { UpdateUserModal } from './UpdateUserModal';
-import { User, Designation, Department, Template, TemplateTask, Firm, Category } from '../types';
+import { User, Designation, Department, Firm, Category } from '../types';
 import { useLabels } from '../labelOverrides';
 import { SearchableSelect } from './SearchableSelect';
 
@@ -12,12 +12,10 @@ interface UsersViewProps {
   users: User[];
   designations: Designation[];
   departments: Department[];
-  templates: Template[];
-  templateTasks: TemplateTask[];
   firms: Firm[];
   categories: Category[];
-  onAddUser: (user: Omit<User, 'id' | 'isActive'>, tasks?: TemplateTask[]) => void;
-  onEditUser: (user: User, tasks?: TemplateTask[]) => void;
+  onAddUser: (user: Omit<User, 'id' | 'isActive'>) => void;
+  onEditUser: (user: User) => void;
   onToggleStatus: (id: number) => void;
   onDeleteUser: (id: number) => void;
   onAddDesignation: () => void;
@@ -29,8 +27,6 @@ export const UsersView: React.FC<UsersViewProps> = ({
   users, 
   designations, 
   departments, 
-  templates,
-  templateTasks,
   firms,
   categories,
   onAddUser, 
@@ -271,8 +267,6 @@ export const UsersView: React.FC<UsersViewProps> = ({
         onAddDesignation={onAddDesignation}
         onAddDepartment={onAddDepartment}
         users={users}
-        templates={templates}
-        templateTasks={templateTasks}
         firms={firms}
         categories={categories}
       />
@@ -287,8 +281,6 @@ export const UsersView: React.FC<UsersViewProps> = ({
         onAddDesignation={onAddDesignation}
         onAddDepartment={onAddDepartment}
         users={users}
-        templates={templates}
-        templateTasks={templateTasks}
         firms={firms}
         categories={categories}
       />

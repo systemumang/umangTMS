@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { RotateCcw, Plus, Search, Filter, X, FileText, Download, Info, ArrowUpDown, ArrowUp, ArrowDown, Trash2, Edit2, LayoutGrid, LayoutList, AlertCircle, Calendar, Upload, Loader2 } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { RotateCcw, Plus, Search, Filter, X, Info, ArrowUpDown, ArrowUp, ArrowDown, Trash2, Edit2, LayoutGrid, LayoutList, AlertCircle, Calendar, Loader2 } from 'lucide-react';
 import { RecurringTask, RecurringTaskAction } from '../types';
 import { SearchableSelect } from './SearchableSelect';
 import { useLabels } from '../labelOverrides';
@@ -12,7 +12,6 @@ interface RecurringTasksViewProps {
   onEdit: (task: RecurringTask) => void;
   onViewHistory: (task: RecurringTask) => void;
   onDelete: (id: number) => Promise<void>;
-  onBulkUpload: (tasks: Array<Omit<RecurringTask, 'id' | 'lastUpdatedOn' | 'lastUpdateRemarks'>>) => Promise<{ successCount: number; failCount: number }>;
   title?: string;
   filterType?: 'all' | 'due';
   currentUser?: any;
@@ -32,7 +31,6 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
     onEdit, 
     onViewHistory, 
     onDelete, 
-    onBulkUpload,
     title = "Recurring Tasks",
     filterType = 'all',
     currentUser,
@@ -50,167 +48,14 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
   const [sortConfig, setSortConfig] = useState<SortConfig>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [isUploadingBulk, setIsUploadingBulk] = useState(false);
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
-  const bulkFileInputRef = useRef<HTMLInputElement>(null);
 
   const isAdmin = currentUser?.role === 'Admin';
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
-
-  const parseCsvLine = (line: string): string[] => {
-    const values: string[] = [];
-    let current = '';
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      if (char === '"') {
-        if (inQuotes && line[i + 1] === '"') {
-          current += '"';
-          i++;
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if (char === ',' && !inQuotes) {
-        values.push(current.trim());
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-    values.push(current.trim());
-    return values;
-  };
-
-  const handleDownloadTemplate = () => {
-    const templateHeaders = ['Task', 'goal', 'firm', 'owner', 'category', 'assignee', 'startDate', 'time', 'Period', 'Fixed Days', 'Day', 'Month'];
-    const rows: string[][] = [
-      templateHeaders,
-      ['', '', '', '', '', '', '', '', '', '', '', ''],
-    ];
-
-    const csv = rows.map(row => row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'RecurringTasksTemplate.csv';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const text = await file.text();
-    const allLines = text.split(/\r?\n/).filter(line => line.trim() !== '');
-    if (allLines.length <= 1) {
-      alert('Template is empty.');
-      event.target.value = '';
-      return;
-    }
-    const markerIndex = allLines.findIndex(line => {
-      const row = parseCsvLine(line);
-      return String(row[0] || '').trim() === '__MASTER_DATA__';
-    });
-    const lines = markerIndex >= 0 ? allLines.slice(0, markerIndex) : allLines;
-
-    const rawHeaders = parseCsvLine(lines[0]).map(header => header.trim());
-    const headerAliases: Record<string, string> = {
-      task: 'title',
-      title: 'title',
-      period: 'periodicity',
-      periodicity: 'periodicity',
-      fixeddays: 'frequencyDays',
-      month: 'recurrenceMonth',
-      recurrencemonth: 'recurrenceMonth',
-      day: 'recurrenceDay',
-      recurrenceday: 'recurrenceDay',
-    };
-    const headers = rawHeaders.map(header => {
-      const key = header.replace(/\s+/g, '').toLowerCase();
-      return headerAliases[key] || header;
-    });
-    const requiredHeaders = ['title', 'firm', 'owner', 'category', 'assignee', 'startDate', 'periodicity'];
-    for (const required of requiredHeaders) {
-      if (!headers.includes(required)) {
-        alert(`Missing required column: ${required}`);
-        event.target.value = '';
-        return;
-      }
-    }
-    const toNumberOrDefault = (value: string, fallback: number) => {
-      const numberValue = Number(String(value || '').trim());
-      return Number.isFinite(numberValue) ? numberValue : fallback;
-    };
-    const parseWeeklyDay = (value: string): number => {
-      const trimmed = String(value || '').trim();
-      if (!trimmed) return 0;
-      const numeric = Number(trimmed);
-      if (Number.isFinite(numeric) && numeric >= 0 && numeric <= 6) return numeric;
-      const lower = trimmed.toLowerCase();
-      const dayMap: Record<string, number> = {
-        sun: 0, sunday: 0,
-        mon: 1, monday: 1,
-        tue: 2, tues: 2, tuesday: 2,
-        wed: 3, wednesday: 3,
-        thu: 4, thur: 4, thurs: 4, thursday: 4,
-        fri: 5, friday: 5,
-        sat: 6, saturday: 6,
-      };
-      return dayMap[lower] ?? 0;
-    };
-
-    const rows = lines.slice(1).map(line => parseCsvLine(line));
-    const tasks = rows.map((row) => {
-      const get = (column: string) => {
-        const index = headers.indexOf(column);
-        return index >= 0 ? String(row[index] || '').trim() : '';
-      };
-      const periodicity = get('periodicity') || 'Fixed Days';
-      const recurrenceDay = get('recurrenceDay');
-      const recurrenceMonth = get('recurrenceMonth');
-      const frequencyDays = get('frequencyDays');
-      const normalizedPeriodicity = String(periodicity || 'Fixed Days').trim();
-      const finalRecurrenceDay =
-        normalizedPeriodicity === 'Weekly'
-          ? parseWeeklyDay(recurrenceDay)
-          : (recurrenceDay ? toNumberOrDefault(recurrenceDay, 1) : 1);
-      return {
-        title: get('title'),
-        goal: toNumberOrDefault(get('goal'), 0),
-        firm: get('firm'),
-        owner: get('owner'),
-        category: get('category'),
-        assignee: get('assignee'),
-        startDate: get('startDate'),
-        time: get('time'),
-        periodicity: normalizedPeriodicity as any,
-        frequencyDays: normalizedPeriodicity === 'Fixed Days' ? toNumberOrDefault(frequencyDays, 1) : 0,
-        recurrenceDay: finalRecurrenceDay,
-        recurrenceMonth: normalizedPeriodicity === 'Yearly' ? (recurrenceMonth || 'January') : undefined,
-      } as Omit<RecurringTask, 'id' | 'lastUpdatedOn' | 'lastUpdateRemarks'>;
-    }).filter(task => String(task.title || '').trim() !== '');
-
-    if (tasks.length === 0) {
-      alert('No valid rows found.');
-      event.target.value = '';
-      return;
-    }
-    setIsUploadingBulk(true);
-    try {
-      const result = await onBulkUpload(tasks);
-      alert(`Bulk upload completed.\nSuccess: ${result.successCount}\nFailed: ${result.failCount}`);
-    } finally {
-      setIsUploadingBulk(false);
-      event.target.value = '';
-    }
-  };
 
   useEffect(() => {
     setCurrentPage(1);
@@ -674,20 +519,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
              </button>
           )}
           <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center space-x-1 px-3 py-2 border rounded-md text-sm font-medium shadow-sm transition-all duration-200 ${showFilters ? 'bg-indigo-600 border-indigo-700 text-white' : 'bg-indigo-50 border-indigo-300 text-indigo-600 hover:bg-indigo-100'}`}><Filter size={16} /><span>Filters</span></button>
-          {false && filterType !== 'due' && (
-            <>
-              <input ref={bulkFileInputRef} type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
-              <button onClick={handleDownloadTemplate} className="flex items-center justify-center space-x-2 px-4 py-2 bg-white border border-indigo-300 text-indigo-700 rounded-md hover:bg-indigo-50 text-sm font-medium transition-colors shadow-sm">
-                <Download size={16} />
-                <span>Template</span>
-              </button>
-              <button disabled={isUploadingBulk} onClick={() => bulkFileInputRef.current?.click()} className="flex items-center justify-center space-x-2 px-4 py-2 bg-white border border-indigo-300 text-indigo-700 rounded-md hover:bg-indigo-50 disabled:opacity-60 disabled:cursor-not-allowed text-sm font-medium transition-colors shadow-sm">
-                <Upload size={16} />
-                <span>{isUploadingBulk ? 'Uploading...' : 'Upload'}</span>
-              </button>
-            </>
-          )}
-            {filterType !== 'due' && (
+          {filterType !== 'due' && (
 	            <button onClick={onAdd} className="flex items-center justify-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium transition-colors shadow-sm"><Plus size={16} /><span>New Recurring Task</span></button>
             )}
         </div>
