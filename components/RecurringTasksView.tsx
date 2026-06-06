@@ -601,7 +601,13 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 		                const isOverdue = effectiveStatus !== 'Complete' && nextDueObj && (nextDueObj.getTime() < new Date().setHours(0,0,0,0));
                   const achieved = String(achievedSumByTaskId.get(Number(task.id || 0)) || 0);
                   const goalDisplay = hasGoalValue(task.goal) ? String(task.goal) : '1';
-                  const achievedDisplay = hasGoalValue(task.goal) ? achieved : '0';
+                  const todayStr = new Date().toLocaleDateString('en-GB');
+                  const hasCompletionToday = actions.some(a => 
+                    Number(a.taskId) === Number(task.id) && 
+                    a.updatedOn === todayStr && 
+                    a.status === 'Complete'
+                  );
+                  const achievedDisplay = hasGoalValue(task.goal) ? achieved : (hasCompletionToday ? '1' : '0');
                   const periodText = getFrequencyText(task);
                   const prevTask = idx > 0 ? paginatedTasks[idx - 1] : null;
                   const showAssigneeHeader = !prevTask || String(prevTask.assignee || '') !== String(task.assignee || '');
@@ -716,7 +722,13 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 	             const isOverdue = effectiveStatus !== 'Complete' && nextDueObj && (nextDueObj.getTime() < new Date().setHours(0,0,0,0));
                const achieved = String(achievedSumByTaskId.get(Number(task.id || 0)) || 0);
                const goalDisplay = hasGoalValue(task.goal) ? String(task.goal) : '1';
-               const achievedDisplay = hasGoalValue(task.goal) ? achieved : '0';
+               const todayStr = new Date().toLocaleDateString('en-GB');
+               const hasCompletionToday = actions.some(a => 
+                 Number(a.taskId) === Number(task.id) && 
+                 a.updatedOn === todayStr && 
+                 a.status === 'Complete'
+               );
+               const achievedDisplay = hasGoalValue(task.goal) ? achieved : (hasCompletionToday ? '1' : '0');
 
              return (
                 <div 

@@ -383,8 +383,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
       );
       const achievedFromActions = actionsToday.reduce((sum, a) => sum + Number(a.goal || 0), 0);
 
-      // For tasks without a numeric Goal, treat "Achieved" as 1 only if an update was logged today.
-      const effectiveAchieved = rawGoal > 0 ? achievedFromActions : (actionsToday.length > 0 ? 1 : 0);
+      // For tasks without a numeric Goal, treat "Achieved" as 1 only if a "Complete" status was logged today.
+      const hasCompletionToday = actionsToday.some(a => String(a.status || '') === 'Complete');
+      const effectiveAchieved = rawGoal > 0 ? achievedFromActions : (hasCompletionToday ? 1 : 0);
 
       if (!byEmployee.has(employeeName)) {
         byEmployee.set(employeeName, { goal: 0, achieved: 0 });
