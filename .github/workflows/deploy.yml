@@ -32,16 +32,14 @@ jobs:
           cp -r dist/* deploy/
           cp -r api deploy/api
 
-      - name: Deploy to Hostinger (FTP)
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: Deploy to Hostinger (SFTP)
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
         with:
-          server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
+          server: ${{ secrets.FTP_SERVER }}
+          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }} # If using key, or use password below
           password: ${{ secrets.FTP_PASSWORD }}
-          port: ${{ secrets.FTP_PORT }}
-          protocol: ftp
-          local-dir: ./deploy/
-          server-dir: ./
-          dangerous-clean-slate: true
-          timeout: 90000
-          log-level: verbose
+          port: 22
+          local_path: './deploy/*'
+          remote_path: '/home/customer/domains/yourdomain.com/public_html' # User needs to verify this path
+          delete_remote_files: true
