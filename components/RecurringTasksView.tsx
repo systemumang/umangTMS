@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { RotateCcw, Plus, Search, Filter, X, Info, ArrowUpDown, ArrowUp, ArrowDown, Trash2, Edit2, LayoutGrid, LayoutList, AlertCircle, Calendar, Loader2 } from 'lucide-react';
+import { RotateCcw, Plus, Search, Filter, X, Info, ArrowUpDown, ArrowUp, ArrowDown, Trash2, Edit2, LayoutGrid, LayoutList, AlertCircle, Calendar, Loader2, ChevronDown, Settings } from 'lucide-react';
 import { RecurringTask, RecurringTaskAction } from '../types';
 import { SearchableSelect } from './SearchableSelect';
 import { useLabels } from '../labelOverrides';
@@ -43,6 +43,22 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
   const [filterAssignee, setFilterAssignee] = useState('All');
   const [filterStatus, setFilterStatus] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
+  const [showColumnToggle, setShowColumnToggle] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
+    notes: false,
+    firm: false,
+    owner: false,
+    department: false, // Assuming department exists or is future-proof
+    category: true,
+    assignee: true,
+    status: true,
+    goal: true,
+    achieved: true,
+    activityDate: true,
+    remarks: true,
+    nextDue: true
+  });
+
   const [viewMode, setViewMode] = useState<'card' | 'card'>('card'); // Fixed type to card | table below
   const [viewModeActual, setViewModeActual] = useState<'card' | 'table'>('card');
   const [sortConfig, setSortConfig] = useState<SortConfig>(null);
@@ -502,7 +518,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
     }
   };
 
-  const thClass = "px-4 py-3 text-[10px] font-bold text-white uppercase tracking-wider border-r border-indigo-500 last:border-r-0 cursor-pointer hover:bg-indigo-700 transition-colors select-none whitespace-normal";
+  const thClass = "px-4 py-3 text-[10px] font-bold text-white uppercase tracking-wider border-r border-indigo-500 last:border-r-0 cursor-pointer transition-colors select-none whitespace-normal";
   const tdClass = "px-4 py-3 text-xs text-black border-r border-black last:border-r-0 align-top whitespace-normal break-words";
   const taskColumnClass = "min-w-[280px] w-[280px] max-w-[360px]";
 
@@ -530,6 +546,30 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                 <Trash2 size={16} /><span>Bulk Delete ({selectedIds.length})</span>
              </button>
           )}
+          <div className="relative">
+            <button 
+              onClick={() => setShowColumnToggle(!showColumnToggle)} 
+              className={`flex items-center space-x-1 px-3 py-2 border rounded-md text-sm font-medium shadow-sm transition-all duration-200 ${showColumnToggle ? 'bg-indigo-600 border-indigo-700 text-white' : 'bg-indigo-50 border-indigo-300 text-indigo-600 hover:bg-indigo-100'}`}
+            >
+              <Settings size={16} /><span>Show/Hide Column</span>
+            </button>
+            {showColumnToggle && (
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-indigo-100 rounded-xl shadow-xl z-[60] p-2 animate-in fade-in zoom-in duration-200">
+                <div className="text-[10px] font-bold text-indigo-400 uppercase px-2 mb-2 tracking-widest">Toggle Columns</div>
+                {Object.keys(visibleColumns).map(col => (
+                  <label key={col} className="flex items-center space-x-2 p-2 hover:bg-indigo-50 rounded-lg cursor-pointer transition-colors">
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-gray-300 text-indigo-600 h-4 w-4"
+                      checked={visibleColumns[col]}
+                      onChange={() => setVisibleColumns(prev => ({ ...prev, [col]: !prev[col] }))}
+                    />
+                    <span className="text-xs font-bold text-indigo-900 capitalize">{col.replace(/([A-Z])/g, ' $1')}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
           <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center space-x-1 px-3 py-2 border rounded-md text-sm font-medium shadow-sm transition-all duration-200 ${showFilters ? 'bg-indigo-600 border-indigo-700 text-white' : 'bg-indigo-50 border-indigo-300 text-indigo-600 hover:bg-indigo-100'}`}><Filter size={16} /><span>Filters</span></button>
           {filterType !== 'due' && (
 	            <button onClick={onAdd} className="flex items-center justify-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium transition-colors shadow-sm"><Plus size={16} /><span>New Recurring Task</span></button>
@@ -578,18 +618,18 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 		                <th className={thClass} onClick={() => requestSort('frequencyDays')}><div className="flex items-center">Period {getSortIcon('frequencyDays')}</div></th>
 			                <th className={thClass} onClick={() => requestSort('time')}><div className="flex items-center">Time {getSortIcon('time')}</div></th>
 			                <th className={`${thClass} ${taskColumnClass}`} onClick={() => requestSort('title')}><div className="flex items-center">Task {getSortIcon('title')}</div></th>
-                <th className={thClass} onClick={() => requestSort('notes' as any)}><div className="flex items-center">Notes {getSortIcon('notes' as any)}</div></th>
-	                  <th className={thClass} onClick={() => requestSort('firm')}><div className="flex items-center">Firm {getSortIcon('firm')}</div></th>
-	                  <th className={thClass} onClick={() => requestSort('owner')}><div className="flex items-center">Owner {getSortIcon('owner')}</div></th>
-		                <th className={thClass} onClick={() => requestSort('category')}><div className="flex items-center">{getFieldLabel('recurringTask.category', 'Category')} {getSortIcon('category')}</div></th>
-	                <th className={thClass} onClick={() => requestSort('assignee')}><div className="flex items-center">Assignee {getSortIcon('assignee')}</div></th>
-	                <th className={thClass} onClick={() => requestSort('status')}><div className="flex items-center">Status {getSortIcon('status')}</div></th>
-		                <th className={thClass} onClick={() => requestSort('goal')}><div className="flex items-center">Goal {getSortIcon('goal')}</div></th>
-		                <th className={thClass}><div className="flex items-center">Achieved</div></th>
-		                <th className={thClass}><div className="flex items-center">Achieved %</div></th>
-		                <th className={thClass} onClick={() => requestSort('lastUpdatedOn')}><div className="flex items-center">Activity {getSortIcon('lastUpdatedOn')}</div></th>
-	                <th className={thClass} onClick={() => requestSort('remarks')}><div className="flex items-center">Remarks {getSortIcon('remarks')}</div></th>
-	                <th className={thClass} onClick={() => requestSort('nextDue')}><div className="flex items-center">Next Due {getSortIcon('nextDue')}</div></th>
+                {visibleColumns.notes && <th className={thClass} onClick={() => requestSort('notes' as any)}><div className="flex items-center">Notes {getSortIcon('notes' as any)}</div></th>}
+	                {visibleColumns.firm && <th className={thClass} onClick={() => requestSort('firm')}><div className="flex items-center">Firm {getSortIcon('firm')}</div></th>}
+	                {visibleColumns.owner && <th className={thClass} onClick={() => requestSort('owner')}><div className="flex items-center">Owner {getSortIcon('owner')}</div></th>}
+                  {visibleColumns.category && <th className={thClass} onClick={() => requestSort('category')}><div className="flex items-center">{getFieldLabel('recurringTask.category', 'Category')} {getSortIcon('category')}</div></th>}
+	                {visibleColumns.assignee && <th className={thClass} onClick={() => requestSort('assignee')}><div className="flex items-center">Assignee {getSortIcon('assignee')}</div></th>}
+	                {visibleColumns.status && <th className={thClass} onClick={() => requestSort('status')}><div className="flex items-center">Status {getSortIcon('status')}</div></th>}
+		                {visibleColumns.goal && <th className={thClass} onClick={() => requestSort('goal')}><div className="flex items-center">Goal {getSortIcon('goal')}</div></th>}
+		                {visibleColumns.achieved && <th className={thClass}><div className="flex items-center">Achieved</div></th>}
+		                {visibleColumns.achieved && <th className={thClass}><div className="flex items-center">Achieved %</div></th>}
+		                {visibleColumns.activityDate && <th className={thClass} onClick={() => requestSort('lastUpdatedOn')}><div className="flex items-center">Activity date {getSortIcon('lastUpdatedOn')}</div></th>}
+	                {visibleColumns.remarks && <th className={`${thClass} max-w-[120px]`} onClick={() => requestSort('remarks')}><div className="flex items-center">Remarks {getSortIcon('remarks')}</div></th>}
+	                {visibleColumns.nextDue && <th className={thClass} onClick={() => requestSort('nextDue')}><div className="flex items-center">Next Due {getSortIcon('nextDue')}</div></th>}
 	                <th className="px-4 py-3 text-[10px] font-bold text-white uppercase tracking-wider text-center whitespace-normal">Actions</th>
 	              </tr>
             </thead>
@@ -624,12 +664,15 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                     for (let i = 0; i < assigneeKey.length; i++) hash += assigneeKey.charCodeAt(i);
                     return palettes[hash % palettes.length];
                   })();
+
+                  // Calculate colSpan for assignee header
+                  const activeCols = Object.values(visibleColumns).filter(v => v).length + 4 + (isAdmin ? 1 : 0);
 		                
 		                return (
                   <React.Fragment key={task.id}>
                     {showAssigneeHeader && (
                       <tr>
-                        <td colSpan={isAdmin ? 17 : 16} className={`px-4 py-2 text-xs font-bold uppercase tracking-wider ${assigneeBgClass}`}>
+                        <td colSpan={activeCols + 1} className={`px-4 py-2 text-xs font-bold uppercase tracking-wider ${assigneeBgClass}`}>
                           {task.assignee || '-'}
                         </td>
                       </tr>
@@ -657,37 +700,37 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 	                    </td>
 	                    <td className={tdClass}>{task.time || '-'}</td>
 			                    <td className={`${tdClass} ${taskColumnClass} font-medium`}>{task.title}</td>
-                      <td className={tdClass}>
+                      {visibleColumns.notes && <td className={tdClass}>
                         <div className="max-h-16 overflow-y-auto scrollbar-thin scrollbar-thumb-indigo-200">
                           {task.notes || '-'}
                         </div>
-                      </td>
-	                      <td className={tdClass}>{task.firm || '-'}</td>
-	                      <td className={tdClass}>{task.owner || '-'}</td>
-		                    <td className={tdClass}>{task.category}</td>
-	                    <td className={tdClass}>{task.assignee}</td>
-                    <td className={tdClass}>
+                      </td>}
+	                      {visibleColumns.firm && <td className={tdClass}>{task.firm || '-'}</td>}
+	                      {visibleColumns.owner && <td className={tdClass}>{task.owner || '-'}</td>}
+		                    {visibleColumns.category && <td className={tdClass}>{task.category}</td>}
+	                    {visibleColumns.assignee && <td className={tdClass}>{task.assignee}</td>}
+                    {visibleColumns.status && <td className={tdClass}>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getStatusColor(effectiveStatus)} whitespace-normal break-words`}>
                             {effectiveStatus}
                         </span>
-                    </td>
-			                    <td className={`${tdClass} bg-yellow-700 text-white font-semibold`}>{goalDisplay}</td>
-			                    <td className={`${tdClass} bg-yellow-700 text-white font-semibold`}>{achievedDisplay}</td>
-			                    <td className={`${tdClass} bg-yellow-700 text-white font-semibold`}>{getAchievedPercent(goalDisplay, achievedDisplay)}</td>
-		                    <td className={tdClass}>
+                    </td>}
+			                    {visibleColumns.goal && <td className={`${tdClass} bg-yellow-700 text-white font-semibold`}>{goalDisplay}</td>}
+			                    {visibleColumns.achieved && <td className={`${tdClass} bg-yellow-700 text-white font-semibold`}>{achievedDisplay}</td>}
+			                    {visibleColumns.achieved && <td className={`${tdClass} bg-yellow-700 text-white font-semibold`}>{getAchievedPercent(goalDisplay, achievedDisplay)}</td>}
+		                    {visibleColumns.activityDate && <td className={tdClass}>
                           <div className="flex flex-col">
                             <span>{task.lastUpdatedOn || '-'}</span>
                             {getLatestActionTimestamp(task.id) && (
-                              <span className="text-[9px] text-gray-500 italic">
+                              <span className="text-[10px] text-gray-800 font-semibold italic">
                                 {String(getLatestActionTimestamp(task.id)).split(' ').slice(1).join(' ')}
                               </span>
                             )}
                           </div>
-                        </td>
-	                    <td className={`${tdClass}`}>{task.lastUpdateRemarks || '-'}</td>
-	                    <td className={`${tdClass} font-bold ${isOverdue ? 'text-red-600 animate-pulse' : 'text-indigo-600'}`}>
+                        </td>}
+	                    {visibleColumns.remarks && <td className={`${tdClass} max-w-[120px]`}>{task.lastUpdateRemarks || '-'}</td>}
+	                    {visibleColumns.nextDue && <td className={`${tdClass} font-bold ${isOverdue ? 'text-red-600 animate-pulse' : 'text-indigo-600'}`}>
 	                        {nextDueStr}
-	                    </td>
+	                    </td>}
                     <td className={tdClass}>
                       <div className="flex items-center gap-1 justify-center" onDoubleClick={(e) => e.stopPropagation()}>
                         <button onClick={() => onUpdate(task)} className="px-2 py-1 bg-indigo-600 text-white rounded text-[10px] font-bold hover:bg-indigo-700">Update</button>
@@ -708,7 +751,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                     </React.Fragment>
 	                );
 	              })}
-			              {paginatedTasks.length === 0 && (<tr><td colSpan={isAdmin ? 17 : 16} className="px-6 py-10 text-center text-gray-500">No recurring tasks found.</td></tr>)}
+			              {paginatedTasks.length === 0 && (<tr><td colSpan={activeCols + 1} className="px-6 py-10 text-center text-gray-500">No recurring tasks found.</td></tr>)}
 	            </tbody>
 	          </table>
 	        </div>
@@ -755,31 +798,37 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                     <h3 className="font-bold text-gray-900 leading-tight mt-2 whitespace-normal break-words">{task.title}</h3>
                     </div>
 		                    <div className="grid grid-cols-2 gap-y-2 text-xs text-gray-600 mb-4 bg-gray-50 p-2 rounded">
-                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Firm</span><span className="whitespace-normal break-words">{task.firm || '-'}</span></div>
-                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Owner</span><span className="whitespace-normal break-words">{task.owner || '-'}</span></div>
-		                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">{getFieldLabel('recurringTask.category', 'Category')}</span><span className="whitespace-normal break-words">{task.category}</span></div>
-	                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Assignee</span><span className="whitespace-normal break-words">{task.assignee}</span></div>
+                    {visibleColumns.firm && <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Firm</span><span className="whitespace-normal break-words">{task.firm || '-'}</span></div>}
+                    {visibleColumns.owner && <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Owner</span><span className="whitespace-normal break-words">{task.owner || '-'}</span></div>}
+		                    {visibleColumns.category && <div><span className="text-gray-400 font-bold uppercase text-[9px] block">{getFieldLabel('recurringTask.category', 'Category')}</span><span className="whitespace-normal break-words">{task.category}</span></div>}
+	                    {visibleColumns.assignee && <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Assignee</span><span className="whitespace-normal break-words">{task.assignee}</span></div>}
 		                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Period</span><span className="whitespace-pre-line break-words">{getFrequencyText(task)}</span></div>
 		                    <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Time</span><span className="whitespace-normal break-words">{task.time || '-'}</span></div>
-                        <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Goal</span><span className="whitespace-normal break-words">{goalDisplay}</span></div>
-                        <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Achieved</span><span className="whitespace-normal break-words">{achievedDisplay}</span></div>
-                        <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Achieved %</span><span className="whitespace-normal break-words">{getAchievedPercent(goalDisplay, achievedDisplay)}</span></div>
-		                    <div>
+                        {visibleColumns.goal && <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Goal</span><span className="whitespace-normal break-words">{goalDisplay}</span></div>}
+                        {visibleColumns.achieved && <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Achieved</span><span className="whitespace-normal break-words">{achievedDisplay}</span></div>}
+                        {visibleColumns.achieved && <div><span className="text-gray-400 font-bold uppercase text-[9px] block">Achieved %</span><span className="whitespace-normal break-words">{getAchievedPercent(goalDisplay, achievedDisplay)}</span></div>}
+		                    {visibleColumns.nextDue && <div>
 		                        <span className="text-indigo-500 font-bold uppercase text-[9px] block">Next Due</span>
 	                        <span className={`font-bold ${isOverdue ? 'text-red-600' : 'text-indigo-600'} whitespace-normal break-words`}>{nextDueStr}</span>
-	                    </div>
-                      <div className="col-span-2 mt-1 pt-1 border-t border-gray-100">
+	                    </div>}
+                      {visibleColumns.notes && <div className="col-span-2 mt-1 pt-1 border-t border-gray-100">
                         <span className="text-gray-400 font-bold uppercase text-[9px] block">Notes</span>
                         <div className="text-[10px] text-gray-600 whitespace-normal break-words line-clamp-3">
                           {task.notes || '-'}
                         </div>
-                      </div>
-                      <div className="col-span-2 mt-1 pt-1 border-t border-gray-100">
-                        <span className="text-gray-400 font-bold uppercase text-[9px] block">Last Activity</span>
+                      </div>}
+                      {visibleColumns.activityDate && <div className="col-span-2 mt-1 pt-1 border-t border-gray-100">
+                        <span className="text-gray-400 font-bold uppercase text-[9px] block">Last Activity Date</span>
                         <div className="text-[10px] text-gray-600">
                           {task.lastUpdatedOn || '-'} {getLatestActionTimestamp(task.id) ? `(${String(getLatestActionTimestamp(task.id)).split(' ').slice(1).join(' ')})` : ''}
                         </div>
-                      </div>
+                      </div>}
+                      {visibleColumns.remarks && <div className="col-span-2 mt-1 pt-1 border-t border-gray-100">
+                        <span className="text-gray-400 font-bold uppercase text-[9px] block">Remarks</span>
+                        <div className="text-[10px] text-gray-600 whitespace-normal break-words line-clamp-2">
+                          {task.lastUpdateRemarks || '-'}
+                        </div>
+                      </div>}
 	                    </div>
                     <div className="flex gap-2 pt-3 border-t border-gray-100 flex-wrap">
                         <button onClick={() => onUpdate(task)} className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm whitespace-normal break-words"><RotateCcw size={14} />Update</button>
