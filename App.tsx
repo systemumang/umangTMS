@@ -250,6 +250,13 @@ export default function App() {
     return 'dashboard';
   });
 
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
+    if (layoutMode === 'side') {
+      setIsSidebarCollapsed(true);
+    }
+  };
+
   const [isLoading, setIsLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSynced, setLastSynced] = useState<Date | null>(null);
@@ -1344,7 +1351,7 @@ export default function App() {
 			            <Sidebar 
 		              items={navItemsWithCounts} 
 		              activeTab={activeTab} 
-	              onTabChange={setActiveTab} 
+	              onTabChange={handleTabChange} 
 	              onLayoutChange={setLayoutMode}
 	              layoutMode={layoutMode}
 	              isOpen={isSidebarOpen} 
@@ -1364,7 +1371,7 @@ export default function App() {
               <TopBar 
                 items={navItemsWithCounts} 
                 activeTab={activeTab} 
-                onTabChange={setActiveTab} 
+                onTabChange={handleTabChange} 
                 onLayoutChange={setLayoutMode}
                 layoutMode={layoutMode}
                 lastSynced={lastSynced}

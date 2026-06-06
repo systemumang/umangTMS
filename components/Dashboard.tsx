@@ -366,9 +366,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     const dueTodayOrOverdue = recurringTasks.filter(task => {
       const nextDue = getNextDueDateObject(task);
-      if (!nextDue) return false;
-      nextDue.setHours(0, 0, 0, 0);
-      return nextDue.getTime() <= today.getTime();
+      const isDueOrOverdue = nextDue && (nextDue.setHours(0, 0, 0, 0) <= today.getTime());
+
+      const hasActionsToday = recurringActions.some(
+        a => Number(a.taskId) === Number(task.id) && parseToISO(a.updatedOn) === isoToday
+      );
+
+      return isDueOrOverdue || hasActionsToday;
     });
 
     const byEmployee = new Map<string, { goal: number; achieved: number }>();
