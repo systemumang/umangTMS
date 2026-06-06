@@ -375,8 +375,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
       return isDueOrOverdue || hasActionsToday;
     });
 
-    const kraRows: any[] = [];
-    const dailyRows: any[] = [];
+    const byEmployeeKRA = new Map<string, { goal: number; achieved: number }>();
+    const byEmployeeDaily = new Map<string, { goal: number; achieved: number }>();
 
     dueTodayOrOverdue.forEach(task => {
       const employeeName = String(task.assignee || '-').trim() || '-';
@@ -393,22 +393,29 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       const isDailyOneDay = (task.periodicity === 'Fixed Days' || task.frequencyType === 'Fixed Days') && Number(task.frequencyDays) === 1;
 
-      const row = {
-        taskTitle: task.title,
-        employeeName,
-        goal: effectiveGoal,
-        achieved: effectiveAchieved,
-        achievedPercent: effectiveGoal > 0 ? ((effectiveAchieved / effectiveGoal) * 100).toFixed(0) + '%' : '0%'
-      };
-
       if (isDailyOneDay) {
-        dailyRows.push(row);
+        if (!byEmployeeDaily.has(employeeName)) byEmployeeDaily.set(employeeName, { goal: 0, achieved: 0 });
+        const data = byEmployeeDaily.get(employeeName)!;
+        data.goal += effectiveGoal;
+        data.achieved += effectiveAchieved;
       } else {
-        kraRows.push(row);
+        if (!byEmployeeKRA.has(employeeName)) byEmployeeKRA.set(employeeName, { goal: 0, achieved: 0 });
+        const data = byEmployeeKRA.get(employeeName)!;
+        data.goal += effectiveGoal;
+        data.achieved += effectiveAchieved;
       }
     });
 
-    return { kraRows, dailyRows };
+    const formatRows = (map: Map<string, { goal: number; achieved: number }>) => {
+      return Array.from(map.entries()).map(([employeeName, data]) => ({
+        employeeName,
+        goal: data.goal,
+        achieved: data.achieved,
+        achievedPercent: data.goal > 0 ? ((data.achieved / data.goal) * 100).toFixed(0) + '%' : '0%'
+      }));
+    };
+
+    return { kraRows: formatRows(byEmployeeKRA), dailyRows: formatRows(byEmployeeDaily) };
   }, [recurringTasks, recurringActions, isoToday]);
 
   const SectionHeader = ({ title, icon }: { title: string; icon: React.ReactNode }) => (
@@ -542,8 +549,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-sky-600">
-                        <th className="px-4 py-2 text-[10px] font-bold text-white uppercase">Task Name</th>
-                        <th className="px-4 py-2 text-[10px] font-bold text-white uppercase">Employee</th>
+                        <th className="px-4 py-2 text-[10px] font-bold text-white uppercase">Employee Name</th>
                         <th className="px-4 py-2 text-[10px] font-bold text-white uppercase text-center">Goal</th>
                         <th className="px-4 py-2 text-[10px] font-bold text-white uppercase text-center">Achieved</th>
                         <th className="px-4 py-2 text-[10px] font-bold text-white uppercase text-center">Achieved%</th>
@@ -551,9 +557,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </thead>
                     <tbody>
                       {dailyKraRows.kraRows.map((row, idx) => (
-                        <tr key={`${row.taskTitle}-${idx}`} className="border-b border-sky-100 hover:bg-sky-50 transition-colors">
-                          <td className="px-4 py-2 text-xs font-bold text-gray-800">{row.taskTitle}</td>
-                          <td className="px-4 py-2 text-xs text-gray-600">{row.employeeName}</td>
+                        <tr key={`${row.employeeName}-${idx}`} className="border-b border-sky-100 hover:bg-sky-50 transition-colors">
+                          <td className="px-4 py-2 text-xs font-bold text-gray-800">{row.employeeName}</td>
                           <td className="px-4 py-2 text-xs font-black text-blue-700 text-center">{row.goal}</td>
                           <td className="px-4 py-2 text-xs font-black text-blue-700 text-center">{row.achieved}</td>
                           <td className="px-4 py-2 text-xs font-black text-blue-800 text-center bg-blue-50">{row.achievedPercent}</td>
@@ -561,7 +566,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       ))}
                       {dailyKraRows.kraRows.length === 0 && (
                         <tr>
-                          <td colSpan={5} className="px-4 py-6 text-center text-xs text-gray-500 uppercase font-bold tracking-widest">No KRA tasks found for today</td>
+                          <td colSpan={4} className="px-4 py-6 text-center text-xs text-gray-500 uppercase font-bold tracking-widest">No recurring tasks found</td>
                         </tr>
                       )}
                     </tbody>
@@ -579,8 +584,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-indigo-600">
-                        <th className="px-4 py-2 text-[10px] font-bold text-white uppercase">Task Name</th>
-                        <th className="px-4 py-2 text-[10px] font-bold text-white uppercase">Employee</th>
+                        <th className="px-4 py-2 text-[10px] font-bold text-white uppercase">Employee Name</th>
                         <th className="px-4 py-2 text-[10px] font-bold text-white uppercase text-center">Goal</th>
                         <th className="px-4 py-2 text-[10px] font-bold text-white uppercase text-center">Achieved</th>
                         <th className="px-4 py-2 text-[10px] font-bold text-white uppercase text-center">Achieved%</th>
@@ -588,9 +592,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </thead>
                     <tbody>
                       {dailyKraRows.dailyRows.map((row, idx) => (
-                        <tr key={`${row.taskTitle}-${idx}`} className="border-b border-indigo-100 hover:bg-indigo-50 transition-colors">
-                          <td className="px-4 py-2 text-xs font-bold text-gray-800">{row.taskTitle}</td>
-                          <td className="px-4 py-2 text-xs text-gray-600">{row.employeeName}</td>
+                        <tr key={`${row.employeeName}-${idx}`} className="border-b border-indigo-100 hover:bg-indigo-50 transition-colors">
+                          <td className="px-4 py-2 text-xs font-bold text-gray-800">{row.employeeName}</td>
                           <td className="px-4 py-2 text-xs font-black text-indigo-700 text-center">{row.goal}</td>
                           <td className="px-4 py-2 text-xs font-black text-indigo-700 text-center">{row.achieved}</td>
                           <td className="px-4 py-2 text-xs font-black text-indigo-800 text-center bg-indigo-50">{row.achievedPercent}</td>
@@ -598,7 +601,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       ))}
                       {dailyKraRows.dailyRows.length === 0 && (
                         <tr>
-                          <td colSpan={5} className="px-4 py-6 text-center text-xs text-gray-500 uppercase font-bold tracking-widest">No daily tasks found for today</td>
+                          <td colSpan={4} className="px-4 py-6 text-center text-xs text-gray-500 uppercase font-bold tracking-widest">No daily tasks found</td>
                         </tr>
                       )}
                     </tbody>
