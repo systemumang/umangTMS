@@ -375,7 +375,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
       return isDueOrOverdue || hasActionsToday;
     });
 
-    const byEmployee = new Map<string, { goal: number; achieved: number }>();
+    const byEmployeeKRA = new Map<string, { goal: number; achieved: number }>();
+    const byEmployeeDaily = new Map<string, { goal: number; achieved: number }>();
 
     dueTodayOrOverdue.forEach(task => {
       const employeeName = String(task.assignee || '-').trim() || '-';
@@ -391,23 +392,43 @@ export const Dashboard: React.FC<DashboardProps> = ({
       const hasCompletionToday = actionsToday.some(a => String(a.status || '') === 'Complete');
       const effectiveAchieved = rawGoal > 0 ? achievedFromActions : (hasCompletionToday ? 1 : 0);
 
-      if (!byEmployee.has(employeeName)) {
-        byEmployee.set(employeeName, { goal: 0, achieved: 0 });
+      // New Logic: Check if it's a "Daily" task (Fixed Days with 1 day interval)
+      const isDailyOneDay = (task.periodicity === 'Fixed Days' || task.frequencyType === 'Fixed Days') && Number(task.frequencyDays) === 1;
+
+      if (isDailyOneDay) {
+        if (!byEmployeeDaily.has(employeeName)) {
+          byEmployeeDaily.set(employeeName, { goal: 0, achieved: 0 });
+        }
+        const row = byEmployeeDaily.get(employeeName)!;
+        row.goal += effectiveGoal;
+        row.achieved += effectiveAchieved;
+      } else {
+        // General KRA Tracker
+        if (!byEmployeeKRA.has(employeeName)) {
+          byEmployeeKRA.set(employeeName, { goal: 0, achieved: 0 });
+        }
+        const row = byEmployeeKRA.get(employeeName)!;
+        row.goal += effectiveGoal;
+        row.achieved += effectiveAchieved;
       }
-      const row = byEmployee.get(employeeName)!;
-      row.goal += effectiveGoal;
-      row.achieved += effectiveAchieved;
     });
 
-    return Array.from(byEmployee.entries()).map(([employeeName, values]) => {
-      const achievedPercent = values.goal > 0 ? ((values.achieved / values.goal) * 100).toFixed(2) + '%' : '0%';
-      return {
-        employeeName,
-        goal: values.goal,
-        achieved: values.achieved,
-        achievedPercent
-      };
-    });
+    const formatRows = (map: Map<string, { goal: number; achieved: number }>) => {
+      return Array.from(map.entries()).map(([employeeName, values]) => {
+        const achievedPercent = values.goal > 0 ? ((values.achieved / values.goal) * 100).toFixed(2) + '%' : '0%';
+        return {
+          employeeName,
+          goal: values.goal,
+          achieved: values.achieved,
+          achievedPercent
+        };
+      });
+    };
+
+    return {
+      kraRows: formatRows(byEmployeeKRA),
+      dailyRows: formatRows(byEmployeeDaily)
+    };
   }, [recurringTasks, recurringActions, isoToday]);
 
   const SectionHeader = ({ title, icon }: { title: string; icon: React.ReactNode }) => (
@@ -529,38 +550,78 @@ export const Dashboard: React.FC<DashboardProps> = ({
                  )}
               </div>
            </div>
-          <div className="bg-white p-5 rounded-2xl border-2 border-sky-200 shadow-sm">
-	          <div className="flex items-center gap-2 mb-4 border-b border-sky-50 pb-2">
-	            <History size={18} className="text-sky-600" />
-	            <h4 className="text-sm font-black text-sky-900 uppercase">Daily KRA Tracker</h4>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-sky-600">
-                  <th className="px-4 py-2 text-xs font-bold text-white uppercase">Employee Name</th>
-                  <th className="px-4 py-2 text-xs font-bold text-white uppercase">Goal</th>
-                  <th className="px-4 py-2 text-xs font-bold text-white uppercase">Achived</th>
-                  <th className="px-4 py-2 text-xs font-bold text-white uppercase">Achived%</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dailyKraRows.map((row, idx) => (
-                  <tr key={`${row.employeeName}-${idx}`} className="border-b border-sky-100">
-                    <td className="px-4 py-2 text-sm">{row.employeeName}</td>
-                    <td className="px-4 py-2 text-sm">{row.goal}</td>
-                    <td className="px-4 py-2 text-sm">{row.achieved}</td>
-                    <td className="px-4 py-2 text-sm">{row.achievedPercent}</td>
-                  </tr>
-                ))}
-                {dailyKraRows.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500">No recurring tasks due today.</td>
-                  </tr>
-                )}
-              </tbody>
-	            </table>
-	          </div>
+          <div className="bg-white p-5 rounded-2xl border-2 border-sky-200 shadow-sm col-span-1 md:col-span-3">
+	          <div className="flex flex-col md:flex-row gap-6">
+              {/* KRA Tracker */}
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-4 border-b border-sky-50 pb-2">
+                  <History size={18} className="text-sky-600" />
+                  <h4 className="text-sm font-black text-sky-900 uppercase">KRA Tracker</h4>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-sky-600">
+                        <th className="px-4 py-2 text-xs font-bold text-white uppercase">Employee Name</th>
+                        <th className="px-4 py-2 text-xs font-bold text-white uppercase">Goal</th>
+                        <th className="px-4 py-2 text-xs font-bold text-white uppercase">Achieved</th>
+                        <th className="px-4 py-2 text-xs font-bold text-white uppercase">Achieved%</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dailyKraRows.kraRows.map((row, idx) => (
+                        <tr key={`${row.employeeName}-${idx}`} className="border-b border-sky-100">
+                          <td className="px-4 py-2 text-sm">{row.employeeName}</td>
+                          <td className="px-4 py-2 text-sm">{row.goal}</td>
+                          <td className="px-4 py-2 text-sm">{row.achieved}</td>
+                          <td className="px-4 py-2 text-sm">{row.achievedPercent}</td>
+                        </tr>
+                      ))}
+                      {dailyKraRows.kraRows.length === 0 && (
+                        <tr>
+                          <td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500">No recurring tasks found.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Daily KRA Tracker (1-day interval) */}
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-4 border-b border-indigo-50 pb-2">
+                  <RotateCcw size={18} className="text-indigo-600" />
+                  <h4 className="text-sm font-black text-indigo-900 uppercase">Daily KRA Tracker</h4>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-indigo-600">
+                        <th className="px-4 py-2 text-xs font-bold text-white uppercase">Employee Name</th>
+                        <th className="px-4 py-2 text-xs font-bold text-white uppercase">Goal</th>
+                        <th className="px-4 py-2 text-xs font-bold text-white uppercase">Achieved</th>
+                        <th className="px-4 py-2 text-xs font-bold text-white uppercase">Achieved%</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dailyKraRows.dailyRows.map((row, idx) => (
+                        <tr key={`${row.employeeName}-${idx}`} className="border-b border-indigo-100">
+                          <td className="px-4 py-2 text-sm">{row.employeeName}</td>
+                          <td className="px-4 py-2 text-sm">{row.goal}</td>
+                          <td className="px-4 py-2 text-sm">{row.achieved}</td>
+                          <td className="px-4 py-2 text-sm">{row.achievedPercent}</td>
+                        </tr>
+                      ))}
+                      {dailyKraRows.dailyRows.length === 0 && (
+                        <tr>
+                          <td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500">No daily tasks (1-day) found.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
 	        </div>
 	        </div>
 	      </div>
