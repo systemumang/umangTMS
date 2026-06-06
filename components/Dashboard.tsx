@@ -364,21 +364,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
       return null;
     };
 
-    const dueTodayOrOverdue = recurringTasks.filter(task => {
+    const tasksRelevantToday = recurringTasks.filter(task => {
       const nextDue = getNextDueDateObject(task);
-      const isDueOrOverdue = nextDue && (nextDue.setHours(0, 0, 0, 0) <= today.getTime());
+      const isDueToday = nextDue && (nextDue.setHours(0, 0, 0, 0) === today.getTime());
 
       const hasActionsToday = recurringActions.some(
         a => Number(a.taskId) === Number(task.id) && parseToISO(a.updatedOn) === isoToday
       );
 
-      return isDueOrOverdue || hasActionsToday;
+      return isDueToday || hasActionsToday;
     });
 
     const byEmployeeKRA = new Map<string, { goal: number; achieved: number }>();
     const byEmployeeDaily = new Map<string, { goal: number; achieved: number }>();
 
-    dueTodayOrOverdue.forEach(task => {
+    tasksRelevantToday.forEach(task => {
       const employeeName = String(task.assignee || '-').trim() || '-';
       const rawGoal = Number(task.goal || 0);
       const effectiveGoal = rawGoal > 0 ? rawGoal : 1;
@@ -393,16 +393,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       const isDailyOneDay = (task.periodicity === 'Fixed Days' || task.frequencyType === 'Fixed Days') && Number(task.frequencyDays) === 1;
 
+      // KRA Tracker now includes ALL relevant tasks (including Daily)
+      if (!byEmployeeKRA.has(employeeName)) byEmployeeKRA.set(employeeName, { goal: 0, achieved: 0 });
+      const kraData = byEmployeeKRA.get(employeeName)!;
+      kraData.goal += effectiveGoal;
+      kraData.achieved += effectiveAchieved;
+
+      // Daily KRA Tracker still shows only 1-day tasks
       if (isDailyOneDay) {
         if (!byEmployeeDaily.has(employeeName)) byEmployeeDaily.set(employeeName, { goal: 0, achieved: 0 });
-        const data = byEmployeeDaily.get(employeeName)!;
-        data.goal += effectiveGoal;
-        data.achieved += effectiveAchieved;
-      } else {
-        if (!byEmployeeKRA.has(employeeName)) byEmployeeKRA.set(employeeName, { goal: 0, achieved: 0 });
-        const data = byEmployeeKRA.get(employeeName)!;
-        data.goal += effectiveGoal;
-        data.achieved += effectiveAchieved;
+        const dailyData = byEmployeeDaily.get(employeeName)!;
+        dailyData.goal += effectiveGoal;
+        dailyData.achieved += effectiveAchieved;
       }
     });
 
