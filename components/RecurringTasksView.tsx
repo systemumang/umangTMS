@@ -719,12 +719,22 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
 			                    {visibleColumns.achieved && <td className={`${tdClass} bg-yellow-700 text-white font-semibold`}>{getAchievedPercent(goalDisplay, achievedDisplay)}</td>}
 		                    {visibleColumns.activityDate && <td className={tdClass}>
                           <div className="whitespace-normal">
-                            <span className="font-medium">{task.lastUpdatedOn || '-'}</span>
-                            {getLatestActionTimestamp(task.id) && (
-                              <span className="text-[10px] text-indigo-600 font-bold ml-1">
-                                {String(getLatestActionTimestamp(task.id)).split(' ').slice(1).join(' ')}
-                              </span>
-                            )}
+                            {(() => {
+                              const latest = actions.find(a => Number(a.taskId) === Number(task.id));
+                              if (latest) {
+                                return (
+                                  <div className="flex flex-wrap items-center">
+                                    <span className="font-medium">{latest.updatedOn || '-'}</span>
+                                    {latest.timestamp && (
+                                      <span className="text-[10px] text-indigo-600 font-bold ml-1">
+                                        {latest.timestamp}
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              }
+                              return <span className="font-medium">{task.lastUpdatedOn || '-'}</span>;
+                            })()}
                           </div>
                         </td>}
 	                    {visibleColumns.remarks && <td className={`${tdClass} max-w-[120px]`}>{task.lastUpdateRemarks || '-'}</td>}
@@ -819,8 +829,23 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                       </div>}
                       {visibleColumns.activityDate && <div className="col-span-2 mt-1 pt-1 border-t border-gray-100">
                         <span className="text-gray-400 font-bold uppercase text-[9px] block">Last Activity Date</span>
-                        <div className="text-[10px] text-gray-600">
-                          {task.lastUpdatedOn || '-'} {getLatestActionTimestamp(task.id) ? `(${String(getLatestActionTimestamp(task.id)).split(' ').slice(1).join(' ')})` : ''}
+                        <div className="text-[10px]">
+                          {(() => {
+                            const latest = actions.find(a => Number(a.taskId) === Number(task.id));
+                            if (latest) {
+                              return (
+                                <span className="flex items-center">
+                                  <span className="font-medium text-gray-700">{latest.updatedOn || '-'}</span>
+                                  {latest.timestamp && (
+                                    <span className="text-indigo-600 font-bold ml-1">
+                                      ({latest.timestamp})
+                                    </span>
+                                  )}
+                                </span>
+                              );
+                            }
+                            return <span className="text-gray-600">{task.lastUpdatedOn || '-'}</span>;
+                          })()}
                         </div>
                       </div>}
                       {visibleColumns.remarks && <div className="col-span-2 mt-1 pt-1 border-t border-gray-100">
