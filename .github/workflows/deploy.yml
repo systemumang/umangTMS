@@ -39,8 +39,9 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           port: ${{ secrets.FTP_PORT }}
-          protocol: ftps
+          protocol: ftp
           local-dir: ./deploy/
           server-dir: ./
           dangerous-clean-slate: true
-          timeout: 60000
+          timeout: 90000
+          log-level: verbose
