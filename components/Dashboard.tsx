@@ -303,10 +303,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
       if (!anchor) return null;
       anchor.setHours(0, 0, 0, 0);
 
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
       if (periodicity === 'Fixed Days') {
         const frequencyDays = Math.max(1, Number(task.frequencyDays || 1));
         const next = new Date(anchor);
-        next.setDate(anchor.getDate() + frequencyDays);
+        do {
+          next.setDate(next.getDate() + frequencyDays);
+        } while (next < today);
         next.setHours(0, 0, 0, 0);
         return next;
       }
@@ -317,16 +322,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
         if (diff <= 0) diff += 7;
         const next = new Date(anchor);
         next.setDate(anchor.getDate() + diff);
+        while (next < today) {
+          next.setDate(next.getDate() + 7);
+        }
         next.setHours(0, 0, 0, 0);
         return next;
       }
 
       if (periodicity === 'Monthly') {
         const targetDay = typeof task.recurrenceDay === 'number' ? task.recurrenceDay : Number(task.recurrenceDay || 1);
-        let next = clampDay(anchor.getFullYear(), anchor.getMonth(), targetDay);
-        if (next <= anchor) {
-          next = clampDay(anchor.getFullYear(), anchor.getMonth() + 1, targetDay);
-        }
+        let monthsToAdd = 0;
+        let next;
+        do {
+          next = clampDay(anchor.getFullYear(), anchor.getMonth() + monthsToAdd, targetDay);
+          if (next <= anchor || next < today) {
+            monthsToAdd++;
+          } else {
+            break;
+          }
+        } while (true);
         return next;
       }
 
@@ -334,10 +348,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
         const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
         const targetMonthIdx = Math.max(0, months.indexOf(String(task.recurrenceMonth || 'January')));
         const targetDay = typeof task.recurrenceDay === 'number' ? task.recurrenceDay : Number(task.recurrenceDay || 1);
-        let next = clampDay(anchor.getFullYear(), targetMonthIdx, targetDay);
-        if (next <= anchor) {
-          next = clampDay(anchor.getFullYear() + 1, targetMonthIdx, targetDay);
-        }
+        let yearsToAdd = 0;
+        let next;
+        do {
+          next = clampDay(anchor.getFullYear() + yearsToAdd, targetMonthIdx, targetDay);
+          if (next <= anchor || next < today) {
+            yearsToAdd++;
+          } else {
+            break;
+          }
+        } while (true);
         return next;
       }
 

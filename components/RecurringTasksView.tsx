@@ -216,35 +216,43 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
     if (isNaN(lastComplete.getTime())) return null;
     lastComplete.setHours(0, 0, 0, 0);
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     if (periodicity === 'Fixed Days') {
-        const nextDate = new Date(lastComplete);
-        nextDate.setDate(lastComplete.getDate() + (task.frequencyDays || 30));
+        const interval = Math.max(1, task.frequencyDays || 30);
+        let nextDate = new Date(lastComplete);
+        do {
+            nextDate.setDate(nextDate.getDate() + interval);
+        } while (nextDate < today);
         return nextDate;
     }
 
     if (periodicity === 'Weekly') {
         const targetDay = task.recurrenceDay ?? 0;
         let diff = targetDay - lastComplete.getDay();
-        // If the target day is today or in the past relative to the anchor, move to the next week's occurrence
         if (diff <= 0) diff += 7;
         
-        const nextDate = new Date(lastComplete);
+        let nextDate = new Date(lastComplete);
         nextDate.setDate(lastComplete.getDate() + diff);
+        while (nextDate < today) {
+            nextDate.setDate(nextDate.getDate() + 7);
+        }
         return nextDate;
     }
 
     if (periodicity === 'Monthly') {
         const targetDay = task.recurrenceDay ?? 1;
-        // Start with the current anchor's month and year
-        let nextDate = new Date(lastComplete.getFullYear(), lastComplete.getMonth(), targetDay);
-        
-        // If the resulting date is not strictly after our anchor, jump to the next month
-        if (nextDate <= lastComplete) {
-            nextDate = new Date(lastComplete.getFullYear(), lastComplete.getMonth() + 1, targetDay);
-        }
-        
-        // Safety check for months with fewer days (e.g., Feb 30th -> March 2nd/last day of Feb)
-        // JS Date automatically handles this, but we ensure it remains roughly the target day or end of month
+        let monthsToAdd = 0;
+        let nextDate;
+        do {
+            nextDate = clampDay(lastComplete.getFullYear(), lastComplete.getMonth() + monthsToAdd, targetDay);
+            if (nextDate <= lastComplete || nextDate < today) {
+                monthsToAdd++;
+            } else {
+                break;
+            }
+        } while (true);
         return nextDate;
     }
 
@@ -253,12 +261,16 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
         const targetMonthIdx = months.indexOf(task.recurrenceMonth || 'January');
         const targetDay = task.recurrenceDay ?? 1;
         
-        let nextDate = new Date(lastComplete.getFullYear(), targetMonthIdx, targetDay);
-        
-        // If today's rule match is in the past or is the anchor, move to next year
-        if (nextDate <= lastComplete) {
-            nextDate = new Date(lastComplete.getFullYear() + 1, targetMonthIdx, targetDay);
-        }
+        let yearsToAdd = 0;
+        let nextDate;
+        do {
+            nextDate = clampDay(lastComplete.getFullYear() + yearsToAdd, targetMonthIdx, targetDay);
+            if (nextDate <= lastComplete || nextDate < today) {
+                yearsToAdd++;
+            } else {
+                break;
+            }
+        } while (true);
         return nextDate;
     }
 
