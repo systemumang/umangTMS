@@ -521,6 +521,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
   const thClass = "px-4 py-3 text-[10px] font-bold text-white uppercase tracking-wider border-r border-indigo-500 last:border-r-0 cursor-pointer transition-colors select-none whitespace-normal";
   const tdClass = "px-4 py-3 text-xs text-black border-r border-black last:border-r-0 align-top whitespace-normal break-words";
   const taskColumnClass = "min-w-[280px] w-[280px] max-w-[360px]";
+  const activeCols = Object.values(visibleColumns).filter(v => v).length + 4 + (isAdmin ? 1 : 0);
 
   const startEntry = sortedTasks.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
   const endEntry = Math.min(currentPage * itemsPerPage, sortedTasks.length);
@@ -664,11 +665,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
                     for (let i = 0; i < assigneeKey.length; i++) hash += assigneeKey.charCodeAt(i);
                     return palettes[hash % palettes.length];
                   })();
-
-                  // Calculate colSpan for assignee header
-                  const activeCols = Object.values(visibleColumns).filter(v => v).length + 4 + (isAdmin ? 1 : 0);
-		                
-		                return (
+                  return (
                   <React.Fragment key={task.id}>
                     {showAssigneeHeader && (
                       <tr>
