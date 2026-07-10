@@ -200,8 +200,10 @@ export const TopBar: React.FC<TopBarProps> = ({
             className="flex items-center space-x-2 hover:opacity-80 group"
           >
              <img 
-               src="https://i.ibb.co/YBSjM7Gg/Chat-GPT-Image-Dec-18-2025-10-23-18-AM.png" 
-               className="h-8 w-8 object-contain" 
+               src="/taskpro-logo.svg"
+               width="32"
+               height="32"
+               className="h-8 w-8 object-contain"
                alt="TaskPro Logo" 
              />
              <div className="flex flex-col justify-center">

@@ -10,8 +10,10 @@ export const Footer: React.FC = () => {
         className="flex flex-col items-center group transition-all hover:scale-105 active:scale-95"
       >
         <img 
-          src="https://i.ibb.co/wh2TP08P/Bizskill-logo-1.png" 
-          className="h-14 w-auto object-contain mb-4" 
+          src="/taskpro-logo.svg"
+          width="56"
+          height="56"
+          className="h-14 w-14 object-contain mb-4"
           alt="BizSkill Logo" 
         />
         <p className="text-[10px] font-black text-white/80 uppercase tracking-[0.5em] group-hover:text-white transition-colors">

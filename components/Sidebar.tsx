@@ -175,7 +175,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className="flex items-center space-x-2 w-full overflow-hidden group hover:opacity-80"
             >
               <img 
-                src="https://i.ibb.co/YBSjM7Gg/Chat-GPT-Image-Dec-18-2025-10-23-18-AM.png" 
+                src="/taskpro-logo.svg"
+                width="40"
+                height="40"
                 className="h-10 w-10 object-contain flex-shrink-0" 
                 alt="TaskPro Logo" 
               />

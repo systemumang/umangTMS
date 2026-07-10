@@ -12,6 +12,8 @@ interface RecurringTasksViewProps {
   onEdit: (task: RecurringTask) => void;
   onViewHistory: (task: RecurringTask) => void;
   onDelete: (id: number) => Promise<void>;
+  onBulkCopy?: (ids: number[], targetAssignee: string) => Promise<void>;
+  assigneesList?: string[];
   title?: string;
   filterType?: 'all' | 'due';
   currentUser?: any;
@@ -66,6 +68,8 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [bulkCopyAssignee, setBulkCopyAssignee] = useState('');
+  const [isBulkCopying, setIsBulkCopying] = useState(false);
 
   const isAdmin = currentUser?.role === 'Admin';
 
@@ -82,6 +86,25 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
   const firms = useMemo(() => ['All', ...Array.from(new Set(tasks.map(t => t.firm || '').filter(Boolean)))], [tasks]);
   const assignees = useMemo(() => ['All', ...Array.from(new Set(tasks.map(t => t.assignee)))], [tasks]);
   const statuses = ['All', 'Not Yet Started', 'In Progress', 'Complete'];
+
+  const availableAssignees = useMemo(() => {
+    const names = assigneesList?.filter(Boolean) || tasks.map(t => t.assignee).filter(Boolean);
+    return Array.from(new Set(names));
+  }, [assigneesList, tasks]);
+
+  const handleBulkCopy = async () => {
+    if (!onBulkCopy || !bulkCopyAssignee) return;
+    setIsBulkCopying(true);
+    try {
+      await onBulkCopy(selectedIds, bulkCopyAssignee);
+      setSelectedIds([]);
+      setBulkCopyAssignee('');
+    } catch (error) {
+      alert(`Bulk copy failed: ${String(error)}`);
+    } finally {
+      setIsBulkCopying(false);
+    }
+  };
 
   const parseDDMMYYYY = (value: string): Date | null => {
     const match = String(value || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
@@ -543,9 +566,32 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
         </div>
         <div className="flex flex-wrap gap-2">
           {isAdmin && selectedIds.length > 0 && (
-             <button onClick={() => setShowDeleteConfirm(true)} className="flex items-center space-x-1 px-4 py-2 bg-red-600 text-white border-2 border-red-700 rounded-md hover:bg-red-700 text-sm font-bold shadow-sm transition-colors uppercase tracking-wider animate-in fade-in zoom-in duration-200">
+            <div className="flex flex-wrap gap-2 items-center">
+              <button onClick={() => setShowDeleteConfirm(true)} className="flex items-center space-x-1 px-4 py-2 bg-red-600 text-white border-2 border-red-700 rounded-md hover:bg-red-700 text-sm font-bold shadow-sm transition-colors uppercase tracking-wider animate-in fade-in zoom-in duration-200">
                 <Trash2 size={16} /><span>Bulk Delete ({selectedIds.length})</span>
-             </button>
+              </button>
+              {onBulkCopy && (
+                <div className="flex items-center gap-2">
+                  <select
+                    value={bulkCopyAssignee}
+                    onChange={(e) => setBulkCopyAssignee(e.target.value)}
+                    className="px-3 py-2 border border-indigo-300 rounded-md text-sm bg-white"
+                  >
+                    <option value="">Assign to...</option>
+                    {availableAssignees.map((name) => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={handleBulkCopy}
+                    disabled={!bulkCopyAssignee || isBulkCopying}
+                    className="flex items-center space-x-1 px-4 py-2 bg-emerald-600 text-white border-2 border-emerald-700 rounded-md hover:bg-emerald-700 text-sm font-bold shadow-sm transition-colors uppercase tracking-wider disabled:opacity-50"
+                  >
+                    {isBulkCopying ? 'Copying...' : `Bulk Copy (${selectedIds.length})`}
+                  </button>
+                </div>
+              )}
+            </div>
           )}
           <div className="relative">
             <button 

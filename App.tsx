@@ -635,6 +635,43 @@ export default function App() {
 	    return window.confirm(`Are you sure you want to delete ${label}?`);
 	  };
 
+  const handleBulkCopyRecurringTasks = async (ids: number[], targetAssignee: string) => {
+    if (!ids.length || !targetAssignee) return;
+    const tasksToCopy = recurringTasks.filter((task) => ids.includes(task.id));
+    if (!tasksToCopy.length) return;
+
+    const copiedTasks: RecurringTask[] = [];
+    for (const task of tasksToCopy) {
+      const payload = {
+        title: task.title,
+        notes: task.notes || '',
+        firm: task.firm || '',
+        owner: task.owner || '',
+        category: task.category,
+        assignee: targetAssignee,
+        frequencyDays: task.frequencyDays,
+        periodicity: task.periodicity || 'Fixed Days',
+        startDate: task.startDate,
+        time: task.time || '',
+        goal: task.goal || '',
+        status: 'Not Yet Started',
+        lastUpdatedOn: '',
+        lastUpdateRemarks: '',
+        recurrenceDay: task.recurrenceDay,
+        recurrenceMonth: task.recurrenceMonth || ''
+      };
+
+      const result = await apiPost('addMaster', payload, 'RecurringTasks');
+      if (!result?.success) {
+        throw new Error(result?.error || 'Bulk copy failed while saving a recurring task.');
+      }
+      const newId = Number(result.data?.id || Date.now());
+      copiedTasks.push({ ...payload, id: newId } as RecurringTask);
+    }
+
+    setRecurringTasks((prev) => [...copiedTasks, ...prev]);
+  };
+
   const abortControllerRef = useRef<AbortController | null>(null);
 
 		  const fetchData = useCallback(async (showLoading = true) => {
@@ -1303,8 +1340,8 @@ export default function App() {
       case 'pending-vendor-tasks': return <TasksView title={getViewLabel('pending-vendor-tasks', 'Pending Vendor Tasks')} tasks={visibleTasks.filter(t => t.vendor && t.vendor !== '')} {...commonTaskProps} isVendorView={true} filterType="pending" />;
       case 'completed-vendor-tasks': return <TasksView title={getViewLabel('completed-vendor-tasks', 'Completed Vendor Tasks')} tasks={visibleTasks.filter(t => t.vendor && t.vendor !== '')} {...commonTaskProps} isVendorView={true} filterType="completed" />;
       case 'vendor-action-log': return <ActionLogView logs={visibleActionLogs.filter(l => l.vendor && l.vendor !== '')} isAdmin={isAdmin} projects={projects} isVendorView={true} onDeleteLog={(logId, taskId) => handleDeleteLog(logId, taskId, true)} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
-      case 'due-recurring-tasks': return <RecurringTasksView title={getViewLabel('due-recurring-tasks', 'Due Recurring Tasks')} filterType="due" tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={async (id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); await apiPost('deleteRecord', { id }, 'RecurringTasks'); }} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
-      case 'recurring-tasks': return <RecurringTasksView title={getViewLabel('recurring-tasks', 'Recurring Tasks')} tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={async (id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); await apiPost('deleteRecord', { id }, 'RecurringTasks'); }} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
+      case 'due-recurring-tasks': return <RecurringTasksView title={getViewLabel('due-recurring-tasks', 'Due Recurring Tasks')} filterType="due" tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={async (id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); await apiPost('deleteRecord', { id }, 'RecurringTasks'); }} onBulkCopy={handleBulkCopyRecurringTasks} assigneesList={users.map((u) => u.name)} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
+      case 'recurring-tasks': return <RecurringTasksView title={getViewLabel('recurring-tasks', 'Recurring Tasks')} tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={async (id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); await apiPost('deleteRecord', { id }, 'RecurringTasks'); }} onBulkCopy={handleBulkCopyRecurringTasks} assigneesList={users.map((u) => u.name)} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
       case 'recurring-actions': return <RecurringTaskActionsView actions={visibleRecurringActions} isAdmin={isAdmin} onDeleteAction={(logId, taskId) => { if (!confirmDelete('this recurring log')) return; apiPost('deleteRecord', { id: logId, taskId: taskId }, 'RecurringActions'); }} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
       case 'users': if (!isAdmin) return null; return <UsersView users={users} designations={designations} departments={categories as any} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} onAddUser={(u) => { setUsers(p => [...p, { ...u, id: Date.now(), isActive: true } as any]); apiPost('addMaster', u, 'Users'); }} onEditUser={(u) => { setUsers(p => p.map(x => x.id === u.id ? u : x)); apiPost('updateMaster', u, 'Users'); }} onToggleStatus={(id) => { const user = users.find(u => u.id === id); if (!user) return; const newStatus = !user.isActive; setUsers(prev => prev.map(u => u.id === id ? { ...u, isActive: newStatus } : u)); apiPost('updateMaster', { id, isActive: newStatus ? 'TRUE' : 'FALSE' }, 'Users'); }} onDeleteUser={(id) => { if (!confirmDelete('this user')) return; setUsers(p => p.filter(u => u.id !== id)); apiPost('deleteRecord', { id }, 'Users'); }} onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }} onAddDepartment={() => setIsCategoryModalOpen(true)} />;
       case 'designations': if (!isAdmin) return null; return <DesignationsView designations={designations} onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }} onEditDesignation={(designation) => { setEditingDesignation(designation); setIsDesignationModalOpen(true); }} onDeleteDesignation={async (id) => { if (!confirmDelete('this designation')) return; setDesignations(prev => prev.filter(x => x.id !== id)); await apiPost('deleteRecord', { id }, 'Designations'); }} />;
@@ -1383,7 +1420,7 @@ export default function App() {
             ) : (
 	              <header className="md:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between sticky top-0 z-40">
                 <div className="flex items-center space-x-2">
-                   <img src="https://i.ibb.co/YBSjM7Gg/Chat-GPT-Image-Dec-18-2025-10-23-18-AM.png" className="h-8 w-8" alt="Logo" />
+                   <img src="/taskpro-logo.svg" width="32" height="32" className="h-8 w-8" alt="Logo" />
                    <h1 className="text-xl font-bold text-indigo-600">TaskPro</h1>
                 </div>
                   {!isAnyFormModalOpen && (

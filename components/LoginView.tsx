@@ -35,7 +35,9 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, isAuthenticating 
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center p-3 bg-white rounded-2xl shadow-xl shadow-indigo-100 mb-4 border border-indigo-50">
             <img 
-              src="https://i.ibb.co/YBSjM7Gg/Chat-GPT-Image-Dec-18-2025-10-23-18-AM.png" 
+              src="/taskpro-logo.svg"
+              width="64"
+              height="64"
               className="h-16 w-16 object-contain" 
               alt="TaskPro Logo" 
             />
