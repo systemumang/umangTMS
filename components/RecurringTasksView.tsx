@@ -33,6 +33,8 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
     onEdit, 
     onViewHistory, 
     onDelete, 
+    onBulkCopy,
+    assigneesList,
     title = "Recurring Tasks",
     filterType = 'all',
     currentUser,
