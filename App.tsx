@@ -1,26 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { Footer } from './components/Footer';
-import { Dashboard } from './components/Dashboard';
-import { TasksView } from './components/TasksView';
-import { UsersView } from './components/UsersView';
-import { DesignationsView } from './components/DesignationsView';
-import { DepartmentsView } from './components/DepartmentsView';
-import { CategoriesView } from './components/CategoriesView';
-import { StatusesView } from './components/StatusesView';
-import { VendorCategoriesView } from './components/VendorCategoriesView';
-import { ProjectsView } from './components/ProjectsView';
-import { ClientsView } from './components/ClientsView';
-import { FirmsView } from './components/FirmsView';
-import { VendorsView } from './components/VendorsView';
-import { ActionLogView } from './components/ActionLogView';
-import { ActivityDashboardView } from './components/ActivityDashboardView';
-import { RecurringTasksView } from './components/RecurringTasksView';
-import { RecurringTaskActionsView } from './components/RecurringTaskActionsView';
-import { UpdateMultipleView } from './components/UpdateMultipleView';
-import { AddMultipleTasksView } from './components/AddMultipleTasksView';
-import { SettingsView } from './components/SettingsView';
 import { LoginView } from './components/LoginView';
 import { AddTaskModal } from './components/AddTaskModal';
 import { AddCategoryModal } from './components/AddCategoryModal';
@@ -41,8 +22,26 @@ import { AddRecurringTaskModal } from './components/AddRecurringTaskModal';
 import { UpdateRecurringTaskModal } from './components/UpdateRecurringTaskModal';
 import { EditRecurringTaskModal } from './components/EditRecurringTaskModal';
 import { LabelProvider, buildLabelResolvers } from './labelOverrides';
-import { TelegramSetupView } from './components/TelegramSetupView'; 
-import { DocumentationView } from './components/DocumentationView';
+
+const Dashboard = lazy(() => import('./components/Dashboard').then((module) => ({ default: module.Dashboard })));
+const TasksView = lazy(() => import('./components/TasksView').then((module) => ({ default: module.TasksView })));
+const UsersView = lazy(() => import('./components/UsersView').then((module) => ({ default: module.UsersView })));
+const DesignationsView = lazy(() => import('./components/DesignationsView').then((module) => ({ default: module.DesignationsView })));
+const CategoriesView = lazy(() => import('./components/CategoriesView').then((module) => ({ default: module.CategoriesView })));
+const StatusesView = lazy(() => import('./components/StatusesView').then((module) => ({ default: module.StatusesView })));
+const ProjectsView = lazy(() => import('./components/ProjectsView').then((module) => ({ default: module.ProjectsView })));
+const ClientsView = lazy(() => import('./components/ClientsView').then((module) => ({ default: module.ClientsView })));
+const FirmsView = lazy(() => import('./components/FirmsView').then((module) => ({ default: module.FirmsView })));
+const VendorsView = lazy(() => import('./components/VendorsView').then((module) => ({ default: module.VendorsView })));
+const ActionLogView = lazy(() => import('./components/ActionLogView').then((module) => ({ default: module.ActionLogView })));
+const ActivityDashboardView = lazy(() => import('./components/ActivityDashboardView').then((module) => ({ default: module.ActivityDashboardView })));
+const RecurringTasksView = lazy(() => import('./components/RecurringTasksView').then((module) => ({ default: module.RecurringTasksView })));
+const RecurringTaskActionsView = lazy(() => import('./components/RecurringTaskActionsView').then((module) => ({ default: module.RecurringTaskActionsView })));
+const UpdateMultipleView = lazy(() => import('./components/UpdateMultipleView').then((module) => ({ default: module.UpdateMultipleView })));
+const AddMultipleTasksView = lazy(() => import('./components/AddMultipleTasksView').then((module) => ({ default: module.AddMultipleTasksView })));
+const SettingsView = lazy(() => import('./components/SettingsView').then((module) => ({ default: module.SettingsView })));
+const TelegramSetupView = lazy(() => import('./components/TelegramSetupView').then((module) => ({ default: module.TelegramSetupView })));
+const DocumentationView = lazy(() => import('./components/DocumentationView').then((module) => ({ default: module.DocumentationView })));
 import { 
   LayoutDashboard, 
   CheckSquare, 
@@ -75,6 +74,15 @@ import { NavItem, Task, User, Designation, Department, Category, Project, Client
 
 const AUTO_SYNC_INTERVAL = 120000;
 const VENDOR_MODULE_ENABLED = false;
+
+const PageLoader = () => (
+  <div className="flex min-h-[40vh] items-center justify-center rounded-2xl border border-indigo-100 bg-white/80 px-6 py-10 shadow-sm">
+    <div className="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">
+      <div className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-200 border-t-indigo-600" />
+      Loading view...
+    </div>
+  </div>
+);
 
 const navItems: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
@@ -1475,7 +1483,7 @@ export default function App() {
 	              ) : (
 				                <div className="w-full mx-auto min-h-full flex flex-col">
 		                  <div className="flex-1">
-		                    {renderContent()}
+		                    <Suspense fallback={<PageLoader />}>{renderContent()}</Suspense>
 		                  </div>
 		                  <Footer />
 		                </div>
