@@ -293,6 +293,8 @@ export default function App() {
 
   const CACHE_KEY = 'taskpro_init_cache_v1';
   const hasHydratedCacheRef = useRef(false);
+  const [hasFullDataLoaded, setHasFullDataLoaded] = useState(false);
+  const fullDataRequestInFlightRef = useRef(false);
 
   const hydrateFromCache = useCallback((): boolean => {
     if (hasHydratedCacheRef.current) return true;
@@ -704,6 +706,9 @@ export default function App() {
 	      const result = await safeJsonParse(response, 'Data Load');
 	      
 			      if (result.success) {
+          if (!useQuickInit) {
+            setHasFullDataLoaded(true);
+          }
 			        const { data } = result;
 	        const normalizeTasks = (list: any[]) => (list || []).map(item => {
             const rawProject = String(item.project || item.Project || '').trim();
@@ -887,25 +892,38 @@ export default function App() {
 	        setApiError(error?.message || 'Failed to load data.');
 	      }
 	    } finally {
-        if (useQuickInit) {
-          window.setTimeout(() => {
-            fetchData(false, false);
-          }, 0);
-        }
 	      window.clearTimeout(timeoutId);
 	      if (showLoading) setIsLoading(false);
 	      setIsSyncing(false);
+	      fullDataRequestInFlightRef.current = false;
 	    }
 		  }, [apiUrl, persistCache]);
 
-	  useEffect(() => {
-	    if (apiUrl && currentUser) {
-        const hadCache = hydrateFromCache();
-        fetchData(!hadCache, !hadCache);
-	      const interval = setInterval(() => fetchData(false), AUTO_SYNC_INTERVAL);
-	      return () => clearInterval(interval);
-	    }
-	  }, [fetchData, apiUrl, currentUser, hydrateFromCache]);
+    useEffect(() => {
+      if (!apiUrl || !currentUser) return;
+      const hadCache = hydrateFromCache();
+      const shouldQuickLoad = !hadCache;
+      setHasFullDataLoaded(hadCache);
+      fetchData(!hadCache, shouldQuickLoad);
+    }, [fetchData, apiUrl, currentUser, hydrateFromCache]);
+
+    useEffect(() => {
+      if (!apiUrl || !currentUser) return;
+      const interval = setInterval(() => fetchData(false, !hasFullDataLoaded), AUTO_SYNC_INTERVAL);
+      return () => clearInterval(interval);
+    }, [fetchData, apiUrl, currentUser, hasFullDataLoaded]);
+
+  useEffect(() => {
+    if (!apiUrl || !currentUser || hasFullDataLoaded) return;
+    const shouldLoadFullData =
+      activeTab !== 'dashboard' &&
+      activeTab !== 'documentation';
+    if (!shouldLoadFullData) return;
+    if (fullDataRequestInFlightRef.current) return;
+
+    fullDataRequestInFlightRef.current = true;
+    fetchData(false, false);
+  }, [apiUrl, currentUser, activeTab, hasFullDataLoaded, fetchData]);
 
   useEffect(() => {
     if (VENDOR_MODULE_ENABLED) return;

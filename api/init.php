@@ -47,6 +47,33 @@ function fetchRecentRows(mysqli $conn, string $table, int $limit): array {
     return $rows;
 }
 
+function fetchRecentRowsPaged(mysqli $conn, string $table, int $limit, int $offset): array {
+    $safe = preg_replace('/[^a-zA-Z0-9_]/', '', $table);
+    $limit = max(1, min(5000, $limit));
+    $offset = max(0, $offset);
+    $sql = "SELECT * FROM `{$safe}` ORDER BY id DESC LIMIT {$limit} OFFSET {$offset}";
+    $result = $conn->query($sql);
+    if (!$result) {
+        return [];
+    }
+    $rows = [];
+    while ($row = $result->fetch_assoc()) {
+        $rows[] = $row;
+    }
+    return $rows;
+}
+
+function countRows(mysqli $conn, string $table): int {
+    $safe = preg_replace('/[^a-zA-Z0-9_]/', '', $table);
+    $sql = "SELECT COUNT(*) AS total FROM `{$safe}`";
+    $result = $conn->query($sql);
+    if (!$result) {
+        return 0;
+    }
+    $row = $result->fetch_assoc();
+    return (int)($row['total'] ?? 0);
+}
+
 function hasColumn(mysqli $conn, string $table, string $column): bool {
     static $cache = [];
     $key = strtolower($table . '.' . $column);
@@ -251,6 +278,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $recurringActionsLimit = isset($_GET['recurringActionsLimit']) ? (int)$_GET['recurringActionsLimit'] : 500;
     $mainTasksLimit = isset($_GET['mainTasksLimit']) ? (int)$_GET['mainTasksLimit'] : 0;
     $vendorTasksLimit = isset($_GET['vendorTasksLimit']) ? (int)$_GET['vendorTasksLimit'] : 0;
+    $actionLogsOffset = isset($_GET['actionLogsOffset']) ? (int)$_GET['actionLogsOffset'] : 0;
+    $recurringActionsOffset = isset($_GET['recurringActionsOffset']) ? (int)$_GET['recurringActionsOffset'] : 0;
+    $mainTasksOffset = isset($_GET['mainTasksOffset']) ? (int)$_GET['mainTasksOffset'] : 0;
+    $vendorTasksOffset = isset($_GET['vendorTasksOffset']) ? (int)$_GET['vendorTasksOffset'] : 0;
 
     // Ensure database columns exist
     add_employee_id_column_if_missing($conn);
@@ -288,11 +319,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     $mainTasks = $mainTasksLimit > 0
-        ? fetchRecentRows($conn, 'main_tasks', $mainTasksLimit)
+        ? fetchRecentRowsPaged($conn, 'main_tasks', $mainTasksLimit, $mainTasksOffset)
         : fetchAllRows($conn, 'main_tasks');
     $vendorTasks = $vendorTasksLimit > 0
-        ? fetchRecentRows($conn, 'vendor_tasks', $vendorTasksLimit)
+        ? fetchRecentRowsPaged($conn, 'vendor_tasks', $vendorTasksLimit, $vendorTasksOffset)
         : fetchAllRows($conn, 'vendor_tasks');
+    $actionLogs = $actionLogsLimit > 0
+        ? fetchRecentRowsPaged($conn, 'action_logs', $actionLogsLimit, $actionLogsOffset)
+        : fetchAllRows($conn, 'action_logs');
+    $recurringActions = $recurringActionsLimit > 0
+        ? fetchRecentRowsPaged($conn, 'recurring_actions', $recurringActionsLimit, $recurringActionsOffset)
+        : fetchAllRows($conn, 'recurring_actions');
 
     sendJson([
         'success' => true,
@@ -309,10 +346,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'clients' => fetchAllRows($conn, 'clients', 'name'),
             'firms' => fetchAllRows($conn, 'firms', 'name'),
             'vendors' => fetchAllRows($conn, 'vendors', 'name'),
-            'actionLogs' => fetchRecentRows($conn, 'action_logs', $actionLogsLimit),
+            'actionLogs' => $actionLogs,
             'recurringTasks' => fetchAllRows($conn, 'recurring_tasks'),
-            'recurringActions' => fetchRecentRows($conn, 'recurring_actions', $recurringActionsLimit),
-            'settings' => $settings
+            'recurringActions' => $recurringActions,
+            'settings' => $settings,
+            'meta' => [
+                'mainTasksTotal' => countRows($conn, 'main_tasks'),
+                'vendorTasksTotal' => countRows($conn, 'vendor_tasks'),
+                'actionLogsTotal' => countRows($conn, 'action_logs'),
+                'recurringActionsTotal' => countRows($conn, 'recurring_actions')
+            ]
         ]
     ]);
 }
