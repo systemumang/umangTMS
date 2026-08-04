@@ -245,10 +245,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         sendJson(['success' => false, 'error' => 'Invalid action.'], 400);
     }
 
-    // Limits (optional). Tasks are kept unbounded to avoid changing core behavior.
-    // Logs can become very large; limiting them drastically improves init payload size.
+    // Limits (optional). By default, tasks stay unbounded to preserve legacy behavior.
+    // Frontend can pass limits for fast first paint and then refresh full data in background.
     $actionLogsLimit = isset($_GET['actionLogsLimit']) ? (int)$_GET['actionLogsLimit'] : 500;
     $recurringActionsLimit = isset($_GET['recurringActionsLimit']) ? (int)$_GET['recurringActionsLimit'] : 500;
+    $mainTasksLimit = isset($_GET['mainTasksLimit']) ? (int)$_GET['mainTasksLimit'] : 0;
+    $vendorTasksLimit = isset($_GET['vendorTasksLimit']) ? (int)$_GET['vendorTasksLimit'] : 0;
 
     // Ensure database columns exist
     add_employee_id_column_if_missing($conn);
@@ -285,11 +287,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $settings['fieldLabelOverrides'] = '{}';
     }
 
+    $mainTasks = $mainTasksLimit > 0
+        ? fetchRecentRows($conn, 'main_tasks', $mainTasksLimit)
+        : fetchAllRows($conn, 'main_tasks');
+    $vendorTasks = $vendorTasksLimit > 0
+        ? fetchRecentRows($conn, 'vendor_tasks', $vendorTasksLimit)
+        : fetchAllRows($conn, 'vendor_tasks');
+
     sendJson([
         'success' => true,
         'data' => [
-            'mainTasks' => fetchAllRows($conn, 'main_tasks'),
-            'vendorTasks' => fetchAllRows($conn, 'vendor_tasks'),
+            'mainTasks' => $mainTasks,
+            'vendorTasks' => $vendorTasks,
             'users' => $users,
             'designations' => fetchAllRows($conn, 'designations', 'name'),
             'departments' => fetchAllRows($conn, 'departments', 'name'),

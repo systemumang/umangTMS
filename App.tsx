@@ -3,24 +3,6 @@ import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { Footer } from './components/Footer';
 import { LoginView } from './components/LoginView';
-import { AddTaskModal } from './components/AddTaskModal';
-import { AddCategoryModal } from './components/AddCategoryModal';
-import { AddVendorCategoryModal } from './components/AddVendorCategoryModal';
-import { AddProjectModal } from './components/AddProjectModal';
-import { AddUserModal } from './components/AddUserModal';
-import { AddClientModal } from './components/AddClientModal';
-import { AddVendorModal } from './components/AddVendorModal';
-import { AddDesignationModal } from './components/AddDesignationModal';
-import { AddDepartmentModal } from './components/AddDepartmentModal';
-import { AddFirmModal } from './components/AddFirmModal';
-import { EditProjectModal } from './components/EditProjectModal';
-import { EditClientModal } from './components/EditClientModal';
-import { EditVendorModal } from './components/EditVendorModal';
-import { TaskHistoryModal } from './components/TaskHistoryModal';
-import { RecurringTaskHistoryModal } from './components/RecurringTaskHistoryModal';
-import { AddRecurringTaskModal } from './components/AddRecurringTaskModal';
-import { UpdateRecurringTaskModal } from './components/UpdateRecurringTaskModal';
-import { EditRecurringTaskModal } from './components/EditRecurringTaskModal';
 import { LabelProvider, buildLabelResolvers } from './labelOverrides';
 
 const Dashboard = lazy(() => import('./components/Dashboard').then((module) => ({ default: module.Dashboard })));
@@ -42,6 +24,21 @@ const AddMultipleTasksView = lazy(() => import('./components/AddMultipleTasksVie
 const SettingsView = lazy(() => import('./components/SettingsView').then((module) => ({ default: module.SettingsView })));
 const TelegramSetupView = lazy(() => import('./components/TelegramSetupView').then((module) => ({ default: module.TelegramSetupView })));
 const DocumentationView = lazy(() => import('./components/DocumentationView').then((module) => ({ default: module.DocumentationView })));
+const AddTaskModal = lazy(() => import('./components/AddTaskModal').then((module) => ({ default: module.AddTaskModal })));
+const AddCategoryModal = lazy(() => import('./components/AddCategoryModal').then((module) => ({ default: module.AddCategoryModal })));
+const AddVendorCategoryModal = lazy(() => import('./components/AddVendorCategoryModal').then((module) => ({ default: module.AddVendorCategoryModal })));
+const AddProjectModal = lazy(() => import('./components/AddProjectModal').then((module) => ({ default: module.AddProjectModal })));
+const AddUserModal = lazy(() => import('./components/AddUserModal').then((module) => ({ default: module.AddUserModal })));
+const AddClientModal = lazy(() => import('./components/AddClientModal').then((module) => ({ default: module.AddClientModal })));
+const AddVendorModal = lazy(() => import('./components/AddVendorModal').then((module) => ({ default: module.AddVendorModal })));
+const AddDesignationModal = lazy(() => import('./components/AddDesignationModal').then((module) => ({ default: module.AddDesignationModal })));
+const AddDepartmentModal = lazy(() => import('./components/AddDepartmentModal').then((module) => ({ default: module.AddDepartmentModal })));
+const AddFirmModal = lazy(() => import('./components/AddFirmModal').then((module) => ({ default: module.AddFirmModal })));
+const TaskHistoryModal = lazy(() => import('./components/TaskHistoryModal').then((module) => ({ default: module.TaskHistoryModal })));
+const RecurringTaskHistoryModal = lazy(() => import('./components/RecurringTaskHistoryModal').then((module) => ({ default: module.RecurringTaskHistoryModal })));
+const AddRecurringTaskModal = lazy(() => import('./components/AddRecurringTaskModal').then((module) => ({ default: module.AddRecurringTaskModal })));
+const UpdateRecurringTaskModal = lazy(() => import('./components/UpdateRecurringTaskModal').then((module) => ({ default: module.UpdateRecurringTaskModal })));
+const EditRecurringTaskModal = lazy(() => import('./components/EditRecurringTaskModal').then((module) => ({ default: module.EditRecurringTaskModal })));
 import { 
   LayoutDashboard, 
   CheckSquare, 
@@ -682,7 +679,7 @@ export default function App() {
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
-		  const fetchData = useCallback(async (showLoading = true) => {
+      const fetchData = useCallback(async (showLoading = true, useQuickInit = false) => {
 		    if (!apiUrl) return;
 		    if (showLoading) setIsLoading(true);
 		    else setIsSyncing(true);
@@ -692,9 +689,13 @@ export default function App() {
 	      try { abortControllerRef.current?.abort(); } catch {}
 	    }, 20000);
 	    
-	    try {
-		      const response = await fetch(
-            `${apiUrl}${apiUrl.includes('?') ? '&' : '?'}action=init&actionLogsLimit=500&recurringActionsLimit=500&_cb=${Date.now()}`,
+      try {
+        const actionLogsLimit = useQuickInit ? 150 : 500;
+        const recurringActionsLimit = useQuickInit ? 150 : 500;
+        const mainTasksLimit = useQuickInit ? 300 : 0;
+        const vendorTasksLimit = useQuickInit ? 150 : 0;
+          const response = await fetch(
+            `${apiUrl}${apiUrl.includes('?') ? '&' : '?'}action=init&actionLogsLimit=${actionLogsLimit}&recurringActionsLimit=${recurringActionsLimit}&mainTasksLimit=${mainTasksLimit}&vendorTasksLimit=${vendorTasksLimit}&_cb=${Date.now()}`,
             { 
 		        signal: abortControllerRef.current.signal,
 		        cache: 'no-store',
@@ -878,7 +879,7 @@ export default function App() {
 		      } else {
 		        setApiError(result?.error || 'Failed to load data.');
 		      }
-	    } catch (error: any) {
+      } catch (error: any) {
 	      if (error?.name === 'AbortError') {
 	        setApiError('Loading timed out. Please refresh.');
 	      } else {
@@ -886,6 +887,11 @@ export default function App() {
 	        setApiError(error?.message || 'Failed to load data.');
 	      }
 	    } finally {
+        if (useQuickInit) {
+          window.setTimeout(() => {
+            fetchData(false, false);
+          }, 0);
+        }
 	      window.clearTimeout(timeoutId);
 	      if (showLoading) setIsLoading(false);
 	      setIsSyncing(false);
@@ -895,7 +901,7 @@ export default function App() {
 	  useEffect(() => {
 	    if (apiUrl && currentUser) {
         const hadCache = hydrateFromCache();
-	      fetchData(!hadCache);
+        fetchData(!hadCache, !hadCache);
 	      const interval = setInterval(() => fetchData(false), AUTO_SYNC_INTERVAL);
 	      return () => clearInterval(interval);
 	    }
@@ -1497,7 +1503,8 @@ export default function App() {
 
 	      <LabelProvider settings={settings}>
 	      {/* Modals */}
-	      <AddTaskModal 
+        <Suspense fallback={null}>
+        {isTaskModalOpen && <AddTaskModal 
 	        isOpen={isTaskModalOpen} 
 	        onClose={() => setIsTaskModalOpen(false)} 
 	        onSave={(t) => {
@@ -1511,9 +1518,9 @@ export default function App() {
         vendorCategories={vendorCategories} isVendorView={isTaskModalVendorMode}
         lastAddedCategory={lastAddedCategory} lastAddedProject={lastAddedProject} 
         lastAddedVendorCategory={lastAddedVendorCategory} onClearLastAdded={() => { setLastAddedCategory(''); setLastAddedProject(''); setLastAddedVendorCategory(''); }}
-      />
+      />}
       
-      <AddCategoryModal
+      {isCategoryModalOpen && <AddCategoryModal
         isOpen={isCategoryModalOpen}
         onClose={() => {
           setIsCategoryModalOpen(false);
@@ -1525,9 +1532,9 @@ export default function App() {
         }}
         initialData={categoryModalInitialName ? ({ id: 0, name: categoryModalInitialName, type: '' } as any) : null}
         categories={categories}
-      />
-      <AddVendorCategoryModal isOpen={isVendorCategoryModalOpen} onClose={() => setIsVendorCategoryModalOpen(false)} onSave={handleInstantAddVendorCategory} vendorCategories={vendorCategories} />
-      <AddProjectModal
+      />}
+      {isVendorCategoryModalOpen && <AddVendorCategoryModal isOpen={isVendorCategoryModalOpen} onClose={() => setIsVendorCategoryModalOpen(false)} onSave={handleInstantAddVendorCategory} vendorCategories={vendorCategories} />}
+      {isProjectModalOpen && <AddProjectModal
         isOpen={isProjectModalOpen}
         onClose={() => {
           setIsProjectModalOpen(false);
@@ -1540,9 +1547,9 @@ export default function App() {
         clients={clients}
         onAddClient={() => setIsClientModalOpen(true)}
         initialName={projectModalInitialName}
-      />
-      <AddClientModal isOpen={isClientModalOpen} onClose={() => setIsClientModalOpen(false)} onSave={handleInstantAddClient} clients={clients} />
-      <AddUserModal 
+      />}
+      {isClientModalOpen && <AddClientModal isOpen={isClientModalOpen} onClose={() => setIsClientModalOpen(false)} onSave={handleInstantAddClient} clients={clients} />}
+      {isUserModalOpen && <AddUserModal 
         isOpen={isUserModalOpen} 
         onClose={() => setIsUserModalOpen(false)} 
         onSave={(u) => { 
@@ -1556,8 +1563,8 @@ export default function App() {
         users={users}
         firms={firms}
         categories={categories}
-      />
-      <AddDesignationModal isOpen={isDesignationModalOpen} onClose={() => { setIsDesignationModalOpen(false); setEditingDesignation(null); }} initialData={editingDesignation} onSave={async (d) => {
+      />}
+      {isDesignationModalOpen && <AddDesignationModal isOpen={isDesignationModalOpen} onClose={() => { setIsDesignationModalOpen(false); setEditingDesignation(null); }} initialData={editingDesignation} onSave={async (d) => {
         const designationPayload = { name: d.title };
         if (editingDesignation) {
           const updatedDesignation = { ...editingDesignation, ...d };
@@ -1576,8 +1583,8 @@ export default function App() {
           const newId = Number(result?.data?.id || Date.now());
           setDesignations(prev => [...prev, { ...d, id: newId } as any]);
         }
-      }} designations={designations} />
-      <AddDepartmentModal isOpen={isDepartmentModalOpen} onClose={() => { setIsDepartmentModalOpen(false); setEditingDepartment(null); }} initialData={editingDepartment} onSave={async (dept) => {
+      }} designations={designations} />}
+      {isDepartmentModalOpen && <AddDepartmentModal isOpen={isDepartmentModalOpen} onClose={() => { setIsDepartmentModalOpen(false); setEditingDepartment(null); }} initialData={editingDepartment} onSave={async (dept) => {
         if (editingDepartment) {
           const updated = { ...editingDepartment, ...dept };
           const result = await apiPost('updateMaster', { id: updated.id, name: updated.name }, 'Departments');
@@ -1595,13 +1602,13 @@ export default function App() {
           const newId = Number(result?.data?.id || Date.now());
           setDepartments(prev => [...prev, { ...dept, id: newId } as any]);
         }
-      }} departments={departments} />
-      <AddVendorModal isOpen={isVendorModalOpen} onClose={() => setIsVendorModalOpen(false)} onSave={(v) => { setVendors(p => [...p, { ...v, id: Date.now() } as any]); apiPost('addMaster', v, 'Vendors'); }} vendors={vendors} />
-      <AddFirmModal isOpen={isFirmModalOpen} onClose={() => setIsFirmModalOpen(false)} onSave={handleInstantAddFirm} firms={firms} />
+      }} departments={departments} />}
+      {isVendorModalOpen && <AddVendorModal isOpen={isVendorModalOpen} onClose={() => setIsVendorModalOpen(false)} onSave={(v) => { setVendors(p => [...p, { ...v, id: Date.now() } as any]); apiPost('addMaster', v, 'Vendors'); }} vendors={vendors} />}
+      {isFirmModalOpen && <AddFirmModal isOpen={isFirmModalOpen} onClose={() => setIsFirmModalOpen(false)} onSave={handleInstantAddFirm} firms={firms} />}
       
-      <TaskHistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} task={selectedTaskForHistory} logs={actionLogs} />
+      {isHistoryModalOpen && <TaskHistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} task={selectedTaskForHistory} logs={actionLogs} />}
       
-      <AddRecurringTaskModal
+      {isRecurringTaskModalOpen && <AddRecurringTaskModal
         isOpen={isRecurringTaskModalOpen}
         onClose={() => setIsRecurringTaskModalOpen(false)}
         onSave={async (t) => {
@@ -1617,8 +1624,8 @@ export default function App() {
         users={users}
         categories={categories}
         firms={firms}
-      />
-      <UpdateRecurringTaskModal
+      />}
+      {isRecurringTaskUpdateModalOpen && <UpdateRecurringTaskModal
         isOpen={isRecurringTaskUpdateModalOpen}
         onClose={() => setIsRecurringTaskUpdateModalOpen(false)}
         task={selectedRecurringTask}
@@ -1665,8 +1672,8 @@ export default function App() {
             pdf
           }, 'RecurringActions');
         }}
-      />
-	      <EditRecurringTaskModal 
+      />}
+        {isEditRecurringTaskModalOpen && <EditRecurringTaskModal 
 	        isOpen={isEditRecurringTaskModalOpen} 
 	        onClose={() => setIsEditRecurringTaskModalOpen(false)} 
 	        task={selectedRecurringTask} 
@@ -1677,8 +1684,9 @@ export default function App() {
 	        users={users} 
 	        categories={categories} 
 	        firms={firms} 
-	      />
-	      <RecurringTaskHistoryModal isOpen={isRecurringHistoryModalOpen} onClose={() => setIsRecurringHistoryModalOpen(false)} task={selectedRecurringTask} actions={recurringActions} />
+        />}
+        {isRecurringHistoryModalOpen && <RecurringTaskHistoryModal isOpen={isRecurringHistoryModalOpen} onClose={() => setIsRecurringHistoryModalOpen(false)} task={selectedRecurringTask} actions={recurringActions} />}
+        </Suspense>
 	      </LabelProvider>
 	    </div>
 	  );
