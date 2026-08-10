@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { RotateCcw, Plus, Search, Filter, X, Info, ArrowUpDown, ArrowUp, ArrowDown, Trash2, Edit2, LayoutGrid, LayoutList, AlertCircle, Calendar, Loader2, ChevronDown, Settings } from 'lucide-react';
+import { RotateCcw, Plus, Search, Filter, X, Info, ArrowUpDown, ArrowUp, ArrowDown, Trash2, Edit2, LayoutGrid, LayoutList, AlertCircle, Calendar, Loader2, ChevronDown, Settings, Download, FileText } from 'lucide-react';
 import { RecurringTask, RecurringTaskAction } from '../types';
 import { SearchableSelect } from './SearchableSelect';
 import { useLabels } from '../labelOverrides';
@@ -521,6 +521,138 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
     else setSelectedIds([...selectedIds, id]);
   };
 
+  const getExportRows = (exportTasks: RecurringTask[]) => exportTasks.map((task, index) => {
+    const latest = actions.find(a => Number(a.taskId) === Number(task.id));
+    const effectiveStatus = getEffectiveStatus(task);
+    const goalDisplay = hasGoalValue(task.goal) ? String(task.goal) : '1';
+    const achieved = String(achievedSumByTaskId.get(Number(task.id || 0)) || 0);
+    const todayStr = new Date().toLocaleDateString('en-GB');
+    const hasCompletionToday = actions.some(a =>
+      Number(a.taskId) === Number(task.id) &&
+      a.updatedOn === todayStr &&
+      a.status === 'Complete'
+    );
+    const achievedDisplay = hasGoalValue(task.goal) ? achieved : (hasCompletionToday ? '1' : '0');
+
+    return {
+      sNo: index + 1,
+      period: getFrequencyText(task).replace(/\n/g, ' '),
+      time: task.time || '-',
+      task: task.title || '-',
+      department: task.category || '-',
+      assignee: task.assignee || 'Unassigned',
+      status: effectiveStatus,
+      goal: goalDisplay,
+      achieved: achievedDisplay,
+      achievedPercent: getAchievedPercent(goalDisplay, achievedDisplay),
+      activityDate: latest ? (latest.updatedOn || '-') : (task.lastUpdatedOn || '-'),
+      remarks: task.lastUpdateRemarks || '-',
+      nextDue: getNextDueDateStr(task),
+    };
+  });
+
+  const handleExportExcel = () => {
+    const headers = ['S.No.', 'Period', 'Time', 'Task', 'Department', 'Assignee', 'Status', 'Goal', 'Achieved', 'Achieved %', 'Activity Date', 'Remarks', 'Next Due'];
+    const rows = getExportRows(sortedTasks).map(row => [
+      row.sNo,
+      row.period,
+      row.time,
+      row.task,
+      row.department,
+      row.assignee,
+      row.status,
+      row.goal,
+      row.achieved,
+      row.achievedPercent,
+      row.activityDate,
+      row.remarks,
+      row.nextDue,
+    ]);
+    const csv = [headers, ...rows]
+      .map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `Recurring_Tasks_${new Date().toISOString().split('T')[0]}.csv`);
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
+  const handleExportPDF = async () => {
+    const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable'),
+    ]);
+    const doc = new jsPDF('l', 'mm', 'a4');
+    const grouped = getExportRows(sortedTasks).reduce<Record<string, ReturnType<typeof getExportRows>>>((acc, row) => {
+      if (!acc[row.assignee]) acc[row.assignee] = [];
+      acc[row.assignee].push(row);
+      return acc;
+    }, {});
+    const headers = [['S.No.', 'Period', 'Time', 'Task', 'Department', 'Status', 'Goal', 'Achieved', 'Achieved %', 'Activity Date', 'Remarks', 'Next Due']];
+
+    doc.setFontSize(16);
+    doc.text(title, 14, 14);
+    doc.setFontSize(9);
+    doc.text(`Grouped by employee | ${sortedTasks.length} tasks`, 14, 20);
+
+    let startY = 26;
+    Object.entries(grouped).forEach(([assignee, rows], groupIndex) => {
+      if (groupIndex > 0 && startY > 170) {
+        doc.addPage();
+        startY = 14;
+      }
+      doc.setFontSize(11);
+      doc.setTextColor(67, 56, 202);
+      doc.text(assignee || 'Unassigned', 14, startY);
+      doc.setTextColor(0, 0, 0);
+
+      autoTable(doc, {
+        head: headers,
+        body: rows.map(row => [
+          row.sNo,
+          row.period,
+          row.time,
+          row.task,
+          row.department,
+          row.status,
+          row.goal,
+          row.achieved,
+          row.achievedPercent,
+          row.activityDate,
+          row.remarks,
+          row.nextDue,
+        ]),
+        startY: startY + 3,
+        theme: 'grid',
+        headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255] },
+        styles: { fontSize: 7, cellPadding: 1.5, overflow: 'linebreak' },
+        columnStyles: {
+          0: { cellWidth: 12, halign: 'center' },
+          1: { cellWidth: 20 },
+          2: { cellWidth: 16 },
+          3: { cellWidth: 52 },
+          4: { cellWidth: 25 },
+          5: { cellWidth: 26 },
+          6: { cellWidth: 14, halign: 'center' },
+          7: { cellWidth: 18, halign: 'center' },
+          8: { cellWidth: 20, halign: 'center' },
+          9: { cellWidth: 22 },
+          10: { cellWidth: 34 },
+          11: { cellWidth: 22 },
+        },
+      });
+      startY = (doc as any).lastAutoTable.finalY + 10;
+    });
+
+    if (sortedTasks.length === 0) {
+      doc.setFontSize(11);
+      doc.text('No recurring tasks found for the selected filters.', 14, 30);
+    }
+
+    doc.save(`Recurring_Tasks_By_Employee_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
   // Corrected requestSort implementation using internal state setSortConfig
   const requestSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -619,6 +751,8 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
               </div>
             )}
           </div>
+          <button onClick={handleExportPDF} className="flex items-center space-x-1 px-3 py-2 bg-white text-indigo-700 border border-indigo-300 rounded-md hover:bg-indigo-50 text-sm font-medium shadow-sm transition-colors" title="Download PDF grouped by employee"><Download size={16} /><span>Download PDF</span></button>
+          <button onClick={handleExportExcel} className="flex items-center space-x-1 px-3 py-2 bg-indigo-600 text-white border border-indigo-700 rounded-md hover:bg-indigo-700 text-sm font-medium shadow-sm transition-colors" title="Download Excel"><FileText size={16} /><span>Excel</span></button>
           <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center space-x-1 px-3 py-2 border rounded-md text-sm font-medium shadow-sm transition-all duration-200 ${showFilters ? 'bg-indigo-600 border-indigo-700 text-white' : 'bg-indigo-50 border-indigo-300 text-indigo-600 hover:bg-indigo-100'}`}><Filter size={16} /><span>Filters</span></button>
           {filterType !== 'due' && (
 	            <button onClick={onAdd} className="flex items-center justify-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium transition-colors shadow-sm"><Plus size={16} /><span>New Recurring Task</span></button>
