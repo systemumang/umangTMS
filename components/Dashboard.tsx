@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, UserPlus, Folder, CheckSquare, Clock, AlertTriangle, CheckCircle, Users, Building2, Truck, FileText, RotateCcw, LayoutList, History, ShieldAlert, Tags } from 'lucide-react';
+import { Plus, UserPlus, Clock, Users, Truck, RotateCcw, LayoutList, History, ShieldAlert, Tags } from 'lucide-react';
 import { StatCard } from './StatCard';
 import { QuickAction } from './QuickAction';
 import { PendingTable } from './PendingTable';
@@ -55,20 +55,98 @@ export const Dashboard: React.FC<DashboardProps> = ({
   
   const stats = useMemo(() => {
     const regularTasks = tasks.filter(t => !t.vendor || t.vendor.trim() === '');
-    const totalTasks = regularTasks.length;
     const pendingTasks = regularTasks.filter(t => t.status !== 'Completed').length;
+    return { pendingTasks };
+  }, [tasks]);
 
-    const todayISO = new Date().toISOString().split('T')[0];
-    const overdueTasks = regularTasks.filter(t => {
-      if (t.status === 'Completed' || !t.dueDate) return false;
-      const dueISO = parseToISO(t.dueDate);
-      return dueISO && dueISO < todayISO;
+  const pendingRecurringTasks = useMemo(() => {
+    const parseRecurringDate = (value: string): Date | null => {
+      const raw = String(value || '').trim();
+      const match = raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
+      const date = match
+        ? new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]))
+        : new Date(raw);
+      if (isNaN(date.getTime())) return null;
+      date.setHours(0, 0, 0, 0);
+      return date;
+    };
+
+    const clampDay = (year: number, monthIndex: number, day: number): Date => {
+      const maxDay = new Date(year, monthIndex + 1, 0).getDate();
+      const date = new Date(year, monthIndex, Math.min(Math.max(day, 1), maxDay));
+      date.setHours(0, 0, 0, 0);
+      return date;
+    };
+
+    const getLastCompletionDate = (task: RecurringTask): string => {
+      const taskHistory = recurringActions
+        .filter(a => Number(a.taskId) === Number(task.id) && a.status === 'Complete')
+        .sort((a, b) => (parseRecurringDate(b.updatedOn)?.getTime() || 0) - (parseRecurringDate(a.updatedOn)?.getTime() || 0));
+      return taskHistory.length > 0 ? taskHistory[0].updatedOn : task.startDate;
+    };
+
+    const getNextDueDate = (task: RecurringTask): Date | null => {
+      const lastComplete = parseRecurringDate(getLastCompletionDate(task));
+      if (!lastComplete) return null;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const periodicity = task.periodicity || 'Fixed Days';
+
+      if (periodicity === 'Fixed Days') {
+        const interval = Math.max(1, Number(task.frequencyDays || 30));
+        const nextDate = new Date(lastComplete);
+        do {
+          nextDate.setDate(nextDate.getDate() + interval);
+        } while (nextDate < today);
+        nextDate.setHours(0, 0, 0, 0);
+        return nextDate;
+      }
+
+      if (periodicity === 'Weekly') {
+        const targetDay = Number(task.recurrenceDay ?? 0);
+        let diff = targetDay - lastComplete.getDay();
+        if (diff <= 0) diff += 7;
+        const nextDate = new Date(lastComplete);
+        nextDate.setDate(lastComplete.getDate() + diff);
+        while (nextDate < today) nextDate.setDate(nextDate.getDate() + 7);
+        nextDate.setHours(0, 0, 0, 0);
+        return nextDate;
+      }
+
+      if (periodicity === 'Monthly') {
+        const targetDay = Number(task.recurrenceDay ?? 1);
+        let monthsToAdd = 0;
+        while (true) {
+          const nextDate = clampDay(lastComplete.getFullYear(), lastComplete.getMonth() + monthsToAdd, targetDay);
+          if (nextDate > lastComplete && nextDate >= today) return nextDate;
+          monthsToAdd++;
+        }
+      }
+
+      if (periodicity === 'Yearly') {
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const targetMonthIndex = Math.max(0, months.indexOf(task.recurrenceMonth || 'January'));
+        const targetDay = Number(task.recurrenceDay ?? 1);
+        let yearsToAdd = 0;
+        while (true) {
+          const nextDate = clampDay(lastComplete.getFullYear() + yearsToAdd, targetMonthIndex, targetDay);
+          if (nextDate > lastComplete && nextDate >= today) return nextDate;
+          yearsToAdd++;
+        }
+      }
+
+      return null;
+    };
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return recurringTasks.filter(task => {
+      const nextDue = getNextDueDate(task);
+      if (!nextDue) return false;
+      return task.status !== 'Complete' && today >= nextDue;
     }).length;
-
-    const completedTasks = regularTasks.filter(t => t.status === 'Completed').length;
-    const totalUsers = users.length;
-    return { totalTasks, pendingTasks, overdueTasks, completedTasks, totalUsers };
-  }, [tasks, users]);
+  }, [recurringActions, recurringTasks]);
 
   const dynamicLiveStatuses = useMemo(() => {
     const baseStatuses = statuses
@@ -452,25 +530,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       <div className="bg-blue-50/70 p-6 rounded-2xl border-2 border-blue-300 shadow-sm">
         <SectionHeader title="Live Statistics" icon={<Clock size={20}/>} />
-	        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-10 gap-4">
-	            <StatCard title="Total Tasks" value={stats.totalTasks} icon={<CheckSquare size={20}/>} iconBgColor="bg-blue-100" iconColor="text-blue-600" onClick={() => onNavigate('all-tasks')} />
-	            <StatCard title="Pending" value={stats.pendingTasks} icon={<Clock size={20}/>} iconBgColor="bg-amber-100" iconColor="text-amber-600" onClick={() => onNavigate('pending')}/>
-              {dynamicLiveStatuses.map((status) => (
-                <StatCard
-                  key={status}
-                  title={status}
-                  value={dynamicLiveStatusCounts[status] || 0}
-                  icon={<Tags size={20}/>}
-                  iconBgColor="bg-indigo-100"
-                  iconColor="text-indigo-600"
-                  onClick={() => onFilterChange('status', status)}
-                />
-              ))}
-	            <StatCard title="Overdue" value={stats.overdueTasks} icon={<AlertTriangle size={20}/>} iconBgColor="bg-red-100" iconColor="text-red-600" onClick={() => onFilterChange('status', 'Overdue')}/>
-	            <StatCard title="Completed" value={stats.completedTasks} icon={<CheckCircle size={20}/>} iconBgColor="bg-green-100" iconColor="text-green-600" onClick={() => onNavigate('completed')}/>
-	            <StatCard title="Total Users" value={stats.totalUsers} icon={<Users size={20}/>} iconBgColor="bg-indigo-100" iconColor="text-indigo-600" onClick={isAdmin ? () => onNavigate('users') : undefined}/>
-	        </div>
-	      </div>
+	        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+	            <StatCard title="Pending Simple Tasks" value={stats.pendingTasks} icon={<Clock size={20}/>} iconBgColor="bg-amber-100" iconColor="text-amber-600" onClick={() => onNavigate('pending')}/>
+	            <StatCard title="Pending Recurring Tasks" value={pendingRecurringTasks} icon={<RotateCcw size={20}/>} iconBgColor="bg-emerald-100" iconColor="text-emerald-600" onClick={() => onNavigate('due-recurring-tasks')}/>
+	        </div>	      </div>
 
       <div className="space-y-6">
         <SectionHeader title="Today's Activity" icon={<History size={20}/>} />
@@ -626,3 +689,4 @@ export const Dashboard: React.FC<DashboardProps> = ({
     </div>
   );
 };
+
