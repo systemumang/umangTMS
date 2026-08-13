@@ -63,6 +63,39 @@ function fetchRecentRowsPaged(mysqli $conn, string $table, int $limit, int $offs
     return $rows;
 }
 
+
+function fetchRowsWithColumns(mysqli $conn, string $table, array $columns, ?int $limit = null, int $offset = 0, ?string $orderBy = 'id', string $direction = 'DESC'): array {
+    $safe = preg_replace('/[^a-zA-Z0-9_]/', '', $table);
+    $safeColumns = array_values(array_filter(array_map(static function($column) {
+        $clean = preg_replace('/[^a-zA-Z0-9_]/', '', (string)$column);
+        return $clean !== '' ? "`{$clean}`" : '';
+    }, $columns)));
+    if (empty($safeColumns)) {
+        return [];
+    }
+
+    $sql = "SELECT " . implode(', ', $safeColumns) . " FROM `{$safe}`";
+    if ($orderBy) {
+        $safeOrder = preg_replace('/[^a-zA-Z0-9_]/', '', $orderBy);
+        $safeDirection = strtoupper($direction) === 'ASC' ? 'ASC' : 'DESC';
+        $sql .= " ORDER BY `{$safeOrder}` {$safeDirection}";
+    }
+    if ($limit !== null && $limit > 0) {
+        $limit = max(1, min(5000, $limit));
+        $offset = max(0, $offset);
+        $sql .= " LIMIT {$limit} OFFSET {$offset}";
+    }
+
+    $result = $conn->query($sql);
+    if (!$result) {
+        return [];
+    }
+    $rows = [];
+    while ($row = $result->fetch_assoc()) {
+        $rows[] = $row;
+    }
+    return $rows;
+}
 function countRows(mysqli $conn, string $table): int {
     $safe = preg_replace('/[^a-zA-Z0-9_]/', '', $table);
     $sql = "SELECT COUNT(*) AS total FROM `{$safe}`";
@@ -337,19 +370,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (!isset($settings['fieldLabelOverrides']) || trim((string)$settings['fieldLabelOverrides']) === '') {
         $settings['fieldLabelOverrides'] = '{}';
     }
+    $mainTaskColumns = ['id', 'date', 'title', 'description', 'project', 'firm', 'category', 'owner', 'assignees', 'client', 'priority', 'status', 'dueDate', 'lastUpdateDate', 'lastUpdateRemarks', 'hours', 'time', 'goal'];
+    $vendorTaskColumns = ['id', 'date', 'title', 'description', 'project', 'firm', 'category', 'owner', 'assignees', 'vendor', 'vendorCategory', 'priority', 'status', 'dueDate', 'lastUpdateDate', 'lastUpdateRemarks', 'hours', 'time', 'goal'];
+    $actionLogColumns = ['id', 'taskId', 'taskTitle', 'taskDate', 'updateDate', 'project', 'firm', 'client', 'category', 'owner', 'assignees', 'vendor', 'status', 'remarks', 'hours', 'time', 'goal', 'updatedOn', 'timestamp'];
+    $recurringActionColumns = ['id', 'taskId', 'taskTitle', 'firm', 'owner', 'category', 'assignee', 'status', 'remarks', 'goal', 'updatedOn', 'timestamp'];
 
-    $mainTasks = $mainTasksLimit > 0
-        ? fetchRecentRowsPaged($conn, 'main_tasks', $mainTasksLimit, $mainTasksOffset)
-        : fetchAllRows($conn, 'main_tasks');
-    $vendorTasks = $vendorTasksLimit > 0
-        ? fetchRecentRowsPaged($conn, 'vendor_tasks', $vendorTasksLimit, $vendorTasksOffset)
-        : fetchAllRows($conn, 'vendor_tasks');
-    $actionLogs = $actionLogsLimit > 0
-        ? fetchRecentRowsPaged($conn, 'action_logs', $actionLogsLimit, $actionLogsOffset)
-        : fetchAllRows($conn, 'action_logs');
-    $recurringActions = $recurringActionsLimit > 0
-        ? fetchRecentRowsPaged($conn, 'recurring_actions', $recurringActionsLimit, $recurringActionsOffset)
-        : fetchAllRows($conn, 'recurring_actions');
+    $mainTasks = fetchRowsWithColumns($conn, 'main_tasks', $mainTaskColumns, $mainTasksLimit > 0 ? $mainTasksLimit : null, $mainTasksOffset);
+    $vendorTasks = fetchRowsWithColumns($conn, 'vendor_tasks', $vendorTaskColumns, $vendorTasksLimit > 0 ? $vendorTasksLimit : null, $vendorTasksOffset);
+    $actionLogs = fetchRowsWithColumns($conn, 'action_logs', $actionLogColumns, $actionLogsLimit > 0 ? $actionLogsLimit : null, $actionLogsOffset);
+    $recurringActions = fetchRowsWithColumns($conn, 'recurring_actions', $recurringActionColumns, $recurringActionsLimit > 0 ? $recurringActionsLimit : null, $recurringActionsOffset);
 
     sendJson([
         'success' => true,
