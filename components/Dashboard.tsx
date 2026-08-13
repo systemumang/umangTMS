@@ -435,6 +435,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 	            <StatCard title="Pending Recurring Tasks" value={pendingRecurringTasks} icon={<RotateCcw size={20}/>} iconBgColor="bg-emerald-100" iconColor="text-emerald-600" onClick={() => onNavigate('due-recurring-tasks')}/>
 	        </div>	      </div>
 
+      {isAdmin && (
       <div className="space-y-6">
         <SectionHeader title="Today's Activity" icon={<History size={20}/>} />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -577,6 +578,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 	        </div>
 	        </div>
 	      </div>
+      )}
 
     </div>
   );
