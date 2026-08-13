@@ -23,6 +23,7 @@ interface DashboardProps {
   onUpdateTask: (task: Task) => void;
   onUpdateRecurringTask: (task: RecurringTask) => void;
   tasks: Task[];
+  currentUser?: User | null;
   users: User[];
   projects: Project[];
   categories: Category[];
@@ -46,6 +47,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onNavigate,
   onUpdateTask,
   onUpdateRecurringTask,
+  currentUser,
   tasks, 
   users, 
   projects,
@@ -174,6 +176,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
     });
     return countMap;
   }, [tasks, dynamicLiveStatuses]);
+
+  const isCurrentUserAssignee = (assignees?: string) => {
+    if (!currentUser) return false;
+    return String(assignees || '').split(',').map(name => name.trim()).includes(currentUser.name);
+  };
+
+  const shouldShowAssignee = (owner?: string, assignees?: string) => {
+    if (!currentUser) return false;
+    return String(owner || '').trim() === currentUser.name && !isCurrentUserAssignee(assignees);
+  };
 
   const employeePendingTasks = useMemo(() => {
     return tasks
@@ -489,6 +501,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <span>Goal: {task.goal || 0}</span>
                       <span>Completed: {(task as any).achieved || 0}</span>
                       {task.time && <span>Time: {task.time}</span>}
+                      {shouldShowAssignee(task.owner, task.assignee) && <span>Assignee: {task.assignee || 'Unassigned'}</span>}
                     </div>
                   </div>
                   <button onClick={() => onUpdateRecurringTask(task)} className="shrink-0 px-4 py-2 bg-emerald-600 text-white text-[10px] font-black rounded-lg hover:bg-emerald-700 uppercase shadow-sm">
@@ -517,6 +530,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <p className="text-xs font-black text-gray-900 uppercase break-words">{task.title}</p>
                     {task.remarks && <p className="text-[10px] font-bold text-gray-500 uppercase mt-1 break-words">{task.remarks}</p>}
                     <p className={`text-[10px] font-black uppercase mt-1 ${isPastDue(task.dueDate) ? 'text-red-600' : 'text-gray-500'}`}>Due: {task.dueDate || '-'}</p>
+                    {shouldShowAssignee(task.owner, task.assignees) && <p className="text-[10px] font-bold text-gray-500 uppercase mt-1 break-words">Assignee: {task.assignees || 'Unassigned'}</p>}
                   </div>
                   <button onClick={() => onUpdateTask(task)} className="shrink-0 px-4 py-2 bg-blue-600 text-white text-[10px] font-black rounded-lg hover:bg-blue-700 uppercase shadow-sm">
                     Update
