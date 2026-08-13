@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { NavItem } from '../types';
+import { NavItem, User } from '../types';
 import { X, LogOut, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface SidebarProps {
@@ -18,6 +18,7 @@ interface SidebarProps {
   onLogout?: () => void;
   onExitWorkspace?: () => void;
   workspaceId?: string;
+  currentUser?: User | null;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -35,7 +36,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   hasError = false,
   onLogout,
   onExitWorkspace,
-  workspaceId
+  workspaceId,
+  currentUser
 }) => {
   const [openPendingGroup, setOpenPendingGroup] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -115,6 +117,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </button>
     );
   };
+
+  const userDisplayName = currentUser?.name || 'User';
+  const userSubtitle = [currentUser?.role, currentUser?.designation].filter(Boolean).join(' | ');
+
+  const UserIdentity = () => (
+    <div className="rounded-lg border border-indigo-200 bg-white px-3 py-2 shadow-sm">
+      <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Logged in as</div>
+      <div className="mt-0.5 truncate text-sm font-black text-indigo-700" title={userDisplayName}>{userDisplayName}</div>
+      {userSubtitle && <div className="mt-0.5 truncate text-[11px] font-semibold text-gray-500" title={userSubtitle}>{userSubtitle}</div>}
+    </div>
+  );
 
   const renderTasksSection = () => {
     const taskItems: NavItem[] = (groupedItems['Tasks'] || []) as NavItem[];
@@ -244,6 +257,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
 
         <div className="hidden md:block p-4 bg-white/50 border-t-2 border-indigo-500 space-y-3 mt-auto">
+          <UserIdentity />
 
           <div className="grid grid-cols-2 gap-2">
             <button onClick={onLogout} className="flex items-center justify-center gap-2 py-2 text-xs font-bold text-indigo-600 bg-white border border-indigo-200 rounded-lg hover:bg-indigo-50">
@@ -257,7 +271,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        <div className="md:hidden p-4 bg-white/50 border-t-2 border-indigo-500 mt-auto">
+        <div className="md:hidden p-4 bg-white/50 border-t-2 border-indigo-500 mt-auto space-y-3">
+          <UserIdentity />
+
           <div className="grid grid-cols-2 gap-2">
             <button onClick={onLogout} className="flex items-center justify-center gap-2 py-2 text-xs font-bold text-indigo-600 bg-white border border-indigo-200 rounded-lg hover:bg-indigo-50">
               <LogOut size={14} />

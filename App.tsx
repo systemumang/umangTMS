@@ -1433,6 +1433,7 @@ export default function App() {
 	              onLogout={() => { setCurrentUser(null); localStorage.removeItem('taskpro_user'); }}
 	              onExitWorkspace={() => { setCurrentUser(null); setWorkspaceId(''); setApiUrl(''); localStorage.clear(); }}
 	              workspaceId={workspaceId}
+              currentUser={currentUser}
 	            />
 	          )}
 
