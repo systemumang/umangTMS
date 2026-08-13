@@ -466,6 +466,18 @@ function notifications_enqueue_update_reminder(mysqli $conn, bool $force = false
 
     $totals = notifications_collect_update_totals($conn, (string)$due['todayIso']);
     $message = notifications_compose_update_reminder($totals['simple'], $totals['recurring'], (string)$due['todayDmy']);
+
+    if ($force) {
+        $dispatch = notifications_send_whatsapp_mas_group($settings, $group, $message);
+        $ok = (bool)($dispatch['ok'] ?? false);
+        $error = (string)($dispatch['error'] ?? '');
+        notifications_log($conn, $eventType, 'whatsapp', $waProvider, $group, $ok ? 'sent' : 'failed', $error);
+        if (!$ok) {
+            return ['success' => false, 'enqueued' => 0, 'skipped' => 0, 'message' => $error ?: 'Update reminder failed'];
+        }
+        return ['success' => true, 'enqueued' => 0, 'sent' => 1, 'skipped' => 0, 'message' => 'Update reminder sent'];
+    }
+
     notifications_enqueue($conn, 'whatsapp', $waProvider, 'group', $group, $message, ['event' => $eventType]);
     notifications_log($conn, $eventType, 'whatsapp', $waProvider, $group, 'enqueued', '');
     return ['success' => true, 'enqueued' => 1, 'skipped' => 0, 'message' => 'Update reminder queued'];

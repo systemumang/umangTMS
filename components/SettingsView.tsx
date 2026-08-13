@@ -124,9 +124,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate, 
     setSaveError('');
     try {
       const result = await onSendUpdateReminder(formData);
+      const sent = (result as any)?.sent ?? 0;
       const enqueued = result?.enqueued ?? 0;
       const skipped = result?.skipped ?? 0;
-      setReminderResult(`Update reminder queued: ${enqueued}. Skipped: ${skipped}.`);
+      setReminderResult(sent > 0 ? `Update reminder sent: ${sent}.` : `Update reminder queued: ${enqueued}. Skipped: ${skipped}.`);
       setTimeout(() => setReminderResult(''), 5000);
     } catch (error: any) {
       setSaveError(error?.message || 'Failed to send update reminder.');
