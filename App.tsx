@@ -25,6 +25,7 @@ const SettingsView = lazy(() => import('./components/SettingsView').then((module
 const TelegramSetupView = lazy(() => import('./components/TelegramSetupView').then((module) => ({ default: module.TelegramSetupView })));
 const DocumentationView = lazy(() => import('./components/DocumentationView').then((module) => ({ default: module.DocumentationView })));
 const AddTaskModal = lazy(() => import('./components/AddTaskModal').then((module) => ({ default: module.AddTaskModal })));
+const UpdateTaskModal = lazy(() => import('./components/UpdateTaskModal').then((module) => ({ default: module.UpdateTaskModal })));
 const AddCategoryModal = lazy(() => import('./components/AddCategoryModal').then((module) => ({ default: module.AddCategoryModal })));
 const AddVendorCategoryModal = lazy(() => import('./components/AddVendorCategoryModal').then((module) => ({ default: module.AddVendorCategoryModal })));
 const AddProjectModal = lazy(() => import('./components/AddProjectModal').then((module) => ({ default: module.AddProjectModal })));
@@ -39,15 +40,15 @@ const RecurringTaskHistoryModal = lazy(() => import('./components/RecurringTaskH
 const AddRecurringTaskModal = lazy(() => import('./components/AddRecurringTaskModal').then((module) => ({ default: module.AddRecurringTaskModal })));
 const UpdateRecurringTaskModal = lazy(() => import('./components/UpdateRecurringTaskModal').then((module) => ({ default: module.UpdateRecurringTaskModal })));
 const EditRecurringTaskModal = lazy(() => import('./components/EditRecurringTaskModal').then((module) => ({ default: module.EditRecurringTaskModal })));
-import { 
-  LayoutDashboard, 
-  CheckSquare, 
-  Clock, 
-  CheckCircle, 
-  Users, 
-  Briefcase, 
-  Tags, 
-  Folder, 
+import {
+  LayoutDashboard,
+  CheckSquare,
+  Clock,
+  CheckCircle,
+  Users,
+  Briefcase,
+  Tags,
+  Folder,
   FileText,
   Building2,
   Truck,
@@ -83,7 +84,7 @@ const PageLoader = () => (
 
 const navItems: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
-  
+
   // Tasks Section
   { id: 'all-tasks', label: 'All Tasks', icon: <CheckSquare size={20} />, section: 'Tasks' },
   { id: 'pending-group', label: 'Pending', icon: <Clock size={20} />, section: 'Tasks' },
@@ -91,7 +92,7 @@ const navItems: NavItem[] = [
   { id: 'completed', label: 'Completed Tasks', icon: <CheckCircle size={20} />, section: 'Tasks' },
   { id: 'activity-dashboard', label: 'Activity Dashboard', icon: <BarChart3 size={20} />, section: 'Tasks' },
   { id: 'action-log', label: 'Action Log', icon: <History size={20} />, section: 'Tasks' },
-  
+
 	  // Vendor Section (hidden)
 	  ...(VENDOR_MODULE_ENABLED ? ([
 	    { id: 'pending-vendor-tasks', label: 'Vendor Pending', icon: <Hammer size={20} />, section: 'Vendor' },
@@ -99,12 +100,12 @@ const navItems: NavItem[] = [
 	    { id: 'completed-vendor-tasks', label: 'Vendor History', icon: <CheckCircle size={20} />, section: 'Vendor' },
 	    { id: 'vendor-action-log', label: 'Vendor Log', icon: <History size={20} />, section: 'Vendor' },
 	  ] as NavItem[]) : []),
-  
+
   // Recurring Tasks Section
   { id: 'recurring-tasks', label: 'Recurring Master', icon: <RotateCcw size={20} />, section: 'Recurring Tasks' },
   { id: 'due-recurring-tasks', label: 'Due Recurring', icon: <AlertCircle size={20} />, section: 'Recurring Tasks' },
   { id: 'recurring-actions', label: 'Recurring Log', icon: <History size={20} />, section: 'Recurring Tasks' },
-  
+
   // Master Section
   { id: 'users', label: 'Users', icon: <Users size={20} />, section: 'Master' },
   { id: 'firms', label: 'Firms', icon: <Building2 size={20} />, section: 'Master' },
@@ -419,7 +420,7 @@ export default function App() {
     if (!currentUser) return [];
     if (isAdmin) return recurringTasks;
     // For recurring tasks, check both owner and assignee
-    return recurringTasks.filter(t => 
+    return recurringTasks.filter(t =>
       String(t.owner || '').trim() === currentUser.name ||
       String(t.assignee || '').trim() === currentUser.name
     );
@@ -429,7 +430,7 @@ export default function App() {
     if (!currentUser) return [];
     if (isAdmin) return recurringActions;
     // For recurring actions, check both owner and assignee
-    return recurringActions.filter(a => 
+    return recurringActions.filter(a =>
       String(a.owner || '').trim() === currentUser.name ||
       String(a.assignee || '').trim() === currentUser.name
     );
@@ -483,7 +484,7 @@ export default function App() {
   const [filterAssignee, setFilterAssignee] = useState<string[]>([]);
   const [filterVendor, setFilterVendor] = useState<string[]>([]);
   const [filterCategory, setFilterCategory] = useState<string[]>([]);
-  
+
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [lastUpdateFrom, setLastUpdateFrom] = useState('');
@@ -514,6 +515,7 @@ export default function App() {
 	  const sidebarCollapsedBeforeViewRef = useRef<boolean | null>(null);
 	  const lastAutoCollapsedTabRef = useRef<string>('');
 	  const [selectedTaskForHistory, setSelectedTaskForHistory] = useState<Task | null>(null);
+          const [selectedDashboardTask, setSelectedDashboardTask] = useState<Task | null>(null);
 	  const [selectedRecurringTask, setSelectedRecurringTask] = useState<RecurringTask | null>(null);
 
 	  useEffect(() => {
@@ -560,11 +562,11 @@ export default function App() {
     const shortDate = now.toLocaleDateString('en-GB');
 
     const finalData = { ...data };
-    
+
     if (action === 'addTask' || action === 'updateTask') {
         finalData.id = data.id || data.ID || 0;
         finalData.title = data.title || data.Title || data.task || data.taskTitle || data.Task || '';
-        finalData.task = finalData.title; 
+        finalData.task = finalData.title;
         finalData.notes = data.remarks || data.Notes || data.remarks || '';
         finalData.assignees = data.assignees || '';
         finalData.owner = data.owner || '';
@@ -574,25 +576,25 @@ export default function App() {
         finalData.vendor = data.vendor || '';
         finalData.vendorCategory = data.vendorCategory || '';
         finalData.hours = Number(data.hours || 0); // Include hours
-        
+
         const projectValue = String(data.project || '');
         const projMatch = projectValue.match(/(.*)\s\((.*)\)/);
         if (projMatch) {
-            finalData.project = projMatch[1].trim(); 
-            finalData.clientName = projMatch[2].trim(); 
+            finalData.project = projMatch[1].trim();
+            finalData.clientName = projMatch[2].trim();
         } else {
             finalData.project = projectValue;
             finalData.clientName = data.clientName || '';
         }
-        
+
         finalData['due Date'] = data.dueDate || '';
-        
+
         if (!data.skipTimestamp) {
             finalData['last Update'] = timestamp;
-            finalData.lastUpdateDate = timestamp; 
+            finalData.lastUpdateDate = timestamp;
             finalData['remark'] = data.lastUpdateRemarks || data.remarks || data.Remarks || '';
         }
-        
+
         finalData.taskDate = data.date || shortDate;
         finalData['date'] = data.date || shortDate;
         finalData.time = data.time || '';
@@ -713,7 +715,7 @@ export default function App() {
 	    const timeoutId = window.setTimeout(() => {
 	      try { abortControllerRef.current?.abort(); } catch {}
 	    }, useQuickInit ? 10000 : 30000);
-	    
+
       let shouldFetchFullAfterQuick = false;
 
       try {
@@ -723,13 +725,13 @@ export default function App() {
         const vendorTasksLimit = useQuickInit ? 150 : 0;
           const response = await fetch(
             `${apiUrl}${apiUrl.includes('?') ? '&' : '?'}action=init&actionLogsLimit=${actionLogsLimit}&recurringActionsLimit=${recurringActionsLimit}&mainTasksLimit=${mainTasksLimit}&vendorTasksLimit=${vendorTasksLimit}&_cb=${Date.now()}`,
-            { 
+            {
 		        signal: abortControllerRef.current.signal,
 		        cache: 'no-store',
 		        mode: 'cors'
 		      });
 	      const result = await safeJsonParse(response, 'Data Load');
-	      
+
 			      if (result.success) {
           if (!useQuickInit) {
             setHasFullDataLoaded(true);
@@ -738,7 +740,7 @@ export default function App() {
 	        const normalizeTasks = (list: any[]) => (list || []).map(item => {
             const rawProject = String(item.project || item.Project || '').trim();
             const rawClient = String(item.clientName || item['client Name'] || item['Client Name'] || item.client || item.Client || '').trim();
-            
+
             return {
                 ...item,
                 id: Number(item.id || item.ID || 0),
@@ -761,8 +763,8 @@ export default function App() {
 	                firm: String(item.firm || item.Firm || ''),
 	                photos: String(item.photos || ''),
 	                pdf: String(item.pdf || ''),
-                project: (rawProject && rawClient && !rawProject.includes('(')) 
-                    ? `${rawProject} (${rawClient})` 
+                project: (rawProject && rawClient && !rawProject.includes('('))
+                    ? `${rawProject} (${rawClient})`
                     : rawProject || ''
             };
         });
@@ -807,8 +809,8 @@ export default function App() {
 	                firm: String(l.firm || l.Firm || ''),
                 photos: String(l.photos || ''),
                 pdf: String(l.pdf || ''),
-                project: (rawProject && rawClient && !rawProject.includes('(')) 
-                    ? `${rawProject} (${rawClient})` 
+                project: (rawProject && rawClient && !rawProject.includes('('))
+                    ? `${rawProject} (${rawClient})`
                     : rawProject || '',
                 vendor: l.vendor || l.Vendor || ''
             };
@@ -1112,11 +1114,11 @@ export default function App() {
       const newAchieved = Number(String(task.goal || '0').trim());
       const sumAchieved = (Number.isFinite(currentAchieved) ? currentAchieved : 0) + (Number.isFinite(newAchieved) ? newAchieved : 0);
       return { ...task, achieved: String(sumAchieved), lastUpdateDate: timestamp };
-    })); 
+    }));
     setSyncingIds(prev => new Set(prev).add(task.id));
     try {
       const targetSheet = task.vendor && task.vendor.trim() !== '' ? 'VendorTasks' : 'MainTasks';
-      await apiPost('updateTask', { ...task, lastUpdateRemarks: task.lastUpdateRemarks || '' }, targetSheet); 
+      await apiPost('updateTask', { ...task, lastUpdateRemarks: task.lastUpdateRemarks || '' }, targetSheet);
     } catch (err) {
     } finally {
       setSyncingIds(prev => {
@@ -1128,11 +1130,11 @@ export default function App() {
   };
 
   const handleEditTaskOptimistic = async (task: Task) => {
-    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, ...task } : t)); 
+    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, ...task } : t));
     setSyncingIds(prev => new Set(prev).add(task.id));
     try {
       const targetSheet = task.vendor && task.vendor.trim() !== '' ? 'VendorTasks' : 'MainTasks';
-      await apiPost('updateTask', { ...task, skipLog: true, skipTimestamp: true }, targetSheet); 
+      await apiPost('updateTask', { ...task, skipLog: true, skipTimestamp: true }, targetSheet);
     } catch (err) {
     } finally {
       setSyncingIds(prev => {
@@ -1177,7 +1179,7 @@ export default function App() {
 	    else if (type === 'project') { setActiveTab('pending'); setFilterProject([value]); }
 	    else if (type === 'priority') { setActiveTab('pending'); setFilterPriority([value]); }
 	    else if (type === 'category') { setActiveTab('pending'); setFilterCategory([value]); }
-	    else if (type === 'status') { 
+	    else if (type === 'status') {
 	        if (value === 'Overdue') setActiveTab('pending');
 	        else if (value === 'Completed') setActiveTab('completed');
 	        else if (value) setActiveTab(makePendingStatusId(value));
@@ -1249,36 +1251,36 @@ export default function App() {
       if (filterAssignee.length > 0) activeFilters.push(`Assignee: ${filterAssignee.join(',')}`);
       if (filterVendor.length > 0) activeFilters.push(`Vendor: ${filterVendor.join(',')}`);
       if (dateFrom || dateTo) activeFilters.push(`Range: ${dateFrom || 'Start'} to ${dateTo || 'End'}`);
-      
+
       const filterRow = activeFilters.length > 0 ? `Filters Applied: ${activeFilters.join(' | ')}` : "No Filters Applied";
       const generatedRow = `Generated on: ${new Date().toLocaleString('en-GB')}`;
 
 	      const headers = ['Date', 'Task', 'Notes', 'Assignees', 'Owner', 'Project', 'Firm', 'Client Name', 'Vendor', 'Vendor Category', 'Status', 'Last Update Date', 'Last Update Remark', 'Priority', 'Due Date', 'Hours'];
-      
+
       const csvContent = [
         `"${filterRow}"`,
         `"${generatedRow}"`,
-        headers.join(','), 
+        headers.join(','),
         ...tasksToExport.map(task => {
           const isNotStarted = task.status === 'Not Yet Started';
           const lastDate = isNotStarted ? '' : (task.lastUpdateDate || '');
           const lastRemark = isNotStarted ? '' : (task.lastUpdateRemarks || '');
 
           return [
-            `"${task.date}"`, 
-            `"${(task.title || '').replace(/"/g, '""')}"`, 
-            `"${(task.remarks || '').replace(/"/g, '""')}"`, 
-	            `"${task.assignees}"`, 
-	            `"${task.owner}"`, 
-	            `"${task.project.split(' (')[0]}"`, 
+            `"${task.date}"`,
+            `"${(task.title || '').replace(/"/g, '""')}"`,
+            `"${(task.remarks || '').replace(/"/g, '""')}"`,
+	            `"${task.assignees}"`,
+	            `"${task.owner}"`,
+	            `"${task.project.split(' (')[0]}"`,
               `"${task.firm || ''}"`,
-	            `"${task.clientName || ''}"`, 
-            `"${task.vendor || ''}"`, 
-            `"${task.vendorCategory || ''}"`, 
-            `"${task.status}"`, 
-            `"${lastDate}"`, 
-            `"${lastRemark.replace(/"/g, '""')}"`, 
-            `"${task.priority}"`, 
+	            `"${task.clientName || ''}"`,
+            `"${task.vendor || ''}"`,
+            `"${task.vendorCategory || ''}"`,
+            `"${task.status}"`,
+            `"${lastDate}"`,
+            `"${lastRemark.replace(/"/g, '""')}"`,
+            `"${task.priority}"`,
             `"${task.dueDate}"`,
             `"${task.hours || 0}"`
           ].join(',');
@@ -1286,9 +1288,9 @@ export default function App() {
       ].join('\n');
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a'); 
-      link.href = URL.createObjectURL(blob); 
-      link.setAttribute('download', `TaskPro_Export_${new Date().toISOString().split('T')[0]}.csv`); 
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', `TaskPro_Export_${new Date().toISOString().split('T')[0]}.csv`);
       link.click();
     };
 
@@ -1301,7 +1303,7 @@ export default function App() {
         showCollapsedMenuButton: layoutMode === 'side' && isSidebarCollapsed && !isAnyFormModalOpen,
         onShowMenu: () => setIsSidebarCollapsed(false),
 	      sidebarCollapsed: layoutMode === 'side' && isSidebarCollapsed,
-	      filterStatus, setFilterStatus, filterPriority, setFilterPriority, 
+	      filterStatus, setFilterStatus, filterPriority, setFilterPriority,
 	      filterProject, setFilterProject, filterFirm, setFilterFirm, filterClient, setFilterClient,
 	      filterOwner, setFilterOwner, filterAssignee, setFilterAssignee, filterCategory, setFilterCategory,
 	      dateFrom, setDateFrom, dateTo, setDateTo,
@@ -1324,7 +1326,7 @@ export default function App() {
               if (task) {
                   const targetSheet = task.vendor && task.vendor.trim() !== '' ? 'VendorTasks' : 'MainTasks';
                   const finalUpdates = { ...updates };
-                  
+
                   const isMetadataOnly = (updates.priority || updates.category || updates.assignees || updates.vendor) && !updates.status;
 
                   if (isMetadataOnly) {
@@ -1339,8 +1341,8 @@ export default function App() {
                           if (updates.category) changedFields.push(`Category to ${updates.category}`);
                           finalUpdates.lastUpdateRemarks = `Bulk update: ${changedFields.join(', ')}`;
                       }
-                      if ((updates.priority || updates.assignees || updates.vendor || updates.category) && !updates.status) { 
-                          finalUpdates.skipLog = true; 
+                      if ((updates.priority || updates.assignees || updates.vendor || updates.category) && !updates.status) {
+                          finalUpdates.skipLog = true;
                       }
                   }
                   await apiPost('updateTask', { ...task, ...finalUpdates }, targetSheet);
@@ -1358,8 +1360,8 @@ export default function App() {
 	      }
 
 	    switch (activeTab) {
-      case 'dashboard': 
-		        return <Dashboard 
+      case 'dashboard':
+		        return <Dashboard
 		          isAdmin={isAdmin} tasks={visibleTasks} users={users} projects={projects} categories={categories} statuses={statuses} actionLogs={visibleActionLogs} recurringActions={visibleRecurringActions} recurringTasks={visibleRecurringTasks} dashboardSummary={dashboardSummary}
 	          onNavigate={(tab) => {
               if (tab === 'pending-client') setActiveTab(makePendingStatusId('Pending for Client'));
@@ -1369,7 +1371,8 @@ export default function App() {
               else if (tab === 'pending-payment') setActiveTab(makePendingStatusId('Pending for Payment'));
               else setActiveTab(tab);
 	            }} onFilterChange={handleDashboardFilterChange} onOpenNewTask={() => { setIsTaskModalVendorMode(false); setIsTaskModalOpen(true); }} onOpenNewRecurringTask={() => setIsRecurringTaskModalOpen(true)}
-	          onOpenAddUser={() => setIsUserModalOpen(true)} onOpenAddCategory={() => setIsCategoryModalOpen(true)} onOpenAddProject={() => setIsProjectModalOpen(true)} onOpenAddClient={() => setIsClientModalOpen(true)} onOpenAddVendor={() => setIsVendorModalOpen(true)} 
+	          onOpenAddUser={() => setIsUserModalOpen(true)} onOpenAddCategory={() => setIsCategoryModalOpen(true)} onOpenAddProject={() => setIsProjectModalOpen(true)} onOpenAddClient={() => setIsClientModalOpen(true)} onOpenAddVendor={() => setIsVendorModalOpen(true)}
+              onUpdateTask={(task) => setSelectedDashboardTask(task)} onUpdateRecurringTask={(task) => { setSelectedRecurringTask(task); setIsRecurringTaskUpdateModalOpen(true); }}
 	        />;
       case 'all-tasks': return <TasksView title={getViewLabel('all-tasks', 'All Tasks')} tasks={visibleTasks.filter(t => !t.vendor || t.vendor === '')} {...commonTaskProps} filterType="all" />;
       case 'add-multiple': return (
@@ -1449,13 +1452,13 @@ export default function App() {
 	      ) : (
 	        <LabelProvider settings={settings}>
 	          {layoutMode === 'side' && (!isSidebarCollapsed || isSidebarOpen) && (
-			            <Sidebar 
-		              items={navItemsWithCounts} 
-		              activeTab={activeTab} 
-	              onTabChange={handleTabChange} 
+			            <Sidebar
+		              items={navItemsWithCounts}
+		              activeTab={activeTab}
+	              onTabChange={handleTabChange}
 	              onLayoutChange={setLayoutMode}
 	              layoutMode={layoutMode}
-	              isOpen={isSidebarOpen} 
+	              isOpen={isSidebarOpen}
 	              onClose={() => setIsSidebarOpen(false)}
 	              lastSynced={lastSynced}
 	              isSyncing={isSyncing}
@@ -1470,10 +1473,10 @@ export default function App() {
 
           <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
             {layoutMode === 'top' ? (
-              <TopBar 
-                items={navItemsWithCounts} 
-                activeTab={activeTab} 
-                onTabChange={handleTabChange} 
+              <TopBar
+                items={navItemsWithCounts}
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
                 onLayoutChange={setLayoutMode}
                 layoutMode={layoutMode}
                 lastSynced={lastSynced}
@@ -1554,9 +1557,9 @@ export default function App() {
 	      <LabelProvider settings={settings}>
 	      {/* Modals */}
         <Suspense fallback={null}>
-        {isTaskModalOpen && <AddTaskModal 
-	        isOpen={isTaskModalOpen} 
-	        onClose={() => setIsTaskModalOpen(false)} 
+        {isTaskModalOpen && <AddTaskModal
+	        isOpen={isTaskModalOpen}
+	        onClose={() => setIsTaskModalOpen(false)}
 	        onSave={(t) => {
 	          setActiveTab('all-tasks');
 	          handleAddTaskOptimistic(t, isTaskModalVendorMode);
@@ -1566,10 +1569,19 @@ export default function App() {
         onAddVendorCategory={() => setIsVendorCategoryModalOpen(true)}
         users={users} categories={categories} projects={projects} firms={firms} vendors={vendors}
         vendorCategories={vendorCategories} isVendorView={isTaskModalVendorMode}
-        lastAddedCategory={lastAddedCategory} lastAddedProject={lastAddedProject} 
+        lastAddedCategory={lastAddedCategory} lastAddedProject={lastAddedProject}
         lastAddedVendorCategory={lastAddedVendorCategory} onClearLastAdded={() => { setLastAddedCategory(''); setLastAddedProject(''); setLastAddedVendorCategory(''); }}
       />}
-      
+
+      {selectedDashboardTask && <UpdateTaskModal
+        isOpen={!!selectedDashboardTask}
+        onClose={() => setSelectedDashboardTask(null)}
+        task={selectedDashboardTask}
+        onUpdate={handleUpdateTaskOptimistic}
+        users={users}
+        vendors={vendors}
+        statusOptions={Array.from(new Set(['Not Yet Started', ...statuses.map(s => String(s.name || '').trim()).filter(Boolean)]))}
+      />}
       {isCategoryModalOpen && <AddCategoryModal
         isOpen={isCategoryModalOpen}
         onClose={() => {
@@ -1599,17 +1611,17 @@ export default function App() {
         initialName={projectModalInitialName}
       />}
       {isClientModalOpen && <AddClientModal isOpen={isClientModalOpen} onClose={() => setIsClientModalOpen(false)} onSave={handleInstantAddClient} clients={clients} />}
-      {isUserModalOpen && <AddUserModal 
-        isOpen={isUserModalOpen} 
-        onClose={() => setIsUserModalOpen(false)} 
-        onSave={(u) => { 
-          setUsers(p => [...p, { ...u, id: Date.now(), isActive: true } as any]); 
-          apiPost('addMaster', u, 'Users'); 
-        }} 
-        designations={designations} 
-        departments={departments} 
-        onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }} 
-        onAddDepartment={() => { setEditingDepartment(null); setIsDepartmentModalOpen(true); }} 
+      {isUserModalOpen && <AddUserModal
+        isOpen={isUserModalOpen}
+        onClose={() => setIsUserModalOpen(false)}
+        onSave={(u) => {
+          setUsers(p => [...p, { ...u, id: Date.now(), isActive: true } as any]);
+          apiPost('addMaster', u, 'Users');
+        }}
+        designations={designations}
+        departments={departments}
+        onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }}
+        onAddDepartment={() => { setEditingDepartment(null); setIsDepartmentModalOpen(true); }}
         users={users}
         firms={firms}
         categories={categories}
@@ -1655,9 +1667,9 @@ export default function App() {
       }} departments={departments} />}
       {isVendorModalOpen && <AddVendorModal isOpen={isVendorModalOpen} onClose={() => setIsVendorModalOpen(false)} onSave={(v) => { setVendors(p => [...p, { ...v, id: Date.now() } as any]); apiPost('addMaster', v, 'Vendors'); }} vendors={vendors} />}
       {isFirmModalOpen && <AddFirmModal isOpen={isFirmModalOpen} onClose={() => setIsFirmModalOpen(false)} onSave={handleInstantAddFirm} firms={firms} />}
-      
+
       {isHistoryModalOpen && <TaskHistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} task={selectedTaskForHistory} logs={actionLogs} />}
-      
+
       {isRecurringTaskModalOpen && <AddRecurringTaskModal
         isOpen={isRecurringTaskModalOpen}
         onClose={() => setIsRecurringTaskModalOpen(false)}
@@ -1723,17 +1735,17 @@ export default function App() {
           }, 'RecurringActions');
         }}
       />}
-        {isEditRecurringTaskModalOpen && <EditRecurringTaskModal 
-	        isOpen={isEditRecurringTaskModalOpen} 
-	        onClose={() => setIsEditRecurringTaskModalOpen(false)} 
-	        task={selectedRecurringTask} 
-	        onSave={async (t) => { 
-	          setRecurringTasks(prev => prev.map(x => x.id === t.id ? t : x)); 
-	          await apiPost('updateMaster', t, 'RecurringTasks'); 
-	        }} 
-	        users={users} 
-	        categories={categories} 
-	        firms={firms} 
+        {isEditRecurringTaskModalOpen && <EditRecurringTaskModal
+	        isOpen={isEditRecurringTaskModalOpen}
+	        onClose={() => setIsEditRecurringTaskModalOpen(false)}
+	        task={selectedRecurringTask}
+	        onSave={async (t) => {
+	          setRecurringTasks(prev => prev.map(x => x.id === t.id ? t : x));
+	          await apiPost('updateMaster', t, 'RecurringTasks');
+	        }}
+	        users={users}
+	        categories={categories}
+	        firms={firms}
         />}
         {isRecurringHistoryModalOpen && <RecurringTaskHistoryModal isOpen={isRecurringHistoryModalOpen} onClose={() => setIsRecurringHistoryModalOpen(false)} task={selectedRecurringTask} actions={recurringActions} />}
         </Suspense>
