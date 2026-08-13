@@ -182,9 +182,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
   }, [tasks]);
 
   const employeePendingRecurringTasks = useMemo(() => {
+    const timeValue = (value?: string) => {
+      const raw = String(value || '').trim();
+      if (!raw) return '99:99';
+      const match = raw.match(/^(\d{1,2}):(\d{2})/);
+      if (!match) return raw;
+      return match[1].padStart(2, '0') + ':' + match[2];
+    };
+
     return recurringTasks
       .filter(task => String(task.status || '').trim().toLowerCase() !== 'complete')
-      .sort((a, b) => String(a.startDate || '').localeCompare(String(b.startDate || '')));
+      .sort((a, b) => {
+        const byTime = timeValue(a.time).localeCompare(timeValue(b.time));
+        if (byTime !== 0) return byTime;
+        return String(a.startDate || '').localeCompare(String(b.startDate || ''));
+      });
   }, [recurringTasks]);
 
   const isPastDue = (dateValue?: string) => {
@@ -476,6 +488,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-[10px] font-bold text-gray-500 uppercase">
                       <span>Goal: {task.goal || 0}</span>
                       <span>Completed: {(task as any).achieved || 0}</span>
+                      {task.time && <span>Time: {task.time}</span>}
                     </div>
                   </div>
                   <button onClick={() => onUpdateRecurringTask(task)} className="shrink-0 px-4 py-2 bg-emerald-600 text-white text-[10px] font-black rounded-lg hover:bg-emerald-700 uppercase shadow-sm">
