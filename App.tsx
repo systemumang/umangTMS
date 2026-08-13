@@ -689,7 +689,7 @@ export default function App() {
 	    abortControllerRef.current = new AbortController();
 	    const timeoutId = window.setTimeout(() => {
 	      try { abortControllerRef.current?.abort(); } catch {}
-	    }, 20000);
+	    }, useQuickInit ? 10000 : 30000);
 	    
       try {
         const actionLogsLimit = useQuickInit ? 150 : 500;
@@ -895,6 +895,7 @@ export default function App() {
 	      window.clearTimeout(timeoutId);
 	      if (showLoading) setIsLoading(false);
 	      setIsSyncing(false);
+	      abortControllerRef.current = null;
 	      fullDataRequestInFlightRef.current = false;
 	    }
 		  }, [apiUrl, persistCache]);
@@ -915,10 +916,9 @@ export default function App() {
 
   useEffect(() => {
     if (!apiUrl || !currentUser || hasFullDataLoaded) return;
-    const shouldLoadFullData =
-      activeTab !== 'dashboard' &&
-      activeTab !== 'documentation';
+    const shouldLoadFullData = activeTab !== 'documentation';
     if (!shouldLoadFullData) return;
+    if (abortControllerRef.current) return;
     if (fullDataRequestInFlightRef.current) return;
 
     fullDataRequestInFlightRef.current = true;
