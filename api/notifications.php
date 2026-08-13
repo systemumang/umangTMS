@@ -339,7 +339,7 @@ function notifications_enqueue_pending_reminders_if_due(mysqli $conn): array {
     $tz = new DateTimeZone('Asia/Kolkata');
     $now = new DateTimeImmutable('now', $tz);
     $settings = notifications_get_settings($conn);
-    $reminderTime = trim((string)($settings['reminderTime'] ?? '09:30'));
+    $reminderTime = trim((string)($overrides['reminderTime'] ?? $settings['reminderTime'] ?? '09:30'));
     if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $reminderTime)) $reminderTime = '09:30';
     [$targetHour, $targetMinute] = array_map('intval', explode(':', $reminderTime));
     $hour = (int)$now->format('H');
@@ -348,6 +348,127 @@ function notifications_enqueue_pending_reminders_if_due(mysqli $conn): array {
         return ['success' => true, 'enqueued' => 0, 'skipped' => 0, 'message' => 'Reminder time not reached'];
     }
     return notifications_enqueue_pending_reminders($conn, false);
+}
+
+function notifications_parse_date_dmy_to_iso(string $value): string {
+    $value = trim($value);
+    if ($value === '') return '';
+    if (preg_match('/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/', $value, $m)) {
+        return $m[3] . '-' . str_pad($m[2], 2, '0', STR_PAD_LEFT) . '-' . str_pad($m[1], 2, '0', STR_PAD_LEFT);
+    }
+    $ts = strtotime($value);
+    return $ts === false ? '' : date('Y-m-d', $ts);
+}
+
+function notifications_collect_update_totals(mysqli $conn, string $todayIso): array {
+    $simple = [];
+    $simpleResult = $conn->query("SELECT taskTitle, goal, updateDate, updatedOn FROM action_logs ORDER BY id ASC");
+    if ($simpleResult) {
+        while ($row = $simpleResult->fetch_assoc()) {
+            $date = notifications_parse_date_dmy_to_iso((string)($row['updatedOn'] ?? '')) ?: notifications_parse_date_dmy_to_iso((string)($row['updateDate'] ?? ''));
+            if ($date !== $todayIso) continue;
+            $title = notifications_trim((string)($row['taskTitle'] ?? ''));
+            if ($title === '') continue;
+            $goal = is_numeric($row['goal'] ?? '') ? (float)$row['goal'] : 0;
+            $simple[$title] = ($simple[$title] ?? 0) + $goal;
+        }
+        $simpleResult->free();
+    }
+
+    $recurring = [];
+    $recurringResult = $conn->query("SELECT taskTitle, goal, updatedOn FROM recurring_actions ORDER BY id ASC");
+    if ($recurringResult) {
+        while ($row = $recurringResult->fetch_assoc()) {
+            $date = notifications_parse_date_dmy_to_iso((string)($row['updatedOn'] ?? ''));
+            if ($date !== $todayIso) continue;
+            $title = notifications_trim((string)($row['taskTitle'] ?? ''));
+            if ($title === '') continue;
+            $goal = is_numeric($row['goal'] ?? '') ? (float)$row['goal'] : 0;
+            $recurring[$title] = ($recurring[$title] ?? 0) + $goal;
+        }
+        $recurringResult->free();
+    }
+
+    return ['simple' => $simple, 'recurring' => $recurring];
+}
+
+function notifications_format_number($value): string {
+    $num = (float)$value;
+    return fmod($num, 1.0) === 0.0 ? (string)(int)$num : rtrim(rtrim(number_format($num, 2, '.', ''), '0'), '.');
+}
+
+function notifications_compose_update_reminder(array $simpleTotals, array $recurringTotals, string $dateDmy): string {
+    $lines = [];
+    $lines[] = '*Task Update - ' . $dateDmy . '* Today Date';
+    $lines[] = '';
+    $lines[] = '*Simple Task*';
+    if (count($simpleTotals) === 0) {
+        $lines[] = 'No simple task updates today';
+    } else {
+        $idx = 1;
+        foreach ($simpleTotals as $title => $total) {
+            $lines[] = $idx . '.' . $title . ' - ' . notifications_format_number($total);
+            $idx++;
+        }
+    }
+    $lines[] = '';
+    $lines[] = '*Recurring Tasks*';
+    if (count($recurringTotals) === 0) {
+        $lines[] = 'No recurring task updates today';
+    } else {
+        $idx = 1;
+        foreach ($recurringTotals as $title => $total) {
+            $lines[] = $idx . '. ' . $title . ' - ' . notifications_format_number($total);
+            $idx++;
+        }
+    }
+    return implode("
+", $lines);
+}
+
+function notifications_update_reminder_due(mysqli $conn, array $overrides = []): array {
+    $tz = new DateTimeZone('Asia/Kolkata');
+    $now = new DateTimeImmutable('now', $tz);
+    $settings = notifications_get_settings($conn);
+    $reminderTime = trim((string)($overrides['reminderTime'] ?? $settings['reminderTime'] ?? '09:30'));
+    if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $reminderTime)) $reminderTime = '09:30';
+    [$targetHour, $targetMinute] = array_map('intval', explode(':', $reminderTime));
+    $hour = (int)$now->format('H');
+    $minute = (int)$now->format('i');
+    return [
+        'due' => !($hour < $targetHour || ($hour === $targetHour && $minute < $targetMinute)),
+        'todayIso' => $now->format('Y-m-d'),
+        'todayDmy' => $now->format('d/m/Y'),
+    ];
+}
+
+function notifications_enqueue_update_reminder(mysqli $conn, bool $force = false, array $overrides = []): array {
+    if (!notifications_enabled()) return ['success' => true, 'enqueued' => 0, 'skipped' => 0, 'message' => 'Notifications disabled'];
+    if (!notifications_table_exists($conn, 'notification_queue')) return ['success' => true, 'enqueued' => 0, 'skipped' => 0, 'message' => 'Queue table missing'];
+
+    $settings = notifications_get_settings($conn);
+    $waProvider = notifications_pick_whatsapp_provider($settings);
+    if ($waProvider === '') return ['success' => false, 'enqueued' => 0, 'skipped' => 0, 'message' => 'WhatsApp provider not configured'];
+    $group = trim((string)($overrides['updateReminderGroup'] ?? $settings['updateReminderGroup'] ?? ''));
+    if ($group === '') return ['success' => false, 'enqueued' => 0, 'skipped' => 0, 'message' => 'Group Number not configured'];
+
+    $due = notifications_update_reminder_due($conn, $overrides);
+    if (!$force && !($due['due'] ?? false)) return ['success' => true, 'enqueued' => 0, 'skipped' => 0, 'message' => 'Reminder time not reached'];
+
+    $eventType = $force ? 'update_reminder_test' : 'update_reminder_' . (string)$due['todayIso'];
+    if (!$force && notifications_pending_reminder_already_logged($conn, $eventType, $group)) {
+        return ['success' => true, 'enqueued' => 0, 'skipped' => 1, 'message' => 'Update reminder already queued'];
+    }
+
+    $totals = notifications_collect_update_totals($conn, (string)$due['todayIso']);
+    $message = notifications_compose_update_reminder($totals['simple'], $totals['recurring'], (string)$due['todayDmy']);
+    notifications_enqueue($conn, 'whatsapp', $waProvider, 'group', $group, $message, ['event' => $eventType]);
+    notifications_log($conn, $eventType, 'whatsapp', $waProvider, $group, 'enqueued', '');
+    return ['success' => true, 'enqueued' => 1, 'skipped' => 0, 'message' => 'Update reminder queued'];
+}
+
+function notifications_enqueue_update_reminder_if_due(mysqli $conn): array {
+    return notifications_enqueue_update_reminder($conn, false);
 }
 
 function notifications_enqueue(mysqli $conn, string $channel, string $provider, string $targetType, string $target, string $message, array $meta = []): void {

@@ -26,6 +26,7 @@ if (!notifications_table_exists($conn, 'notification_queue')) {
 }
 
 $reminderResult = notifications_enqueue_pending_reminders_if_due($conn);
+$updateReminderResult = notifications_enqueue_update_reminder_if_due($conn);
 
 $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
 $limit = max(1, min(200, $limit));
@@ -82,5 +83,6 @@ echo json_encode([
     'processed' => $processed,
     'sent' => $sent,
     'failed' => $failed,
-    'reminders' => $reminderResult ?? null
+    'reminders' => $reminderResult ?? null,
+    'updateReminders' => $updateReminderResult ?? null
 ]);

@@ -7,9 +7,10 @@ interface SettingsViewProps {
   settings: AppSettings;
   onUpdate: (settings: AppSettings) => Promise<void> | void;
   onSendReminder?: () => Promise<{ enqueued?: number; skipped?: number; message?: string } | void> | void;
+  onSendUpdateReminder?: (settings: AppSettings) => Promise<{ enqueued?: number; skipped?: number; message?: string } | void> | void;
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate, onSendReminder }) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate, onSendReminder, onSendUpdateReminder }) => {
   const { getViewLabel } = useLabels();
   const [formData, setFormData] = useState<AppSettings>({ ...settings });
   const [isSaved, setIsSaved] = useState(false);
@@ -17,6 +18,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate, 
   const [saveError, setSaveError] = useState('');
   const [isSendingReminder, setIsSendingReminder] = useState(false);
   const [reminderResult, setReminderResult] = useState('');
+  const [isSendingUpdateReminder, setIsSendingUpdateReminder] = useState(false);
 
   type Row = { id: string; key: string; label: string };
 
@@ -115,6 +117,24 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate, 
     }
   };
 
+  const handleSendUpdateReminder = async () => {
+    if (!onSendUpdateReminder) return;
+    setIsSendingUpdateReminder(true);
+    setReminderResult('');
+    setSaveError('');
+    try {
+      const result = await onSendUpdateReminder(formData);
+      const enqueued = result?.enqueued ?? 0;
+      const skipped = result?.skipped ?? 0;
+      setReminderResult(`Update reminder queued: ${enqueued}. Skipped: ${skipped}.`);
+      setTimeout(() => setReminderResult(''), 5000);
+    } catch (error: any) {
+      setSaveError(error?.message || 'Failed to send update reminder.');
+    } finally {
+      setIsSendingUpdateReminder(false);
+    }
+  };
+
   const inputClass = "w-full px-4 py-2.5 bg-white border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none text-gray-900 transition-all";
   const labelClass = "text-xs font-bold text-indigo-600 uppercase tracking-wider block mb-1.5";
 
@@ -204,6 +224,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate, 
                 <label className={labelClass}>Reminder Time</label>
                 <input name="reminderTime" type="time" value={formData.reminderTime || '09:30'} onChange={handleChange} className={inputClass} />
               </div>
+              <div className="space-y-1">
+                <label className={labelClass}>Group Number</label>
+                <input name="updateReminderGroup" value={formData.updateReminderGroup || ''} onChange={handleChange} className={inputClass} placeholder="Enter MAS group invite code" />
+              </div>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2 border-t border-indigo-100">
               <button
@@ -214,6 +238,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate, 
               >
                 {isSendingReminder ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                 {isSendingReminder ? 'Sending...' : 'Send Reminder'}
+              </button>
+              <button
+                type="button"
+                onClick={handleSendUpdateReminder}
+                disabled={isSendingUpdateReminder || !onSendUpdateReminder}
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-sm font-bold text-xs uppercase tracking-wide"
+              >
+                {isSendingUpdateReminder ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                {isSendingUpdateReminder ? 'Sending...' : 'Update Message Reminder'}
               </button>
               {reminderResult && <span className="text-xs font-bold text-emerald-700">{reminderResult}</span>}
             </div>

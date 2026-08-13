@@ -219,6 +219,7 @@ CREATE TABLE IF NOT EXISTS app_settings (
   masId VARCHAR(255) DEFAULT '',
   masPassword VARCHAR(255) DEFAULT '',
   reminderTime VARCHAR(5) DEFAULT '09:30',
+  updateReminderGroup VARCHAR(255) DEFAULT '',
   metaAccessToken TEXT,
   metaPhoneNumberId VARCHAR(255) DEFAULT '',
   metaWabaId VARCHAR(255) DEFAULT '',

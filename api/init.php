@@ -173,6 +173,12 @@ function add_reminder_time_column_if_missing(mysqli $conn): void {
     }
 }
 
+function add_update_reminder_group_column_if_missing(mysqli $conn): void {
+    if (!hasColumn($conn, 'app_settings', 'updateReminderGroup')) {
+        $conn->query("ALTER TABLE `app_settings` ADD COLUMN `updateReminderGroup` VARCHAR(255) DEFAULT '' AFTER `reminderTime`");
+    }
+}
+
 function sendJson(array $payload, int $statusCode = 200): void {
     http_response_code($statusCode);
     echo json_encode($payload);
@@ -340,6 +346,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     ensure_departments_table($conn);
     add_notes_column_if_missing($conn);
     add_reminder_time_column_if_missing($conn);
+    add_update_reminder_group_column_if_missing($conn);
     if ($action === 'dashboardSummary') {
         $summaryUser = trim((string)($_GET['user'] ?? ''));
         $summaryRole = strtolower(trim((string)($_GET['role'] ?? '')));
@@ -380,6 +387,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         'masId' => '',
         'masPassword' => '',
         'reminderTime' => '09:30',
+        'updateReminderGroup' => '',
         'metaAccessToken' => '',
         'metaPhoneNumberId' => '',
         'metaWabaId' => '',
@@ -493,7 +501,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$stmt) {
             sendJson(['success' => false, 'error' => 'Failed to prepare insert query.'], 500);
         }
-        $stmt->bind_param('ssssssssssi', $name, $email, $employee_id, $mobile, $role, $designation, $department, $telegram_user_name, $password, $isActive);
+        $stmt->bind_param('sssssssssssi', $name, $email, $employee_id, $mobile, $role, $designation, $department, $telegram_user_name, $password, $isActive);
         $ok = $stmt->execute();
         $insertId = (int)$stmt->insert_id;
         $stmt->close();
@@ -880,6 +888,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         sendJson($result);
     }
 
+    if ($action === 'sendUpdateReminder') {
+        $force = strtolower((string)($data['force'] ?? 'true')) !== 'false';
+        $result = notifications_enqueue_update_reminder($conn, $force, [
+            'updateReminderGroup' => trim((string)($data['updateReminderGroup'] ?? '')),
+            'reminderTime' => trim((string)($data['reminderTime'] ?? '')),
+        ]);
+        sendJson($result);
+    }
+
     if ($action === 'updateMaster' && $table === 'app_settings') {
 	        $officeTokenId = trim((string)($data['officeTokenId'] ?? ''));
 	        $officeTelegramGroupId = trim((string)($data['officeTelegramGroupId'] ?? ''));
@@ -888,6 +905,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	        $masPassword = (string)($data['masPassword'] ?? '');
             $reminderTime = trim((string)($data['reminderTime'] ?? '09:30'));
             if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $reminderTime)) $reminderTime = '09:30';
+            $updateReminderGroup = trim((string)($data['updateReminderGroup'] ?? ''));
 	        $metaAccessToken = trim((string)($data['metaAccessToken'] ?? ''));
 	        $metaPhoneNumberId = trim((string)($data['metaPhoneNumberId'] ?? ''));
 	        $metaWabaId = trim((string)($data['metaWabaId'] ?? ''));
@@ -905,9 +923,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	        $existingId = isset($existing[0]['id']) ? (int)$existing[0]['id'] : 0;
 
 	        if ($existingId > 0) {
-	            $stmt = $conn->prepare("UPDATE app_settings SET officeTokenId=?, officeTelegramGroupId=?, whatsappGroupId=?, masId=?, masPassword=?, reminderTime=?, metaAccessToken=?, metaPhoneNumberId=?, metaWabaId=?, metaVerifyToken=?, viewLabelOverrides=?, fieldLabelOverrides=?, updated_at=NOW() WHERE id=?");
+	            $stmt = $conn->prepare("UPDATE app_settings SET officeTokenId=?, officeTelegramGroupId=?, whatsappGroupId=?, masId=?, masPassword=?, reminderTime=?, updateReminderGroup=?, metaAccessToken=?, metaPhoneNumberId=?, metaWabaId=?, metaVerifyToken=?, viewLabelOverrides=?, fieldLabelOverrides=?, updated_at=NOW() WHERE id=?");
 	            if ($stmt) {
-	                $stmt->bind_param('ssssssssssssi', $officeTokenId, $officeTelegramGroupId, $whatsappGroupId, $masId, $masPassword, $reminderTime, $metaAccessToken, $metaPhoneNumberId, $metaWabaId, $metaVerifyToken, $viewLabelOverrides, $fieldLabelOverrides, $existingId);
+	                $stmt->bind_param('sssssssssssssi', $officeTokenId, $officeTelegramGroupId, $whatsappGroupId, $masId, $masPassword, $reminderTime, $updateReminderGroup, $metaAccessToken, $metaPhoneNumberId, $metaWabaId, $metaVerifyToken, $viewLabelOverrides, $fieldLabelOverrides, $existingId);
 	            } else {
 	                if ($hasLabelOverrides) {
 	                    sendJson([
@@ -916,15 +934,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	                    ], 400);
 	                }
 	                // Backward compatible with older schemas where override columns don't exist.
-	                $stmt = $conn->prepare("UPDATE app_settings SET officeTokenId=?, officeTelegramGroupId=?, whatsappGroupId=?, masId=?, masPassword=?, reminderTime=?, metaAccessToken=?, metaPhoneNumberId=?, metaWabaId=?, metaVerifyToken=?, updated_at=NOW() WHERE id=?");
+	                $stmt = $conn->prepare("UPDATE app_settings SET officeTokenId=?, officeTelegramGroupId=?, whatsappGroupId=?, masId=?, masPassword=?, reminderTime=?, updateReminderGroup=?, metaAccessToken=?, metaPhoneNumberId=?, metaWabaId=?, metaVerifyToken=?, updated_at=NOW() WHERE id=?");
 	                if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare settings update query.'], 500);
-	                $stmt->bind_param('ssssssssssi', $officeTokenId, $officeTelegramGroupId, $whatsappGroupId, $masId, $masPassword, $reminderTime, $metaAccessToken, $metaPhoneNumberId, $metaWabaId, $metaVerifyToken, $existingId);
+	                $stmt->bind_param('sssssssssssi', $officeTokenId, $officeTelegramGroupId, $whatsappGroupId, $masId, $masPassword, $reminderTime, $updateReminderGroup, $metaAccessToken, $metaPhoneNumberId, $metaWabaId, $metaVerifyToken, $existingId);
 	            }
 	        } else {
 	            $insertId = 1;
-	            $stmt = $conn->prepare("INSERT INTO app_settings (id, officeTokenId, officeTelegramGroupId, whatsappGroupId, masId, masPassword, reminderTime, metaAccessToken, metaPhoneNumberId, metaWabaId, metaVerifyToken, viewLabelOverrides, fieldLabelOverrides, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+	            $stmt = $conn->prepare("INSERT INTO app_settings (id, officeTokenId, officeTelegramGroupId, whatsappGroupId, masId, masPassword, reminderTime, updateReminderGroup, metaAccessToken, metaPhoneNumberId, metaWabaId, metaVerifyToken, viewLabelOverrides, fieldLabelOverrides, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
 	            if ($stmt) {
-	                $stmt->bind_param('isssssssssss', $insertId, $officeTokenId, $officeTelegramGroupId, $whatsappGroupId, $masId, $masPassword, $reminderTime, $metaAccessToken, $metaPhoneNumberId, $metaWabaId, $metaVerifyToken, $viewLabelOverrides, $fieldLabelOverrides);
+	                $stmt->bind_param('isssssssssssss', $insertId, $officeTokenId, $officeTelegramGroupId, $whatsappGroupId, $masId, $masPassword, $reminderTime, $updateReminderGroup, $metaAccessToken, $metaPhoneNumberId, $metaWabaId, $metaVerifyToken, $viewLabelOverrides, $fieldLabelOverrides);
 	            } else {
 	                if ($hasLabelOverrides) {
 	                    sendJson([
@@ -933,9 +951,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	                    ], 400);
 	                }
 	                // Backward compatible with older schemas where override columns don't exist.
-	                $stmt = $conn->prepare("INSERT INTO app_settings (id, officeTokenId, officeTelegramGroupId, whatsappGroupId, masId, masPassword, reminderTime, metaAccessToken, metaPhoneNumberId, metaWabaId, metaVerifyToken, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+	                $stmt = $conn->prepare("INSERT INTO app_settings (id, officeTokenId, officeTelegramGroupId, whatsappGroupId, masId, masPassword, reminderTime, updateReminderGroup, metaAccessToken, metaPhoneNumberId, metaWabaId, metaVerifyToken, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
 	                if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare settings insert query.'], 500);
-	                $stmt->bind_param('issssssssss', $insertId, $officeTokenId, $officeTelegramGroupId, $whatsappGroupId, $masId, $masPassword, $reminderTime, $metaAccessToken, $metaPhoneNumberId, $metaWabaId, $metaVerifyToken);
+	                $stmt->bind_param('isssssssssss', $insertId, $officeTokenId, $officeTelegramGroupId, $whatsappGroupId, $masId, $masPassword, $reminderTime, $updateReminderGroup, $metaAccessToken, $metaPhoneNumberId, $metaWabaId, $metaVerifyToken);
 	            }
 	        }
 

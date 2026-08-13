@@ -232,7 +232,7 @@ export default function App() {
   const normalizeSettings = useCallback((incoming: any): AppSettings => {
     const base: AppSettings = {
       officeTokenId: '', officeTelegramGroupId: '', whatsappGroupId: '', masId: '',
-      masPassword: '', reminderTime: '09:30', metaAccessToken: '', metaPhoneNumberId: '', metaWabaId: '', metaVerifyToken: '',
+      masPassword: '', reminderTime: '09:30', updateReminderGroup: '', metaAccessToken: '', metaPhoneNumberId: '', metaWabaId: '', metaVerifyToken: '',
       viewLabelOverrides: '{}', fieldLabelOverrides: '{}'
     };
     if (!incoming || typeof incoming !== 'object') return base;
@@ -288,7 +288,7 @@ export default function App() {
   const [recurringActions, setRecurringActions] = useState<RecurringTaskAction[]>([]);
   const [settings, setSettings] = useState<AppSettings>({
 	    officeTokenId: '', officeTelegramGroupId: '', whatsappGroupId: '', masId: '',
-	    masPassword: '', reminderTime: '09:30', metaAccessToken: '', metaPhoneNumberId: '', metaWabaId: '', metaVerifyToken: '',
+	    masPassword: '', reminderTime: '09:30', updateReminderGroup: '', metaAccessToken: '', metaPhoneNumberId: '', metaWabaId: '', metaVerifyToken: '',
 	    viewLabelOverrides: '{}', fieldLabelOverrides: '{}'
 	  });
   const [dashboardSummary, setDashboardSummary] = useState<{ pendingSimpleTasks?: number; pendingRecurringTasks?: number } | null>(null);
@@ -1426,6 +1426,12 @@ export default function App() {
         const result = await apiPost('sendPendingReminders', { force: true }, 'AppSettings');
         if (!result?.success) {
           throw new Error(result?.message || result?.error || 'Failed to send reminder.');
+        }
+        return result;
+      }} onSendUpdateReminder={async (s) => {
+        const result = await apiPost('sendUpdateReminder', { ...s, force: true }, 'AppSettings');
+        if (!result?.success) {
+          throw new Error(result?.message || result?.error || 'Failed to send update reminder.');
         }
         return result;
       }} />;
