@@ -571,16 +571,16 @@ function notifications_send_whatsapp_mas_personal(array $settings, string $toMob
     ]);
 }
 
-function notifications_send_whatsapp_mas_group(array $settings, string $groupInviteCode, string $message): array {
+function notifications_send_whatsapp_mas_group(array $settings, string $groupNumber, string $message): array {
     $username = trim((string)($settings['masId'] ?? ''));
     $password = trim((string)($settings['masPassword'] ?? ''));
     if ($username === '' || $password === '') return ['ok' => false, 'error' => 'MessageAutoSender not configured'];
-    $groupInviteCode = trim($groupInviteCode);
-    if ($groupInviteCode === '') return ['ok' => false, 'error' => 'Missing group id'];
-    $url = "https://app.messageautosender.com/api/v1/message/create-group-message";
+    $groupNumber = trim($groupNumber);
+    if ($groupNumber === '') return ['ok' => false, 'error' => 'Missing group number'];
+    $url = "https://app.messageautosender.com/api/v1/message/create";
     $auth = base64_encode($username . ":" . $password);
     return notifications_http_post_json($url, ["Authorization: Basic {$auth}"], [
-        'groupInviteCode' => $groupInviteCode,
+        'recipientIds' => [$groupNumber],
         'message' => [$message],
     ]);
 }
