@@ -303,8 +303,10 @@ function notifications_enqueue_pending_reminders(mysqli $conn, bool $force = fal
     if (!notifications_table_exists($conn, 'notification_queue')) return ['success' => true, 'enqueued' => 0, 'skipped' => 0, 'message' => 'Queue table missing'];
 
     $settings = notifications_get_settings($conn);
-    $waProvider = notifications_pick_whatsapp_provider($settings);
-    if ($waProvider === '') return ['success' => false, 'enqueued' => 0, 'skipped' => 0, 'message' => 'WhatsApp provider not configured'];
+    $waProvider = 'mas';
+    if (trim((string)($settings['masId'] ?? '')) === '' || trim((string)($settings['masPassword'] ?? '')) === '') {
+        return ['success' => false, 'enqueued' => 0, 'skipped' => 0, 'message' => 'MessageAutoSender not configured'];
+    }
 
     $eventType = notifications_pending_reminder_event_key($force);
     $groups = notifications_collect_pending_reminders($conn);
@@ -447,8 +449,10 @@ function notifications_enqueue_update_reminder(mysqli $conn, bool $force = false
     if (!notifications_table_exists($conn, 'notification_queue')) return ['success' => true, 'enqueued' => 0, 'skipped' => 0, 'message' => 'Queue table missing'];
 
     $settings = notifications_get_settings($conn);
-    $waProvider = notifications_pick_whatsapp_provider($settings);
-    if ($waProvider === '') return ['success' => false, 'enqueued' => 0, 'skipped' => 0, 'message' => 'WhatsApp provider not configured'];
+    $waProvider = 'mas';
+    if (trim((string)($settings['masId'] ?? '')) === '' || trim((string)($settings['masPassword'] ?? '')) === '') {
+        return ['success' => false, 'enqueued' => 0, 'skipped' => 0, 'message' => 'MessageAutoSender not configured'];
+    }
     $group = trim((string)($overrides['updateReminderGroup'] ?? $settings['updateReminderGroup'] ?? ''));
     if ($group === '') return ['success' => false, 'enqueued' => 0, 'skipped' => 0, 'message' => 'Group Number not configured'];
 
