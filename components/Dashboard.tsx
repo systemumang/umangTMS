@@ -502,7 +502,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <div key={task.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 border border-amber-100 bg-amber-50/20 rounded-xl shadow-sm">
                   <div className="min-w-0">
                     <p className="text-xs font-black text-gray-900 uppercase break-words">{task.title}</p>
-                    <p className="text-[10px] font-bold text-gray-500 uppercase mt-1 break-words">{task.remarks || '-'}</p>
+                    {task.remarks && <p className="text-[10px] font-bold text-gray-500 uppercase mt-1 break-words">{task.remarks}</p>}
                     <p className={`text-[10px] font-black uppercase mt-1 ${isPastDue(task.dueDate) ? 'text-red-600' : 'text-gray-500'}`}>Due: {task.dueDate || '-'}</p>
                   </div>
                   <button onClick={() => onUpdateTask(task)} className="shrink-0 px-4 py-2 bg-blue-600 text-white text-[10px] font-black rounded-lg hover:bg-blue-700 uppercase shadow-sm">
