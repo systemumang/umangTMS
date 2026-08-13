@@ -57,12 +57,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
   
   const stats = useMemo(() => {
     const regularTasks = tasks.filter(t => !t.vendor || t.vendor.trim() === '');
-    const pendingTasks = dashboardSummary?.pendingSimpleTasks ?? regularTasks.filter(t => t.status !== 'Completed').length;
+    const pendingTasks = dashboardSummary ? dashboardSummary.pendingSimpleTasks ?? 0 : '...';
     return { pendingTasks };
   }, [tasks, dashboardSummary]);
 
   const pendingRecurringTasks = useMemo(() => {
-    if (typeof dashboardSummary?.pendingRecurringTasks === 'number') return dashboardSummary.pendingRecurringTasks;
+    if (!dashboardSummary) return '...';
+    if (typeof dashboardSummary.pendingRecurringTasks === 'number') return dashboardSummary.pendingRecurringTasks;
 
     const parseRecurringDate = (value: string): Date | null => {
       const raw = String(value || '').trim();
