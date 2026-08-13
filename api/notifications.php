@@ -364,28 +364,28 @@ function notifications_parse_date_dmy_to_iso(string $value): string {
 
 function notifications_collect_update_totals(mysqli $conn, string $todayIso): array {
     $simple = [];
-    $simpleResult = $conn->query("SELECT assignees, goal, updateDate, updatedOn FROM action_logs ORDER BY id ASC");
+    $simpleResult = $conn->query("SELECT assignees, owner, updateDate, updatedOn FROM action_logs ORDER BY id ASC");
     if ($simpleResult) {
         while ($row = $simpleResult->fetch_assoc()) {
             $date = notifications_parse_date_dmy_to_iso((string)($row['updatedOn'] ?? '')) ?: notifications_parse_date_dmy_to_iso((string)($row['updateDate'] ?? ''));
             if ($date !== $todayIso) continue;
-            $goal = is_numeric($row['goal'] ?? '') ? (float)$row['goal'] : 0;
-            foreach (notifications_split_names((string)($row['assignees'] ?? '')) as $assignee) {
-                $simple[$assignee] = ($simple[$assignee] ?? 0) + $goal;
+            $names = notifications_split_names((string)($row['assignees'] ?? ''));
+            if (count($names) === 0) $names = notifications_split_names((string)($row['owner'] ?? ''));
+            foreach ($names as $assignee) {
+                $simple[$assignee] = ($simple[$assignee] ?? 0) + 1;
             }
         }
         $simpleResult->free();
     }
 
     $recurring = [];
-    $recurringResult = $conn->query("SELECT assignee, goal, updatedOn FROM recurring_actions ORDER BY id ASC");
+    $recurringResult = $conn->query("SELECT assignee, updatedOn FROM recurring_actions ORDER BY id ASC");
     if ($recurringResult) {
         while ($row = $recurringResult->fetch_assoc()) {
             $date = notifications_parse_date_dmy_to_iso((string)($row['updatedOn'] ?? ''));
             if ($date !== $todayIso) continue;
-            $goal = is_numeric($row['goal'] ?? '') ? (float)$row['goal'] : 0;
             foreach (notifications_split_names((string)($row['assignee'] ?? '')) as $assignee) {
-                $recurring[$assignee] = ($recurring[$assignee] ?? 0) + $goal;
+                $recurring[$assignee] = ($recurring[$assignee] ?? 0) + 1;
             }
         }
         $recurringResult->free();
@@ -401,28 +401,24 @@ function notifications_format_number($value): string {
 
 function notifications_compose_update_reminder(array $simpleTotals, array $recurringTotals, string $dateDmy): string {
     $lines = [];
-    $lines[] = '*Task Update - ' . $dateDmy . '* Today Date';
+    $lines[] = '*Task Update - ' . $dateDmy . '*';
     $lines[] = '';
     $lines[] = '*Simple Task*';
-    if (count($simpleTotals) === 0) {
-        $lines[] = 'No simple task updates today';
-    } else {
-        $idx = 1;
-        foreach ($simpleTotals as $title => $total) {
-            $lines[] = $idx . '.' . $title . ' - ' . notifications_format_number($total);
-            $idx++;
-        }
+    $simpleTotals = array_filter($simpleTotals, fn($total) => (float)$total > 0);
+    arsort($simpleTotals, SORT_NUMERIC);
+    $idx = 1;
+    foreach ($simpleTotals as $title => $total) {
+        $lines[] = $idx . '.' . $title . ' - ' . notifications_format_number($total);
+        $idx++;
     }
     $lines[] = '';
     $lines[] = '*Recurring Tasks*';
-    if (count($recurringTotals) === 0) {
-        $lines[] = 'No recurring task updates today';
-    } else {
-        $idx = 1;
-        foreach ($recurringTotals as $title => $total) {
-            $lines[] = $idx . '. ' . $title . ' - ' . notifications_format_number($total);
-            $idx++;
-        }
+    $recurringTotals = array_filter($recurringTotals, fn($total) => (float)$total > 0);
+    arsort($recurringTotals, SORT_NUMERIC);
+    $idx = 1;
+    foreach ($recurringTotals as $title => $total) {
+        $lines[] = $idx . '. ' . $title . ' - ' . notifications_format_number($total);
+        $idx++;
     }
     return implode("
 ", $lines);
