@@ -334,11 +334,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     ensure_departments_table($conn);
     add_notes_column_if_missing($conn);
     if ($action === 'dashboardSummary') {
+        $summaryUser = trim((string)($_GET['user'] ?? ''));
+        $summaryRole = strtolower(trim((string)($_GET['role'] ?? '')));
+        $simpleWhere = "LOWER(TRIM(COALESCE(status, ''))) <> 'completed'";
+        $recurringWhere = "LOWER(TRIM(COALESCE(status, ''))) <> 'complete'";
+
+        if ($summaryRole !== 'admin') {
+            if ($summaryUser === '') {
+                $simpleWhere .= ' AND 1 = 0';
+                $recurringWhere .= ' AND 1 = 0';
+            } else {
+                $safeUser = $conn->real_escape_string($summaryUser);
+                $simpleWhere .= " AND (TRIM(COALESCE(owner, '')) = '$safeUser' OR FIND_IN_SET('$safeUser', REPLACE(COALESCE(assignees, ''), ', ', ',')) > 0)";
+                $recurringWhere .= " AND (TRIM(COALESCE(owner, '')) = '$safeUser' OR TRIM(COALESCE(assignee, '')) = '$safeUser')";
+            }
+        }
+
         sendJson([
             'success' => true,
             'data' => [
-                'pendingSimpleTasks' => countWhere($conn, 'main_tasks', "LOWER(TRIM(COALESCE(status, ''))) <> 'completed'"),
-                'pendingRecurringTasks' => countWhere($conn, 'recurring_tasks', "LOWER(TRIM(COALESCE(status, ''))) <> 'complete'")
+                'pendingSimpleTasks' => countWhere($conn, 'main_tasks', $simpleWhere),
+                'pendingRecurringTasks' => countWhere($conn, 'recurring_tasks', $recurringWhere)
             ]
         ]);
     }

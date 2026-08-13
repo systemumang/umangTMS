@@ -682,10 +682,13 @@ export default function App() {
 
 
   const fetchDashboardSummary = useCallback(async () => {
-    if (!apiUrl) return;
+    if (!apiUrl || !currentUser) return;
     try {
+      const userParam = encodeURIComponent(currentUser.name || '');
+      const roleParam = encodeURIComponent(currentUser.role || '');
+      const separator = apiUrl.includes('?') ? '&' : '?';
       const response = await fetch(
-        `${apiUrl}${apiUrl.includes('?') ? '&' : '?'}action=dashboardSummary&_cb=${Date.now()}`,
+        `${apiUrl}${separator}action=dashboardSummary&user=${userParam}&role=${roleParam}&_cb=${Date.now()}`,
         { cache: 'no-store', mode: 'cors' }
       );
       const result = await safeJsonParse(response, 'Dashboard Summary');
@@ -698,7 +701,7 @@ export default function App() {
     } catch (error) {
       console.error('dashboardSummary error:', error);
     }
-  }, [apiUrl]);
+  }, [apiUrl, currentUser]);
   const abortControllerRef = useRef<AbortController | null>(null);
 
       const fetchData = useCallback(async (showLoading = true, useQuickInit = false) => {
