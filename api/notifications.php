@@ -216,6 +216,136 @@ function notifications_compose_recurring_action(array $action): string {
     return implode("\n", $lines);
 }
 
+function notifications_split_names(string $names): array {
+    $parts = array_map('trim', explode(',', $names));
+    $parts = array_filter($parts, static fn($name) => $name !== '');
+    return array_values(array_unique($parts));
+}
+
+function notifications_pending_reminder_event_key(bool $force): string {
+    if ($force) return 'pending_reminder_test';
+    $tz = new DateTimeZone('Asia/Kolkata');
+    return 'pending_reminder_' . (new DateTimeImmutable('now', $tz))->format('Y-m-d');
+}
+
+function notifications_pending_reminder_already_logged(mysqli $conn, string $eventType, string $target): bool {
+    if (!notifications_table_exists($conn, 'notification_logs')) return false;
+    $stmt = $conn->prepare("SELECT id FROM notification_logs WHERE eventType=? AND target=? AND status='enqueued' LIMIT 1");
+    if (!$stmt) return false;
+    $stmt->bind_param('ss', $eventType, $target);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $exists = $res ? (bool)$res->fetch_assoc() : false;
+    $stmt->close();
+    return $exists;
+}
+
+function notifications_compose_pending_reminder(array $simpleTasks, array $recurringTasks): string {
+    $lines = [];
+    $lines[] = '*Pending Tasks Reminder*';
+    $lines[] = '';
+    $lines[] = 'Simple Task';
+    if (count($simpleTasks) === 0) {
+        $lines[] = 'No pending simple tasks';
+    } else {
+        foreach (array_values($simpleTasks) as $idx => $task) {
+            $lines[] = ($idx + 1) . '. ' . notifications_trim((string)$task);
+        }
+    }
+    $lines[] = '';
+    $lines[] = 'Recurring Task';
+    if (count($recurringTasks) === 0) {
+        $lines[] = 'No pending recurring tasks';
+    } else {
+        foreach (array_values($recurringTasks) as $idx => $task) {
+            $lines[] = ($idx + 1) . '. ' . notifications_trim((string)$task);
+        }
+    }
+    return implode("\n", $lines);
+}
+
+function notifications_collect_pending_reminders(mysqli $conn): array {
+    $byAssignee = [];
+
+    $simpleSql = "SELECT title, assignees FROM main_tasks WHERE TRIM(COALESCE(assignees, '')) <> '' AND LOWER(TRIM(COALESCE(status, ''))) <> 'completed' ORDER BY dueDate ASC, title ASC";
+    $simpleResult = $conn->query($simpleSql);
+    if ($simpleResult) {
+        while ($row = $simpleResult->fetch_assoc()) {
+            $title = trim((string)($row['title'] ?? ''));
+            if ($title === '') continue;
+            foreach (notifications_split_names((string)($row['assignees'] ?? '')) as $assignee) {
+                if (!isset($byAssignee[$assignee])) $byAssignee[$assignee] = ['simple' => [], 'recurring' => []];
+                $byAssignee[$assignee]['simple'][] = $title;
+            }
+        }
+        $simpleResult->free();
+    }
+
+    $recurringSql = "SELECT title, assignee FROM recurring_tasks WHERE TRIM(COALESCE(assignee, '')) <> '' AND LOWER(TRIM(COALESCE(status, ''))) <> 'complete' ORDER BY time ASC, title ASC";
+    $recurringResult = $conn->query($recurringSql);
+    if ($recurringResult) {
+        while ($row = $recurringResult->fetch_assoc()) {
+            $title = trim((string)($row['title'] ?? ''));
+            if ($title === '') continue;
+            foreach (notifications_split_names((string)($row['assignee'] ?? '')) as $assignee) {
+                if (!isset($byAssignee[$assignee])) $byAssignee[$assignee] = ['simple' => [], 'recurring' => []];
+                $byAssignee[$assignee]['recurring'][] = $title;
+            }
+        }
+        $recurringResult->free();
+    }
+
+    return $byAssignee;
+}
+
+function notifications_enqueue_pending_reminders(mysqli $conn, bool $force = false): array {
+    if (!notifications_enabled()) return ['success' => true, 'enqueued' => 0, 'skipped' => 0, 'message' => 'Notifications disabled'];
+    if (!notifications_table_exists($conn, 'notification_queue')) return ['success' => true, 'enqueued' => 0, 'skipped' => 0, 'message' => 'Queue table missing'];
+
+    $settings = notifications_get_settings($conn);
+    $waProvider = notifications_pick_whatsapp_provider($settings);
+    if ($waProvider === '') return ['success' => false, 'enqueued' => 0, 'skipped' => 0, 'message' => 'WhatsApp provider not configured'];
+
+    $eventType = notifications_pending_reminder_event_key($force);
+    $groups = notifications_collect_pending_reminders($conn);
+    $enqueued = 0;
+    $skipped = 0;
+
+    foreach ($groups as $assignee => $tasks) {
+        if (count($tasks['simple']) === 0 && count($tasks['recurring']) === 0) {
+            $skipped++;
+            continue;
+        }
+        $mobile = notifications_get_user_mobile($conn, (string)$assignee);
+        if ($mobile === '') {
+            $skipped++;
+            notifications_log($conn, $eventType, 'whatsapp', $waProvider, (string)$assignee, 'skipped', 'Missing user mobile');
+            continue;
+        }
+        if (!$force && notifications_pending_reminder_already_logged($conn, $eventType, $mobile)) {
+            $skipped++;
+            continue;
+        }
+        $message = notifications_compose_pending_reminder($tasks['simple'], $tasks['recurring']);
+        notifications_enqueue($conn, 'whatsapp', $waProvider, 'personal', $mobile, $message, ['event' => $eventType, 'assignee' => $assignee]);
+        notifications_log($conn, $eventType, 'whatsapp', $waProvider, $mobile, 'enqueued', '');
+        $enqueued++;
+    }
+
+    return ['success' => true, 'enqueued' => $enqueued, 'skipped' => $skipped, 'message' => 'Pending reminders queued'];
+}
+
+function notifications_enqueue_pending_reminders_if_due(mysqli $conn): array {
+    $tz = new DateTimeZone('Asia/Kolkata');
+    $now = new DateTimeImmutable('now', $tz);
+    $hour = (int)$now->format('H');
+    $minute = (int)$now->format('i');
+    if ($hour < 9 || ($hour === 9 && $minute < 30)) {
+        return ['success' => true, 'enqueued' => 0, 'skipped' => 0, 'message' => 'Reminder time not reached'];
+    }
+    return notifications_enqueue_pending_reminders($conn, false);
+}
+
 function notifications_enqueue(mysqli $conn, string $channel, string $provider, string $targetType, string $target, string $message, array $meta = []): void {
     if (!notifications_enabled()) return;
     if ($channel === '' || $provider === '' || $target === '' || $message === '') return;

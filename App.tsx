@@ -1422,6 +1422,12 @@ export default function App() {
         if (!result?.success) {
           throw new Error(result?.error || 'Failed to save settings.');
         }
+      }} onSendReminder={async () => {
+        const result = await apiPost('sendPendingReminders', { force: true }, 'AppSettings');
+        if (!result?.success) {
+          throw new Error(result?.message || result?.error || 'Failed to send reminder.');
+        }
+        return result;
       }} />;
       case 'telegram-setup': if (!isAdmin) return null; return <TelegramSetupView />;
       case 'documentation': return <DocumentationView />;

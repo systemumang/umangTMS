@@ -866,7 +866,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         sendJson(['success' => true]);
     }
 
-	    if ($action === 'updateMaster' && $table === 'app_settings') {
+	    if ($action === 'sendPendingReminders') {
+        $force = strtolower((string)($data['force'] ?? 'true')) !== 'false';
+        $result = notifications_enqueue_pending_reminders($conn, $force);
+        sendJson($result);
+    }
+
+    if ($action === 'updateMaster' && $table === 'app_settings') {
 	        $officeTokenId = trim((string)($data['officeTokenId'] ?? ''));
 	        $officeTelegramGroupId = trim((string)($data['officeTelegramGroupId'] ?? ''));
 	        $whatsappGroupId = trim((string)($data['whatsappGroupId'] ?? ''));

@@ -1,19 +1,22 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Save, Key, MessageSquare, Database, Loader2, Type, Plus, Trash2, Search, RotateCcw } from 'lucide-react';
+import { Save, Key, MessageSquare, Database, Loader2, Type, Plus, Trash2, Search, RotateCcw, Send } from 'lucide-react';
 import { AppSettings } from '../types';
 import { useLabels } from '../labelOverrides';
 
 interface SettingsViewProps {
   settings: AppSettings;
   onUpdate: (settings: AppSettings) => Promise<void> | void;
+  onSendReminder?: () => Promise<{ enqueued?: number; skipped?: number; message?: string } | void> | void;
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate }) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate, onSendReminder }) => {
   const { getViewLabel } = useLabels();
   const [formData, setFormData] = useState<AppSettings>({ ...settings });
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [isSendingReminder, setIsSendingReminder] = useState(false);
+  const [reminderResult, setReminderResult] = useState('');
 
   type Row = { id: string; key: string; label: string };
 
@@ -94,6 +97,24 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate }
     }
   };
 
+  const handleSendReminder = async () => {
+    if (!onSendReminder) return;
+    setIsSendingReminder(true);
+    setReminderResult('');
+    setSaveError('');
+    try {
+      const result = await onSendReminder();
+      const enqueued = result?.enqueued ?? 0;
+      const skipped = result?.skipped ?? 0;
+      setReminderResult(`Reminder queued: ${enqueued}. Skipped: ${skipped}.`);
+      setTimeout(() => setReminderResult(''), 5000);
+    } catch (error: any) {
+      setSaveError(error?.message || 'Failed to send reminder.');
+    } finally {
+      setIsSendingReminder(false);
+    }
+  };
+
   const inputClass = "w-full px-4 py-2.5 bg-white border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none text-gray-900 transition-all";
   const labelClass = "text-xs font-bold text-indigo-600 uppercase tracking-wider block mb-1.5";
 
@@ -167,14 +188,28 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate }
             <Database className="text-indigo-600" size={18} />
             <h3 className="text-sm font-bold text-indigo-700 uppercase tracking-wide">MAS Credentials</h3>
           </div>
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-1">
-              <label className={labelClass}>MAS ID</label>
-              <input name="masId" value={formData.masId} onChange={handleChange} className={inputClass} placeholder="Enter MAS Identification" />
+          <div className="p-6 space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-1">
+                <label className={labelClass}>MAS ID</label>
+                <input name="masId" value={formData.masId} onChange={handleChange} className={inputClass} placeholder="Enter MAS Identification" />
+              </div>
+              <div className="space-y-1">
+                <label className={labelClass}>MAS Password</label>
+                <input name="masPassword" type="password" value={formData.masPassword} onChange={handleChange} className={inputClass} placeholder="Password" />
+              </div>
             </div>
-            <div className="space-y-1">
-              <label className={labelClass}>MAS Password</label>
-              <input name="masPassword" type="password" value={formData.masPassword} onChange={handleChange} className={inputClass} placeholder="••••••••" />
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2 border-t border-indigo-100">
+              <button
+                type="button"
+                onClick={handleSendReminder}
+                disabled={isSendingReminder || !onSendReminder}
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-sm font-bold text-xs uppercase tracking-wide"
+              >
+                {isSendingReminder ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                {isSendingReminder ? 'Sending...' : 'Send Reminder'}
+              </button>
+              {reminderResult && <span className="text-xs font-bold text-emerald-700">{reminderResult}</span>}
             </div>
           </div>
         </div>
