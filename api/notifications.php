@@ -339,7 +339,7 @@ function notifications_enqueue_pending_reminders_if_due(mysqli $conn): array {
     $tz = new DateTimeZone('Asia/Kolkata');
     $now = new DateTimeImmutable('now', $tz);
     $settings = notifications_get_settings($conn);
-    $reminderTime = trim((string)($overrides['reminderTime'] ?? $settings['reminderTime'] ?? '09:30'));
+    $reminderTime = trim((string)($settings['reminderTime'] ?? '09:30'));
     if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $reminderTime)) $reminderTime = '09:30';
     [$targetHour, $targetMinute] = array_map('intval', explode(':', $reminderTime));
     $hour = (int)$now->format('H');
@@ -430,7 +430,7 @@ function notifications_update_reminder_due(mysqli $conn, array $overrides = []):
     $tz = new DateTimeZone('Asia/Kolkata');
     $now = new DateTimeImmutable('now', $tz);
     $settings = notifications_get_settings($conn);
-    $reminderTime = trim((string)($overrides['reminderTime'] ?? $settings['reminderTime'] ?? '09:30'));
+    $reminderTime = trim((string)($overrides['updateReminderTime'] ?? $settings['updateReminderTime'] ?? '09:30'));
     if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $reminderTime)) $reminderTime = '09:30';
     [$targetHour, $targetMinute] = array_map('intval', explode(':', $reminderTime));
     $hour = (int)$now->format('H');

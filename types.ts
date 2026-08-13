@@ -199,6 +199,9 @@ export interface AppSettings {
   whatsappGroupId: string;
   masId: string;
   masPassword: string;
+  reminderTime?: string;
+  updateReminderTime?: string;
+  updateReminderGroup?: string;
   metaAccessToken: string;
   metaPhoneNumberId: string;
   metaWabaId: string;

@@ -219,10 +219,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate, 
                 <input name="masPassword" type="password" value={formData.masPassword} onChange={handleChange} className={inputClass} placeholder="Password" />
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-1">
                 <label className={labelClass}>Reminder Time</label>
                 <input name="reminderTime" type="time" value={formData.reminderTime || '09:30'} onChange={handleChange} className={inputClass} />
+              </div>
+              <div className="space-y-1">
+                <label className={labelClass}>Update Reminder Time</label>
+                <input name="updateReminderTime" type="time" value={formData.updateReminderTime || '09:30'} onChange={handleChange} className={inputClass} />
               </div>
               <div className="space-y-1">
                 <label className={labelClass}>Group Number</label>
