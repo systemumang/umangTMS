@@ -444,47 +444,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
 	        </div>
 	      )}
 
-      <div className="bg-blue-50/70 p-6 rounded-2xl border-2 border-blue-300 shadow-sm">
-        <SectionHeader title="Live Statistics" icon={<Clock size={20}/>} />
-	        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-	            <StatCard title="Pending Simple Tasks" value={stats.pendingTasks} icon={<Clock size={20}/>} iconBgColor="bg-amber-100" iconColor="text-amber-600" onClick={() => onNavigate('pending')}/>
-	            <StatCard title="Pending Recurring Tasks" value={pendingRecurringTasks} icon={<RotateCcw size={20}/>} iconBgColor="bg-emerald-100" iconColor="text-emerald-600" onClick={() => onNavigate('due-recurring-tasks')}/>
-	        </div>	      </div>
+      {isAdmin && (
+        <div className="bg-blue-50/70 p-6 rounded-2xl border-2 border-blue-300 shadow-sm">
+          <SectionHeader title="Live Statistics" icon={<Clock size={20}/>} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard title="Pending Simple Tasks" value={stats.pendingTasks} icon={<Clock size={20}/>} iconBgColor="bg-amber-100" iconColor="text-amber-600" onClick={() => onNavigate('pending')}/>
+            <StatCard title="Pending Recurring Tasks" value={pendingRecurringTasks} icon={<RotateCcw size={20}/>} iconBgColor="bg-emerald-100" iconColor="text-emerald-600" onClick={() => onNavigate('due-recurring-tasks')}/>
+          </div>
+        </div>
+      )}
 
       {!isAdmin && (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <div className="bg-white p-5 rounded-2xl border-2 border-amber-200 shadow-sm">
-            <div className="flex items-center gap-2 mb-4 border-b border-amber-50 pb-2">
-              <CheckSquare size={18} className="text-amber-600" />
-              <h4 className="text-sm font-black text-amber-900 uppercase">Pending Simple Tasks</h4>
-            </div>
-            <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
-              {employeePendingTasks.map(task => (
-                <div key={task.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 border border-amber-100 bg-amber-50/20 rounded-xl shadow-sm">
-                  <div className="min-w-0">
-                    <p className="text-xs font-black text-gray-900 uppercase break-words">{task.title}</p>
-                    <p className="text-[10px] font-bold text-gray-500 uppercase mt-1 break-words">{task.status} {task.dueDate ? `| Due: ${task.dueDate}` : ''}</p>
-                  </div>
-                  <button onClick={() => onUpdateTask(task)} className="shrink-0 px-4 py-2 bg-blue-600 text-white text-[10px] font-black rounded-lg hover:bg-blue-700 uppercase shadow-sm">
-                    Update
-                  </button>
-                </div>
-              ))}
-              {employeePendingTasks.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-10 opacity-50">
-                  <Clock size={32} className="text-gray-300 mb-2" />
-                  <p className="text-[10px] text-gray-500 italic text-center uppercase font-bold tracking-widest">No pending simple tasks</p>
-                </div>
-              )}
-            </div>
-          </div>
-
           <div className="bg-white p-5 rounded-2xl border-2 border-emerald-200 shadow-sm">
             <div className="flex items-center gap-2 mb-4 border-b border-emerald-50 pb-2">
               <RotateCcw size={18} className="text-emerald-600" />
-              <h4 className="text-sm font-black text-emerald-900 uppercase">Pending Recurring Tasks</h4>
+              <h4 className="text-sm font-black text-emerald-900 uppercase">Pending Recurring Tasks ({employeePendingRecurringTasks.length})</h4>
             </div>
-            <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-[520px] overflow-y-auto pr-1">
               {employeePendingRecurringTasks.map(task => (
                 <div key={task.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 border border-emerald-100 bg-emerald-50/20 rounded-xl shadow-sm">
                   <div className="min-w-0">
@@ -500,6 +477,32 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <div className="flex flex-col items-center justify-center py-10 opacity-50">
                   <Clock size={32} className="text-gray-300 mb-2" />
                   <p className="text-[10px] text-gray-500 italic text-center uppercase font-bold tracking-widest">No pending recurring tasks</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-2xl border-2 border-amber-200 shadow-sm">
+            <div className="flex items-center gap-2 mb-4 border-b border-amber-50 pb-2">
+              <CheckSquare size={18} className="text-amber-600" />
+              <h4 className="text-sm font-black text-amber-900 uppercase">Pending Simple Tasks ({employeePendingTasks.length})</h4>
+            </div>
+            <div className="space-y-2 max-h-[520px] overflow-y-auto pr-1">
+              {employeePendingTasks.map(task => (
+                <div key={task.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 border border-amber-100 bg-amber-50/20 rounded-xl shadow-sm">
+                  <div className="min-w-0">
+                    <p className="text-xs font-black text-gray-900 uppercase break-words">{task.title}</p>
+                    <p className="text-[10px] font-bold text-gray-500 uppercase mt-1 break-words">{task.status} {task.dueDate ? `| Due: ${task.dueDate}` : ''}</p>
+                  </div>
+                  <button onClick={() => onUpdateTask(task)} className="shrink-0 px-4 py-2 bg-blue-600 text-white text-[10px] font-black rounded-lg hover:bg-blue-700 uppercase shadow-sm">
+                    Update
+                  </button>
+                </div>
+              ))}
+              {employeePendingTasks.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-10 opacity-50">
+                  <Clock size={32} className="text-gray-300 mb-2" />
+                  <p className="text-[10px] text-gray-500 italic text-center uppercase font-bold tracking-widest">No pending simple tasks</p>
                 </div>
               )}
             </div>
