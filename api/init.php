@@ -74,6 +74,17 @@ function countRows(mysqli $conn, string $table): int {
     return (int)($row['total'] ?? 0);
 }
 
+
+function countWhere(mysqli $conn, string $table, string $where): int {
+    $safe = preg_replace('/[^a-zA-Z0-9_]/', '', $table);
+    $sql = "SELECT COUNT(*) AS total FROM `{$safe}` WHERE {$where}";
+    $result = $conn->query($sql);
+    if (!$result) {
+        return 0;
+    }
+    $row = $result->fetch_assoc();
+    return (int)($row['total'] ?? 0);
+}
 function hasColumn(mysqli $conn, string $table, string $column): bool {
     static $cache = [];
     $key = strtolower($table . '.' . $column);
@@ -268,7 +279,7 @@ function notify_recurring_action(mysqli $conn, array $actionRow): void {
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $action = isset($_GET['action']) ? (string)$_GET['action'] : '';
-    if ($action !== 'init') {
+    if (!in_array($action, ['init', 'dashboardSummary'], true)) {
         sendJson(['success' => false, 'error' => 'Invalid action.'], 400);
     }
 
@@ -289,6 +300,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     add_telegram_user_name_column_if_missing($conn);
     ensure_departments_table($conn);
     add_notes_column_if_missing($conn);
+    if ($action === 'dashboardSummary') {
+        sendJson([
+            'success' => true,
+            'data' => [
+                'pendingSimpleTasks' => countWhere($conn, 'main_tasks', "LOWER(TRIM(COALESCE(status, ''))) <> 'completed'"),
+                'pendingRecurringTasks' => countWhere($conn, 'recurring_tasks', "LOWER(TRIM(COALESCE(status, ''))) <> 'complete'")
+            ]
+        ]);
+    }
 
     $users = array_map(static function(array $u): array {
         $isActiveRaw = strtolower((string)($u['isActive'] ?? '1'));

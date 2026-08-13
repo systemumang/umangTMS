@@ -290,6 +290,7 @@ export default function App() {
 	    masPassword: '', metaAccessToken: '', metaPhoneNumberId: '', metaWabaId: '', metaVerifyToken: '',
 	    viewLabelOverrides: '{}', fieldLabelOverrides: '{}'
 	  });
+  const [dashboardSummary, setDashboardSummary] = useState<{ pendingSimpleTasks?: number; pendingRecurringTasks?: number } | null>(null);
 
   const CACHE_KEY = 'taskpro_init_cache_v1';
   const hasHydratedCacheRef = useRef(false);
@@ -679,6 +680,25 @@ export default function App() {
     setRecurringTasks((prev) => [...copiedTasks, ...prev]);
   };
 
+
+  const fetchDashboardSummary = useCallback(async () => {
+    if (!apiUrl) return;
+    try {
+      const response = await fetch(
+        `${apiUrl}${apiUrl.includes('?') ? '&' : '?'}action=dashboardSummary&_cb=${Date.now()}`,
+        { cache: 'no-store', mode: 'cors' }
+      );
+      const result = await safeJsonParse(response, 'Dashboard Summary');
+      if (result?.success && result.data) {
+        setDashboardSummary({
+          pendingSimpleTasks: Number(result.data.pendingSimpleTasks || 0),
+          pendingRecurringTasks: Number(result.data.pendingRecurringTasks || 0),
+        });
+      }
+    } catch (error) {
+      console.error('dashboardSummary error:', error);
+    }
+  }, [apiUrl]);
   const abortControllerRef = useRef<AbortController | null>(null);
 
       const fetchData = useCallback(async (showLoading = true, useQuickInit = false) => {
@@ -912,8 +932,9 @@ export default function App() {
       if (!apiUrl || !currentUser) return;
       const hadCache = hydrateFromCache();
       setHasFullDataLoaded(false);
+      fetchDashboardSummary();
       fetchData(!hadCache, !hadCache);
-    }, [fetchData, apiUrl, currentUser, hydrateFromCache]);
+    }, [fetchData, apiUrl, currentUser, hydrateFromCache, fetchDashboardSummary]);
 
     useEffect(() => {
       if (!apiUrl || !currentUser) return;
@@ -1336,7 +1357,7 @@ export default function App() {
 	    switch (activeTab) {
       case 'dashboard': 
 		        return <Dashboard 
-		          isAdmin={isAdmin} tasks={visibleTasks} users={users} projects={projects} categories={categories} statuses={statuses} actionLogs={visibleActionLogs} recurringActions={visibleRecurringActions} recurringTasks={visibleRecurringTasks}
+		          isAdmin={isAdmin} tasks={visibleTasks} users={users} projects={projects} categories={categories} statuses={statuses} actionLogs={visibleActionLogs} recurringActions={visibleRecurringActions} recurringTasks={visibleRecurringTasks} dashboardSummary={dashboardSummary}
 	          onNavigate={(tab) => {
               if (tab === 'pending-client') setActiveTab(makePendingStatusId('Pending for Client'));
               else if (tab === 'pending-owner') setActiveTab(makePendingStatusId('Pending for Owner'));

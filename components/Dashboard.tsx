@@ -28,6 +28,7 @@ interface DashboardProps {
   actionLogs?: ActionLogEntry[];
   recurringActions?: RecurringTaskAction[];
   recurringTasks?: RecurringTask[];
+  dashboardSummary?: { pendingSimpleTasks?: number; pendingRecurringTasks?: number } | null;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -48,18 +49,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
   statuses,
   actionLogs = [],
   recurringActions = [],
-  recurringTasks = []
+  recurringTasks = [],
+  dashboardSummary = null
 }) => {
   const { getFieldLabel } = useLabels();
   const categoryLabel = getFieldLabel('task.category', 'Category');
   
   const stats = useMemo(() => {
     const regularTasks = tasks.filter(t => !t.vendor || t.vendor.trim() === '');
-    const pendingTasks = regularTasks.filter(t => t.status !== 'Completed').length;
+    const pendingTasks = dashboardSummary?.pendingSimpleTasks ?? regularTasks.filter(t => t.status !== 'Completed').length;
     return { pendingTasks };
-  }, [tasks]);
+  }, [tasks, dashboardSummary]);
 
   const pendingRecurringTasks = useMemo(() => {
+    if (typeof dashboardSummary?.pendingRecurringTasks === 'number') return dashboardSummary.pendingRecurringTasks;
+
     const parseRecurringDate = (value: string): Date | null => {
       const raw = String(value || '').trim();
       const match = raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
@@ -146,7 +150,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       if (!nextDue) return false;
       return task.status !== 'Complete' && today >= nextDue;
     }).length;
-  }, [recurringActions, recurringTasks]);
+  }, [recurringActions, recurringTasks, dashboardSummary]);
 
   const dynamicLiveStatuses = useMemo(() => {
     const baseStatuses = statuses
