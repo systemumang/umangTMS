@@ -691,6 +691,8 @@ export default function App() {
 	      try { abortControllerRef.current?.abort(); } catch {}
 	    }, useQuickInit ? 10000 : 30000);
 	    
+      let shouldFetchFullAfterQuick = false;
+
       try {
         const actionLogsLimit = useQuickInit ? 150 : 500;
         const recurringActionsLimit = useQuickInit ? 150 : 500;
@@ -881,6 +883,8 @@ export default function App() {
               recurringActions: (data.recurringActions || []).slice(0, 500),
               settings: data.settings || null,
             });
+
+            shouldFetchFullAfterQuick = useQuickInit;
 		      } else {
 		        setApiError(result?.error || 'Failed to load data.');
 		      }
@@ -897,15 +901,18 @@ export default function App() {
 	      setIsSyncing(false);
 	      abortControllerRef.current = null;
 	      fullDataRequestInFlightRef.current = false;
+          if (shouldFetchFullAfterQuick) {
+            fullDataRequestInFlightRef.current = true;
+            window.setTimeout(() => fetchData(false, false), 150);
+          }
 	    }
 		  }, [apiUrl, persistCache]);
 
     useEffect(() => {
       if (!apiUrl || !currentUser) return;
       const hadCache = hydrateFromCache();
-      const shouldQuickLoad = !hadCache;
-      setHasFullDataLoaded(hadCache);
-      fetchData(!hadCache, shouldQuickLoad);
+      setHasFullDataLoaded(false);
+      fetchData(!hadCache, !hadCache);
     }, [fetchData, apiUrl, currentUser, hydrateFromCache]);
 
     useEffect(() => {
