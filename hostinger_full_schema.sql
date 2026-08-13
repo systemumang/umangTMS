@@ -218,6 +218,7 @@ CREATE TABLE IF NOT EXISTS app_settings (
   whatsappGroupId VARCHAR(255) DEFAULT '',
   masId VARCHAR(255) DEFAULT '',
   masPassword VARCHAR(255) DEFAULT '',
+  reminderTime VARCHAR(5) DEFAULT '09:30',
   metaAccessToken TEXT,
   metaPhoneNumberId VARCHAR(255) DEFAULT '',
   metaWabaId VARCHAR(255) DEFAULT '',

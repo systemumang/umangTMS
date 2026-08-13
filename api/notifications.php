@@ -338,9 +338,13 @@ function notifications_enqueue_pending_reminders(mysqli $conn, bool $force = fal
 function notifications_enqueue_pending_reminders_if_due(mysqli $conn): array {
     $tz = new DateTimeZone('Asia/Kolkata');
     $now = new DateTimeImmutable('now', $tz);
+    $settings = notifications_get_settings($conn);
+    $reminderTime = trim((string)($settings['reminderTime'] ?? '09:30'));
+    if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $reminderTime)) $reminderTime = '09:30';
+    [$targetHour, $targetMinute] = array_map('intval', explode(':', $reminderTime));
     $hour = (int)$now->format('H');
     $minute = (int)$now->format('i');
-    if ($hour < 9 || ($hour === 9 && $minute < 30)) {
+    if ($hour < $targetHour || ($hour === $targetHour && $minute < $targetMinute)) {
         return ['success' => true, 'enqueued' => 0, 'skipped' => 0, 'message' => 'Reminder time not reached'];
     }
     return notifications_enqueue_pending_reminders($conn, false);

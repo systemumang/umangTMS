@@ -199,6 +199,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate, 
                 <input name="masPassword" type="password" value={formData.masPassword} onChange={handleChange} className={inputClass} placeholder="Password" />
               </div>
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-1">
+                <label className={labelClass}>Reminder Time</label>
+                <input name="reminderTime" type="time" value={formData.reminderTime || '09:30'} onChange={handleChange} className={inputClass} />
+              </div>
+            </div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2 border-t border-indigo-100">
               <button
                 type="button"
