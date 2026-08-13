@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, UserPlus, Clock, Users, Truck, RotateCcw, LayoutList, History, ShieldAlert, Tags, CheckSquare } from 'lucide-react';
+import { Plus, UserPlus, Clock, Users, Truck, RotateCcw, LayoutList, History, ShieldAlert, Tags, CheckSquare, Pencil } from 'lucide-react';
 import { StatCard } from './StatCard';
 import { QuickAction } from './QuickAction';
 
@@ -494,8 +494,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
             <div className="space-y-2 max-h-[520px] overflow-y-auto pr-1">
               {employeePendingRecurringTasks.map(task => (
-                <div key={task.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 border border-emerald-100 bg-emerald-50/20 rounded-xl shadow-sm">
-                  <div className="min-w-0">
+                <div key={task.id} className="flex items-start sm:items-center justify-between gap-3 p-3 border border-emerald-100 bg-emerald-50/20 rounded-xl shadow-sm">
+                  <div className="min-w-0 flex-1">
                     <p className="text-xs font-black text-gray-900 uppercase break-words">{task.title}</p>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-[10px] font-bold text-gray-500 uppercase">
                       <span>Goal: {task.goal || 0}</span>
@@ -504,8 +504,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       {shouldShowAssignee(task.owner, task.assignee) && <span>Assignee: {task.assignee || 'Unassigned'}</span>}
                     </div>
                   </div>
-                  <button onClick={() => onUpdateRecurringTask(task)} className="shrink-0 px-4 py-2 bg-emerald-600 text-white text-[10px] font-black rounded-lg hover:bg-emerald-700 uppercase shadow-sm">
-                    Update
+                  <button onClick={() => onUpdateRecurringTask(task)} className="shrink-0 w-9 h-9 sm:w-auto sm:h-auto sm:px-4 sm:py-2 bg-emerald-600 text-white text-[10px] font-black rounded-lg hover:bg-emerald-700 uppercase shadow-sm flex items-center justify-center" title="Update recurring task" aria-label="Update recurring task">
+                    <Pencil size={14} className="sm:hidden" />
+                    <span className="hidden sm:inline">Update</span>
                   </button>
                 </div>
               ))}
@@ -525,15 +526,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
             <div className="space-y-2 max-h-[520px] overflow-y-auto pr-1">
               {employeePendingTasks.map(task => (
-                <div key={task.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 border border-amber-100 bg-amber-50/20 rounded-xl shadow-sm">
-                  <div className="min-w-0">
+                <div key={task.id} className="flex items-start sm:items-center justify-between gap-3 p-3 border border-amber-100 bg-amber-50/20 rounded-xl shadow-sm">
+                  <div className="min-w-0 flex-1">
                     <p className="text-xs font-black text-gray-900 uppercase break-words">{task.title}</p>
                     {task.remarks && <p className="text-[10px] font-bold text-gray-500 uppercase mt-1 break-words">{task.remarks}</p>}
                     <p className={`text-[10px] font-black uppercase mt-1 ${isPastDue(task.dueDate) ? 'text-red-600' : 'text-gray-500'}`}>Due: {task.dueDate || '-'}</p>
                     {shouldShowAssignee(task.owner, task.assignees) && <p className="text-[10px] font-bold text-gray-500 uppercase mt-1 break-words">Assignee: {task.assignees || 'Unassigned'}</p>}
                   </div>
-                  <button onClick={() => onUpdateTask(task)} className="shrink-0 px-4 py-2 bg-blue-600 text-white text-[10px] font-black rounded-lg hover:bg-blue-700 uppercase shadow-sm">
-                    Update
+                  <button onClick={() => onUpdateTask(task)} className="shrink-0 w-9 h-9 sm:w-auto sm:h-auto sm:px-4 sm:py-2 bg-blue-600 text-white text-[10px] font-black rounded-lg hover:bg-blue-700 uppercase shadow-sm flex items-center justify-center" title="Update task" aria-label="Update task">
+                    <Pencil size={14} className="sm:hidden" />
+                    <span className="hidden sm:inline">Update</span>
                   </button>
                 </div>
               ))}
