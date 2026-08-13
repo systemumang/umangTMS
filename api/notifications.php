@@ -364,29 +364,29 @@ function notifications_parse_date_dmy_to_iso(string $value): string {
 
 function notifications_collect_update_totals(mysqli $conn, string $todayIso): array {
     $simple = [];
-    $simpleResult = $conn->query("SELECT taskTitle, goal, updateDate, updatedOn FROM action_logs ORDER BY id ASC");
+    $simpleResult = $conn->query("SELECT assignees, goal, updateDate, updatedOn FROM action_logs ORDER BY id ASC");
     if ($simpleResult) {
         while ($row = $simpleResult->fetch_assoc()) {
             $date = notifications_parse_date_dmy_to_iso((string)($row['updatedOn'] ?? '')) ?: notifications_parse_date_dmy_to_iso((string)($row['updateDate'] ?? ''));
             if ($date !== $todayIso) continue;
-            $title = notifications_trim((string)($row['taskTitle'] ?? ''));
-            if ($title === '') continue;
             $goal = is_numeric($row['goal'] ?? '') ? (float)$row['goal'] : 0;
-            $simple[$title] = ($simple[$title] ?? 0) + $goal;
+            foreach (notifications_split_names((string)($row['assignees'] ?? '')) as $assignee) {
+                $simple[$assignee] = ($simple[$assignee] ?? 0) + $goal;
+            }
         }
         $simpleResult->free();
     }
 
     $recurring = [];
-    $recurringResult = $conn->query("SELECT taskTitle, goal, updatedOn FROM recurring_actions ORDER BY id ASC");
+    $recurringResult = $conn->query("SELECT assignee, goal, updatedOn FROM recurring_actions ORDER BY id ASC");
     if ($recurringResult) {
         while ($row = $recurringResult->fetch_assoc()) {
             $date = notifications_parse_date_dmy_to_iso((string)($row['updatedOn'] ?? ''));
             if ($date !== $todayIso) continue;
-            $title = notifications_trim((string)($row['taskTitle'] ?? ''));
-            if ($title === '') continue;
             $goal = is_numeric($row['goal'] ?? '') ? (float)$row['goal'] : 0;
-            $recurring[$title] = ($recurring[$title] ?? 0) + $goal;
+            foreach (notifications_split_names((string)($row['assignee'] ?? '')) as $assignee) {
+                $recurring[$assignee] = ($recurring[$assignee] ?? 0) + $goal;
+            }
         }
         $recurringResult->free();
     }
