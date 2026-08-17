@@ -211,6 +211,16 @@ CREATE TABLE IF NOT EXISTS template_tasks (
   KEY idx_template_tasks_template (templateId)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS daily_due_snapshots (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  snapshotDate DATE NOT NULL,
+  taskType VARCHAR(20) NOT NULL,
+  assignee VARCHAR(255) NOT NULL,
+  totalDue INT NOT NULL DEFAULT 0,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_due_snapshot (snapshotDate, taskType, assignee),
+  KEY idx_due_snapshot_date (snapshotDate)
+);
 CREATE TABLE IF NOT EXISTS app_settings (
   id INT PRIMARY KEY DEFAULT 1,
   officeTokenId VARCHAR(255) DEFAULT '',

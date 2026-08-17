@@ -29,6 +29,18 @@ function notifications_table_exists(mysqli $conn, string $table): bool {
     $result->free();
     return (bool)$row;
 }
+function notifications_ensure_due_snapshot_table(mysqli $conn): void {
+    $conn->query("CREATE TABLE IF NOT EXISTS `daily_due_snapshots` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `snapshotDate` DATE NOT NULL,
+        `taskType` VARCHAR(20) NOT NULL,
+        `assignee` VARCHAR(255) NOT NULL,
+        `totalDue` INT NOT NULL DEFAULT 0,
+        `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY `uniq_due_snapshot` (`snapshotDate`, `taskType`, `assignee`),
+        KEY `idx_due_snapshot_date` (`snapshotDate`)
+    )");
+}
 
 function notifications_get_settings(mysqli $conn): array {
     $result = $conn->query("SELECT * FROM app_settings LIMIT 1");
@@ -362,6 +374,107 @@ function notifications_parse_date_dmy_to_iso(string $value): string {
     return $ts === false ? '' : date('Y-m-d', $ts);
 }
 
+function notifications_is_due_on_iso(string $value, string $todayIso): bool {
+    $iso = notifications_parse_date_dmy_to_iso($value);
+    return $iso !== '' && $iso === $todayIso;
+}
+
+function notifications_collect_due_totals(mysqli $conn, string $todayIso): array {
+    $simple = [];
+    $simpleSql = "SELECT assignees, owner, dueDate FROM main_tasks WHERE LOWER(TRIM(COALESCE(status, ''))) <> 'completed' AND dueDate <> ''";
+    $simpleResult = $conn->query($simpleSql);
+    if ($simpleResult) {
+        while ($row = $simpleResult->fetch_assoc()) {
+            if (!notifications_is_due_on_iso((string)($row['dueDate'] ?? ''), $todayIso)) continue;
+            $names = notifications_split_names((string)($row['assignees'] ?? ''));
+            if (count($names) === 0) $names = notifications_split_names((string)($row['owner'] ?? ''));
+            foreach ($names as $assignee) $simple[$assignee] = ($simple[$assignee] ?? 0) + 1;
+        }
+        $simpleResult->free();
+    }
+
+    $recurring = [];
+    $recurringSql = "SELECT assignee FROM recurring_tasks WHERE LOWER(TRIM(COALESCE(status, ''))) <> 'complete'";
+    $recurringResult = $conn->query($recurringSql);
+    if ($recurringResult) {
+        while ($row = $recurringResult->fetch_assoc()) {
+            foreach (notifications_split_names((string)($row['assignee'] ?? '')) as $assignee) {
+                $recurring[$assignee] = ($recurring[$assignee] ?? 0) + 1;
+            }
+        }
+        $recurringResult->free();
+    }
+
+    return ['simple' => $simple, 'recurring' => $recurring];
+}
+
+function notifications_store_due_snapshot(mysqli $conn, string $todayIso, bool $force = false): array {
+    notifications_ensure_due_snapshot_table($conn);
+    if (!$force) {
+        $stmt = $conn->prepare("SELECT COUNT(*) AS c FROM daily_due_snapshots WHERE snapshotDate=?");
+        if ($stmt) {
+            $stmt->bind_param('s', $todayIso);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            $row = $res ? $res->fetch_assoc() : null;
+            $stmt->close();
+            if ((int)($row['c'] ?? 0) > 0) return ['success' => true, 'created' => 0, 'message' => 'Due snapshot already exists'];
+        }
+    }
+    if ($force) {
+        $stmt = $conn->prepare("DELETE FROM daily_due_snapshots WHERE snapshotDate=?");
+        if ($stmt) { $stmt->bind_param('s', $todayIso); $stmt->execute(); $stmt->close(); }
+    }
+    $totals = notifications_collect_due_totals($conn, $todayIso);
+    $created = 0;
+    $stmt = $conn->prepare("INSERT INTO daily_due_snapshots (snapshotDate, taskType, assignee, totalDue) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE totalDue=VALUES(totalDue)");
+    if ($stmt) {
+        foreach (['simple' => 'simple', 'recurring' => 'recurring'] as $key => $type) {
+            foreach ($totals[$key] as $assignee => $total) {
+                if ((int)$total <= 0) continue;
+                $count = (int)$total;
+                $stmt->bind_param('sssi', $todayIso, $type, $assignee, $count);
+                if ($stmt->execute()) $created++;
+            }
+        }
+        $stmt->close();
+    }
+    return ['success' => true, 'created' => $created, 'message' => 'Due snapshot stored'];
+}
+
+function notifications_due_snapshot_if_due(mysqli $conn): array {
+    $tz = new DateTimeZone('Asia/Kolkata');
+    $now = new DateTimeImmutable('now', $tz);
+    if ((int)$now->format('H') < 6) return ['success' => true, 'created' => 0, 'message' => 'Snapshot time not reached'];
+    return notifications_store_due_snapshot($conn, $now->format('Y-m-d'), false);
+}
+
+function notifications_get_due_snapshot(mysqli $conn, string $todayIso): array {
+    notifications_ensure_due_snapshot_table($conn);
+    $simple = [];
+    $recurring = [];
+    $stmt = $conn->prepare("SELECT taskType, assignee, totalDue FROM daily_due_snapshots WHERE snapshotDate=?");
+    if ($stmt) {
+        $stmt->bind_param('s', $todayIso);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($res && ($row = $res->fetch_assoc())) {
+            $type = (string)($row['taskType'] ?? '');
+            $assignee = notifications_trim((string)($row['assignee'] ?? ''));
+            $total = (int)($row['totalDue'] ?? 0);
+            if ($assignee === '' || $total <= 0) continue;
+            if ($type === 'simple') $simple[$assignee] = $total;
+            if ($type === 'recurring') $recurring[$assignee] = $total;
+        }
+        $stmt->close();
+    }
+    if (count($simple) === 0 && count($recurring) === 0) {
+        notifications_store_due_snapshot($conn, $todayIso, true);
+        $fallback = notifications_collect_due_totals($conn, $todayIso);
+        return ['simple' => $fallback['simple'], 'recurring' => $fallback['recurring']];
+    }
+    return ['simple' => $simple, 'recurring' => $recurring];
+}
 function notifications_collect_update_totals(mysqli $conn, string $todayIso): array {
     $simple = [];
     $simpleResult = $conn->query("SELECT assignees, owner, updateDate, updatedOn FROM action_logs ORDER BY id ASC");
@@ -399,29 +512,36 @@ function notifications_format_number($value): string {
     return fmod($num, 1.0) === 0.0 ? (string)(int)$num : rtrim(rtrim(number_format($num, 2, '.', ''), '0'), '.');
 }
 
-function notifications_compose_update_reminder(array $simpleTotals, array $recurringTotals, string $dateDmy): string {
+function notifications_compose_update_reminder(array $simpleUpdates, array $recurringUpdates, array $simpleDue, array $recurringDue, string $dateDmy): string {
+    $formatRows = static function(array $updates, array $dueTotals, bool $spaceAfterDot): array {
+        $rows = [];
+        foreach ($dueTotals as $name => $due) {
+            $due = (int)$due;
+            if ($due <= 0) continue;
+            $updated = (int)($updates[$name] ?? 0);
+            $percent = $due > 0 ? round(($updated / $due) * 100) : 0;
+            $rows[$name] = ['updated' => $updated, 'due' => $due, 'percent' => $percent];
+        }
+        uasort($rows, static fn($a, $b) => ($b['percent'] <=> $a['percent']) ?: ($b['updated'] <=> $a['updated']));
+        $lines = [];
+        $idx = 1;
+        foreach ($rows as $name => $row) {
+            $prefix = $spaceAfterDot ? ($idx . '. ') : ($idx . '.');
+            $lines[] = $prefix . $name . ' - (' . $row['updated'] . '/' . $row['due'] . ') - ' . $row['percent'] . '%';
+            $idx++;
+        }
+        return $lines;
+    };
+
     $lines = [];
     $lines[] = '*Task Update - ' . $dateDmy . '*';
     $lines[] = '';
     $lines[] = '*Simple Task*';
-    $simpleTotals = array_filter($simpleTotals, fn($total) => (float)$total > 0);
-    arsort($simpleTotals, SORT_NUMERIC);
-    $idx = 1;
-    foreach ($simpleTotals as $title => $total) {
-        $lines[] = $idx . '.' . $title . ' - ' . notifications_format_number($total);
-        $idx++;
-    }
+    $lines = array_merge($lines, $formatRows($simpleUpdates, $simpleDue, false));
     $lines[] = '';
     $lines[] = '*Recurring Tasks*';
-    $recurringTotals = array_filter($recurringTotals, fn($total) => (float)$total > 0);
-    arsort($recurringTotals, SORT_NUMERIC);
-    $idx = 1;
-    foreach ($recurringTotals as $title => $total) {
-        $lines[] = $idx . '. ' . $title . ' - ' . notifications_format_number($total);
-        $idx++;
-    }
-    return implode("
-", $lines);
+    $lines = array_merge($lines, $formatRows($recurringUpdates, $recurringDue, true));
+    return implode("\n", $lines);
 }
 
 function notifications_update_reminder_due(mysqli $conn, array $overrides = []): array {
@@ -461,7 +581,8 @@ function notifications_enqueue_update_reminder(mysqli $conn, bool $force = false
     }
 
     $totals = notifications_collect_update_totals($conn, (string)$due['todayIso']);
-    $message = notifications_compose_update_reminder($totals['simple'], $totals['recurring'], (string)$due['todayDmy']);
+    $dueTotals = notifications_get_due_snapshot($conn, (string)$due['todayIso']);
+    $message = notifications_compose_update_reminder($totals['simple'], $totals['recurring'], $dueTotals['simple'], $dueTotals['recurring'], (string)$due['todayDmy']);
 
     if ($force) {
         $dispatch = notifications_send_whatsapp_mas_group($settings, $group, $message);

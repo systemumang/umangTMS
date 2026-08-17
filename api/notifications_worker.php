@@ -25,6 +25,7 @@ if (!notifications_table_exists($conn, 'notification_queue')) {
     exit;
 }
 
+$snapshotResult = notifications_due_snapshot_if_due($conn);
 $reminderResult = notifications_enqueue_pending_reminders_if_due($conn);
 $updateReminderResult = notifications_enqueue_update_reminder_if_due($conn);
 
@@ -83,6 +84,7 @@ echo json_encode([
     'processed' => $processed,
     'sent' => $sent,
     'failed' => $failed,
+    'snapshot' => $snapshotResult ?? null,
     'reminders' => $reminderResult ?? null,
     'updateReminders' => $updateReminderResult ?? null
 ]);
