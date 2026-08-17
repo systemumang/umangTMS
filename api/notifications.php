@@ -374,9 +374,9 @@ function notifications_parse_date_dmy_to_iso(string $value): string {
     return $ts === false ? '' : date('Y-m-d', $ts);
 }
 
-function notifications_is_due_on_iso(string $value, string $todayIso): bool {
+function notifications_is_due_on_or_before_iso(string $value, string $todayIso): bool {
     $iso = notifications_parse_date_dmy_to_iso($value);
-    return $iso !== '' && $iso === $todayIso;
+    return $iso !== '' && $iso <= $todayIso;
 }
 
 function notifications_collect_due_totals(mysqli $conn, string $todayIso): array {
@@ -385,7 +385,7 @@ function notifications_collect_due_totals(mysqli $conn, string $todayIso): array
     $simpleResult = $conn->query($simpleSql);
     if ($simpleResult) {
         while ($row = $simpleResult->fetch_assoc()) {
-            if (!notifications_is_due_on_iso((string)($row['dueDate'] ?? ''), $todayIso)) continue;
+            if (!notifications_is_due_on_or_before_iso((string)($row['dueDate'] ?? ''), $todayIso)) continue;
             $names = notifications_split_names((string)($row['assignees'] ?? ''));
             if (count($names) === 0) $names = notifications_split_names((string)($row['owner'] ?? ''));
             foreach ($names as $assignee) $simple[$assignee] = ($simple[$assignee] ?? 0) + 1;
