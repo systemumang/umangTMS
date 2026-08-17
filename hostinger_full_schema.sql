@@ -231,6 +231,7 @@ CREATE TABLE IF NOT EXISTS app_settings (
   reminderTime VARCHAR(5) DEFAULT '09:30',
   updateReminderTime VARCHAR(5) DEFAULT '09:30',
   updateReminderGroup VARCHAR(255) DEFAULT '',
+  updateReminderExcludeUsers TEXT,
   metaAccessToken TEXT,
   metaPhoneNumberId VARCHAR(255) DEFAULT '',
   metaWabaId VARCHAR(255) DEFAULT '',

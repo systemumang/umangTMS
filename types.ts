@@ -202,6 +202,7 @@ export interface AppSettings {
   reminderTime?: string;
   updateReminderTime?: string;
   updateReminderGroup?: string;
+  updateReminderExcludeUsers?: string;
   metaAccessToken: string;
   metaPhoneNumberId: string;
   metaWabaId: string;

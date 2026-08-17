@@ -379,7 +379,21 @@ function notifications_is_due_on_or_before_iso(string $value, string $todayIso):
     return $iso !== '' && $iso <= $todayIso;
 }
 
-function notifications_collect_due_totals(mysqli $conn, string $todayIso): array {
+function notifications_update_reminder_excluded_users(array $settings, array $overrides = []): array {
+    $raw = trim((string)($overrides['updateReminderExcludeUsers'] ?? $settings['updateReminderExcludeUsers'] ?? ''));
+    if ($raw === '') return [];
+    $excluded = [];
+    foreach (notifications_split_names($raw) as $name) {
+        $key = strtolower(notifications_trim($name));
+        if ($key !== '') $excluded[$key] = true;
+    }
+    return $excluded;
+}
+
+function notifications_is_update_reminder_user_excluded(string $name, array $excludedUsers): bool {
+    return isset($excludedUsers[strtolower(notifications_trim($name))]);
+}
+function notifications_collect_due_totals(mysqli $conn, string $todayIso, array $excludedUsers = []): array {
     $simple = [];
     $simpleSql = "SELECT assignees, owner, dueDate FROM main_tasks WHERE LOWER(TRIM(COALESCE(status, ''))) <> 'completed' AND dueDate <> ''";
     $simpleResult = $conn->query($simpleSql);
@@ -388,7 +402,10 @@ function notifications_collect_due_totals(mysqli $conn, string $todayIso): array
             if (!notifications_is_due_on_or_before_iso((string)($row['dueDate'] ?? ''), $todayIso)) continue;
             $names = notifications_split_names((string)($row['assignees'] ?? ''));
             if (count($names) === 0) $names = notifications_split_names((string)($row['owner'] ?? ''));
-            foreach ($names as $assignee) $simple[$assignee] = ($simple[$assignee] ?? 0) + 1;
+            foreach ($names as $assignee) {
+                if (notifications_is_update_reminder_user_excluded($assignee, $excludedUsers)) continue;
+                $simple[$assignee] = ($simple[$assignee] ?? 0) + 1;
+            }
         }
         $simpleResult->free();
     }
@@ -399,6 +416,7 @@ function notifications_collect_due_totals(mysqli $conn, string $todayIso): array
     if ($recurringResult) {
         while ($row = $recurringResult->fetch_assoc()) {
             foreach (notifications_split_names((string)($row['assignee'] ?? '')) as $assignee) {
+                if (notifications_is_update_reminder_user_excluded($assignee, $excludedUsers)) continue;
                 $recurring[$assignee] = ($recurring[$assignee] ?? 0) + 1;
             }
         }
@@ -408,7 +426,7 @@ function notifications_collect_due_totals(mysqli $conn, string $todayIso): array
     return ['simple' => $simple, 'recurring' => $recurring];
 }
 
-function notifications_store_due_snapshot(mysqli $conn, string $todayIso, bool $force = false): array {
+function notifications_store_due_snapshot(mysqli $conn, string $todayIso, bool $force = false, array $excludedUsers = []): array {
     notifications_ensure_due_snapshot_table($conn);
     if (!$force) {
         $stmt = $conn->prepare("SELECT COUNT(*) AS c FROM daily_due_snapshots WHERE snapshotDate=?");
@@ -425,7 +443,7 @@ function notifications_store_due_snapshot(mysqli $conn, string $todayIso, bool $
         $stmt = $conn->prepare("DELETE FROM daily_due_snapshots WHERE snapshotDate=?");
         if ($stmt) { $stmt->bind_param('s', $todayIso); $stmt->execute(); $stmt->close(); }
     }
-    $totals = notifications_collect_due_totals($conn, $todayIso);
+    $totals = notifications_collect_due_totals($conn, $todayIso, $excludedUsers);
     $created = 0;
     $stmt = $conn->prepare("INSERT INTO daily_due_snapshots (snapshotDate, taskType, assignee, totalDue) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE totalDue=VALUES(totalDue)");
     if ($stmt) {
@@ -446,10 +464,12 @@ function notifications_due_snapshot_if_due(mysqli $conn): array {
     $tz = new DateTimeZone('Asia/Kolkata');
     $now = new DateTimeImmutable('now', $tz);
     if ((int)$now->format('H') < 6) return ['success' => true, 'created' => 0, 'message' => 'Snapshot time not reached'];
-    return notifications_store_due_snapshot($conn, $now->format('Y-m-d'), false);
+    $settings = notifications_get_settings($conn);
+    $excludedUsers = notifications_update_reminder_excluded_users($settings);
+    return notifications_store_due_snapshot($conn, $now->format('Y-m-d'), false, $excludedUsers);
 }
 
-function notifications_get_due_snapshot(mysqli $conn, string $todayIso): array {
+function notifications_get_due_snapshot(mysqli $conn, string $todayIso, array $excludedUsers = []): array {
     notifications_ensure_due_snapshot_table($conn);
     $simple = [];
     $recurring = [];
@@ -463,19 +483,20 @@ function notifications_get_due_snapshot(mysqli $conn, string $todayIso): array {
             $assignee = notifications_trim((string)($row['assignee'] ?? ''));
             $total = (int)($row['totalDue'] ?? 0);
             if ($assignee === '' || $total <= 0) continue;
+            if (notifications_is_update_reminder_user_excluded($assignee, $excludedUsers)) continue;
             if ($type === 'simple') $simple[$assignee] = $total;
             if ($type === 'recurring') $recurring[$assignee] = $total;
         }
         $stmt->close();
     }
     if (count($simple) === 0 && count($recurring) === 0) {
-        notifications_store_due_snapshot($conn, $todayIso, true);
-        $fallback = notifications_collect_due_totals($conn, $todayIso);
+        notifications_store_due_snapshot($conn, $todayIso, true, $excludedUsers);
+        $fallback = notifications_collect_due_totals($conn, $todayIso, $excludedUsers);
         return ['simple' => $fallback['simple'], 'recurring' => $fallback['recurring']];
     }
     return ['simple' => $simple, 'recurring' => $recurring];
 }
-function notifications_collect_update_totals(mysqli $conn, string $todayIso): array {
+function notifications_collect_update_totals(mysqli $conn, string $todayIso, array $excludedUsers = []): array {
     $simple = [];
     $simpleResult = $conn->query("SELECT assignees, owner, updateDate, updatedOn FROM action_logs ORDER BY id ASC");
     if ($simpleResult) {
@@ -580,8 +601,9 @@ function notifications_enqueue_update_reminder(mysqli $conn, bool $force = false
         return ['success' => true, 'enqueued' => 0, 'skipped' => 1, 'message' => 'Update reminder already queued'];
     }
 
-    $totals = notifications_collect_update_totals($conn, (string)$due['todayIso']);
-    $dueTotals = notifications_get_due_snapshot($conn, (string)$due['todayIso']);
+    $excludedUsers = notifications_update_reminder_excluded_users($settings, $overrides);
+    $totals = notifications_collect_update_totals($conn, (string)$due['todayIso'], $excludedUsers);
+    $dueTotals = notifications_get_due_snapshot($conn, (string)$due['todayIso'], $excludedUsers);
     $message = notifications_compose_update_reminder($totals['simple'], $totals['recurring'], $dueTotals['simple'], $dueTotals['recurring'], (string)$due['todayDmy']);
 
     if ($force) {

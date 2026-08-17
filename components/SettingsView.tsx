@@ -234,6 +234,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate, 
                 <input name="updateReminderGroup" value={formData.updateReminderGroup || ''} onChange={handleChange} className={inputClass} placeholder="Enter MAS group invite code" />
               </div>
             </div>
+            <div className="space-y-1">
+              <label className={labelClass}>Exclude Users From Update Reminder</label>
+              <input name="updateReminderExcludeUsers" value={formData.updateReminderExcludeUsers || ''} onChange={handleChange} className={inputClass} placeholder="Enter user names separated by comma" />
+            </div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2 border-t border-indigo-100">
               <button
                 type="button"
