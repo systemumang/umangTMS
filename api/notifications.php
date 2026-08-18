@@ -498,14 +498,20 @@ function notifications_get_due_snapshot(mysqli $conn, string $todayIso, array $e
 }
 function notifications_collect_update_totals(mysqli $conn, string $todayIso, array $excludedUsers = []): array {
     $simple = [];
-    $simpleResult = $conn->query("SELECT assignees, owner, updateDate, updatedOn FROM action_logs ORDER BY id ASC");
+    $simpleSeen = [];
+    $simpleResult = $conn->query("SELECT id, taskId, assignees, owner, updateDate, updatedOn FROM action_logs ORDER BY id ASC");
     if ($simpleResult) {
         while ($row = $simpleResult->fetch_assoc()) {
             $date = notifications_parse_date_dmy_to_iso((string)($row['updatedOn'] ?? '')) ?: notifications_parse_date_dmy_to_iso((string)($row['updateDate'] ?? ''));
             if ($date !== $todayIso) continue;
+            $taskKey = trim((string)($row['taskId'] ?? ''));
+            if ($taskKey === '' || $taskKey === '0') $taskKey = 'log:' . trim((string)($row['id'] ?? ''));
             $names = notifications_split_names((string)($row['assignees'] ?? ''));
             if (count($names) === 0) $names = notifications_split_names((string)($row['owner'] ?? ''));
             foreach ($names as $assignee) {
+                $seenKey = strtolower(notifications_trim($assignee)) . '|' . $taskKey;
+                if (isset($simpleSeen[$seenKey])) continue;
+                $simpleSeen[$seenKey] = true;
                 $simple[$assignee] = ($simple[$assignee] ?? 0) + 1;
             }
         }
@@ -513,12 +519,18 @@ function notifications_collect_update_totals(mysqli $conn, string $todayIso, arr
     }
 
     $recurring = [];
-    $recurringResult = $conn->query("SELECT assignee, updatedOn FROM recurring_actions ORDER BY id ASC");
+    $recurringSeen = [];
+    $recurringResult = $conn->query("SELECT id, taskId, assignee, updatedOn FROM recurring_actions ORDER BY id ASC");
     if ($recurringResult) {
         while ($row = $recurringResult->fetch_assoc()) {
             $date = notifications_parse_date_dmy_to_iso((string)($row['updatedOn'] ?? ''));
             if ($date !== $todayIso) continue;
+            $taskKey = trim((string)($row['taskId'] ?? ''));
+            if ($taskKey === '' || $taskKey === '0') $taskKey = 'log:' . trim((string)($row['id'] ?? ''));
             foreach (notifications_split_names((string)($row['assignee'] ?? '')) as $assignee) {
+                $seenKey = strtolower(notifications_trim($assignee)) . '|' . $taskKey;
+                if (isset($recurringSeen[$seenKey])) continue;
+                $recurringSeen[$seenKey] = true;
                 $recurring[$assignee] = ($recurring[$assignee] ?? 0) + 1;
             }
         }
