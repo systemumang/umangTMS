@@ -379,6 +379,89 @@ function notifications_is_due_on_or_before_iso(string $value, string $todayIso):
     return $iso !== '' && $iso <= $todayIso;
 }
 
+function notifications_date_from_iso(string $iso): ?DateTimeImmutable {
+    $iso = trim($iso);
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $iso)) return null;
+    $date = DateTimeImmutable::createFromFormat('!Y-m-d', $iso, new DateTimeZone('Asia/Kolkata'));
+    return $date instanceof DateTimeImmutable ? $date : null;
+}
+
+function notifications_clamp_date(int $year, int $month, int $day): DateTimeImmutable {
+    $first = DateTimeImmutable::createFromFormat('!Y-n-j', $year . '-' . $month . '-1', new DateTimeZone('Asia/Kolkata'));
+    if (!$first) $first = new DateTimeImmutable('today', new DateTimeZone('Asia/Kolkata'));
+    $maxDay = (int)$first->format('t');
+    $safeDay = min(max($day, 1), $maxDay);
+    return $first->setDate((int)$first->format('Y'), (int)$first->format('n'), $safeDay);
+}
+
+function notifications_recurring_last_completion_iso(mysqli $conn): array {
+    $last = [];
+    $result = $conn->query("SELECT taskId, updatedOn FROM recurring_actions WHERE LOWER(TRIM(COALESCE(status, ''))) = 'complete'");
+    if (!$result) return $last;
+    while ($row = $result->fetch_assoc()) {
+        $taskId = trim((string)($row['taskId'] ?? ''));
+        if ($taskId === '' || $taskId === '0') continue;
+        $iso = notifications_parse_date_dmy_to_iso((string)($row['updatedOn'] ?? ''));
+        if ($iso === '') continue;
+        if (!isset($last[$taskId]) || $iso > $last[$taskId]) $last[$taskId] = $iso;
+    }
+    $result->free();
+    return $last;
+}
+
+function notifications_recurring_next_due_iso(array $task, array $lastCompletionByTaskId, string $todayIso): string {
+    $taskId = trim((string)($task['id'] ?? ''));
+    $anchorIso = $lastCompletionByTaskId[$taskId] ?? notifications_parse_date_dmy_to_iso((string)($task['startDate'] ?? ''));
+    $anchor = notifications_date_from_iso($anchorIso);
+    $today = notifications_date_from_iso($todayIso);
+    if (!$anchor || !$today) return '';
+
+    $periodicity = trim((string)($task['frequencyType'] ?? 'Fixed Days')) ?: 'Fixed Days';
+    if ($periodicity === 'Fixed Days') {
+        $frequencyDays = max(1, (int)($task['frequencyDays'] ?? 1));
+        $next = $anchor;
+        do {
+            $next = $next->modify('+' . $frequencyDays . ' days');
+        } while ($next < $today);
+        return $next->format('Y-m-d');
+    }
+
+    if ($periodicity === 'Weekly') {
+        $targetDay = (int)($task['recurrenceDay'] ?? 0);
+        $anchorDay = (int)$anchor->format('w');
+        $diff = $targetDay - $anchorDay;
+        if ($diff <= 0) $diff += 7;
+        $next = $anchor->modify('+' . $diff . ' days');
+        while ($next < $today) $next = $next->modify('+7 days');
+        return $next->format('Y-m-d');
+    }
+
+    if ($periodicity === 'Monthly') {
+        $targetDay = (int)($task['recurrenceDay'] ?? 1);
+        $monthsToAdd = 0;
+        while (true) {
+            $base = $anchor->modify('+' . $monthsToAdd . ' months');
+            $next = notifications_clamp_date((int)$base->format('Y'), (int)$base->format('n'), $targetDay);
+            if ($next > $anchor && $next >= $today) return $next->format('Y-m-d');
+            $monthsToAdd++;
+        }
+    }
+
+    if ($periodicity === 'Yearly') {
+        $months = ['January' => 1, 'February' => 2, 'March' => 3, 'April' => 4, 'May' => 5, 'June' => 6, 'July' => 7, 'August' => 8, 'September' => 9, 'October' => 10, 'November' => 11, 'December' => 12];
+        $targetMonth = $months[(string)($task['recurrenceMonth'] ?? 'January')] ?? 1;
+        $targetDay = (int)($task['recurrenceDay'] ?? 1);
+        $yearsToAdd = 0;
+        while (true) {
+            $next = notifications_clamp_date((int)$anchor->format('Y') + $yearsToAdd, $targetMonth, $targetDay);
+            if ($next > $anchor && $next >= $today) return $next->format('Y-m-d');
+            $yearsToAdd++;
+        }
+    }
+
+    return '';
+}
+
 function notifications_update_reminder_excluded_users(array $settings, array $overrides = []): array {
     $raw = trim((string)($overrides['updateReminderExcludeUsers'] ?? $settings['updateReminderExcludeUsers'] ?? ''));
     if ($raw === '') return [];
@@ -411,10 +494,16 @@ function notifications_collect_due_totals(mysqli $conn, string $todayIso, array 
     }
 
     $recurring = [];
-    $recurringSql = "SELECT assignee FROM recurring_tasks WHERE LOWER(TRIM(COALESCE(status, ''))) <> 'complete'";
+    $lastCompletionByTaskId = notifications_recurring_last_completion_iso($conn);
+    // Do not filter by raw status here: a recurring task's stored status can still say
+    // 'Complete' from its last cycle even though it is due again now (same as the
+    // frontend's effective-status logic, which recomputes due state from next-due date).
+    $recurringSql = "SELECT id, assignee, frequencyType, frequencyDays, recurrenceDay, recurrenceMonth, startDate, status FROM recurring_tasks";
     $recurringResult = $conn->query($recurringSql);
     if ($recurringResult) {
         while ($row = $recurringResult->fetch_assoc()) {
+            $nextDueIso = notifications_recurring_next_due_iso($row, $lastCompletionByTaskId, $todayIso);
+            if ($nextDueIso === '' || $nextDueIso > $todayIso) continue;
             foreach (notifications_split_names((string)($row['assignee'] ?? '')) as $assignee) {
                 if (notifications_is_update_reminder_user_excluded($assignee, $excludedUsers)) continue;
                 $recurring[$assignee] = ($recurring[$assignee] ?? 0) + 1;
@@ -552,7 +641,8 @@ function notifications_compose_update_reminder(array $simpleUpdates, array $recu
             $due = (int)$due;
             if ($due <= 0) continue;
             $updated = (int)($updates[$name] ?? 0);
-            $percent = $due > 0 ? round(($updated / $due) * 100) : 0;
+            $completed = min($updated, $due);
+            $percent = $due > 0 ? round(($completed / $due) * 100) : 0;
             $rows[$name] = ['updated' => $updated, 'due' => $due, 'percent' => $percent];
         }
         uasort($rows, static fn($a, $b) => ($b['percent'] <=> $a['percent']) ?: ($b['updated'] <=> $a['updated']));
@@ -615,6 +705,8 @@ function notifications_enqueue_update_reminder(mysqli $conn, bool $force = false
 
     $excludedUsers = notifications_update_reminder_excluded_users($settings, $overrides);
     $totals = notifications_collect_update_totals($conn, (string)$due['todayIso'], $excludedUsers);
+    // Force-refresh the cached snapshot on manual/test sends so corrected due-calc logic applies immediately.
+    if ($force) notifications_store_due_snapshot($conn, (string)$due['todayIso'], true, $excludedUsers);
     $dueTotals = notifications_get_due_snapshot($conn, (string)$due['todayIso'], $excludedUsers);
     $message = notifications_compose_update_reminder($totals['simple'], $totals['recurring'], $dueTotals['simple'], $dueTotals['recurring'], (string)$due['todayDmy']);
 
