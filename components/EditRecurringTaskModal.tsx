@@ -113,7 +113,9 @@ export const EditRecurringTaskModal: React.FC<EditRecurringTaskModalProps> = ({ 
       await onSave({
         ...task,
         ...formData,
-        frequencyDays: formData.periodicity === 'Fixed Days' ? Number(formData.frequencyDays) : Number(task.frequencyDays || 0)
+        periodicity: formData.periodicity,
+        frequencyType: formData.periodicity,
+        frequencyDays: formData.periodicity === 'Fixed Days' ? Number(formData.frequencyDays) : Number(task.frequencyDays ?? 0)
       });
       onClose();
     } catch (error) {
