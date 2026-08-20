@@ -1752,17 +1752,23 @@ export default function App() {
           }, 'RecurringActions');
         }}
       />}
-        {isEditRecurringTaskModalOpen && <EditRecurringTaskModal
-	        isOpen={isEditRecurringTaskModalOpen}
-	        onClose={() => setIsEditRecurringTaskModalOpen(false)}
-	        task={selectedRecurringTask}
-	        onSave={async (t) => {
-	          setRecurringTasks(prev => prev.map(x => x.id === t.id ? t : x));
-	          await apiPost('updateMaster', t, 'RecurringTasks');
-	        }}
-	        users={users}
-	        categories={categories}
-	        firms={firms}
+                {isEditRecurringTaskModalOpen && <EditRecurringTaskModal
+          isOpen={isEditRecurringTaskModalOpen}
+          onClose={() => setIsEditRecurringTaskModalOpen(false)}
+          task={selectedRecurringTask}
+          onSave={async (t) => {
+            const updatedTask = {
+              ...t,
+              periodicity: t.periodicity || t.frequencyType || "Fixed Days",
+              frequencyType: t.frequencyType || t.periodicity || "Fixed Days",
+            };
+            setSelectedRecurringTask(updatedTask as any);
+            setRecurringTasks(prev => prev.map(x => x.id === t.id ? updatedTask as any : x));
+            await apiPost("updateMaster", updatedTask as any, "RecurringTasks");
+          }}
+          users={users}
+          categories={categories}
+          firms={firms}
         />}
         {isRecurringHistoryModalOpen && <RecurringTaskHistoryModal isOpen={isRecurringHistoryModalOpen} onClose={() => setIsRecurringHistoryModalOpen(false)} task={selectedRecurringTask} actions={recurringActions} />}
         </Suspense>
