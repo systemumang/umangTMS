@@ -221,12 +221,23 @@ function notify_task_created(mysqli $conn, array $taskRow, bool $isVendorTask): 
                 notifications_log($conn, 'task_created', 'whatsapp', $waProvider, $mobile, 'enqueued', '');
             }
         } else {
-            $assignees = (string)($taskRow['assignees'] ?? '');
-            foreach (array_filter(array_map('trim', explode(',', $assignees))) as $assignee) {
-                $mobile = notifications_get_user_mobile($conn, $assignee);
-                if ($mobile === '') continue;
-                notifications_enqueue($conn, 'whatsapp', $waProvider, 'personal', $mobile, $message, ['event' => 'task_created']);
-                notifications_log($conn, 'task_created', 'whatsapp', $waProvider, $mobile, 'enqueued', '');
+            $assignees = array_filter(array_map('trim', explode(',', (string)($taskRow['assignees'] ?? ''))));
+            if (count($assignees) > 0) {
+                foreach ($assignees as $assignee) {
+                    $mobile = notifications_get_user_mobile($conn, $assignee);
+                    if ($mobile === '') continue;
+                    notifications_enqueue($conn, 'whatsapp', $waProvider, 'personal', $mobile, $message, ['event' => 'task_created']);
+                    notifications_log($conn, 'task_created', 'whatsapp', $waProvider, $mobile, 'enqueued', '');
+                }
+            } else {
+                $owner = trim((string)($taskRow['owner'] ?? ''));
+                if ($owner !== '') {
+                    $mobile = notifications_get_user_mobile($conn, $owner);
+                    if ($mobile !== '') {
+                        notifications_enqueue($conn, 'whatsapp', $waProvider, 'personal', $mobile, $message, ['event' => 'task_created']);
+                        notifications_log($conn, 'task_created', 'whatsapp', $waProvider, $mobile, 'enqueued', '');
+                    }
+                }
             }
         }
     }

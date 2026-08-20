@@ -150,9 +150,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
         return basicValid && formData.vendor !== '' && formData.vendorCategory.length > 0;
     }
 
-    return basicValid &&
-        formData.assignees.length > 0 &&
-        formData.category !== '';
+    return basicValid;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -228,7 +226,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
           <div className="p-4 md:p-6 space-y-5 max-h-[70vh] overflow-y-auto">
             
 		            <div className="space-y-1">
-		              <label className="text-sm font-medium text-black block mb-1">{getFieldLabel('task.title', 'Task')}</label>
+		              <label className="text-sm font-medium text-black block mb-1">{getFieldLabel('task.title', 'Task')} <span className="text-red-500">*</span></label>
 		              <input 
 	                name="title"
 	                type="text"
@@ -253,7 +251,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
 
 		            <div className="flex flex-col md:flex-row gap-4">
 		              <div className="w-full md:w-72">
-		                <label className="text-sm font-medium text-black block mb-1">{getFieldLabel('task.priority', 'Priority')}</label>
+		                <label className="text-sm font-medium text-black block mb-1">{getFieldLabel('task.priority', 'Priority')} <span className="text-red-500">*</span></label>
                   <div className="grid grid-cols-3 gap-2">
                     {(['High', 'Medium', 'Low'] as const).map((priorityOption) => (
                       <button
@@ -320,7 +318,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
 	                            />
 	                        </div>
 	                        <div className="space-y-1">
-	                            <label className="text-sm font-medium text-black block mb-1">{getFieldLabel('task.vendorCategory', 'Vendor Category')}</label>
+	                            <label className="text-sm font-medium text-black block mb-1">{getFieldLabel('task.vendorCategory', 'Vendor Category')} <span className="text-red-500">*</span></label>
 	                            <div className="flex gap-2">
 	                                <div className="flex-1">
 	                                    <SearchableSelect
@@ -336,7 +334,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
 	                            </div>
 	                        </div>
 	                        <div className="space-y-1">
-	                            <label className="text-sm font-medium text-black block mb-1">Due Date</label>
+	                            <label className="text-sm font-medium text-black block mb-1">Due Date <span className="text-red-500">*</span></label>
 	                            <input 
 	                                name="dueDate"
 	                                type="date" 
@@ -390,7 +388,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
 	                        </div>
 
 	                        <div className="space-y-1">
-	                            <label className="text-sm font-medium text-black block mb-1">Due Date</label>
+	                            <label className="text-sm font-medium text-black block mb-1">Due Date <span className="text-red-500">*</span></label>
 	                            <input 
 	                                name="dueDate"
 	                                type="date" 
