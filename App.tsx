@@ -248,7 +248,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : null;
   });
   const [workspaceId, setWorkspaceId] = useState<string>(() => localStorage.getItem('taskpro_workspace_id') || '');
-  const [apiUrl, setApiUrl] = useState<string>(() => localStorage.getItem('taskpro_api_url') || '');
+  const [apiUrl, setApiUrl] = useState<string>(() => localStorage.getItem('taskpro_api_url') || '/api/init.php');
 
   const isAdmin = currentUser?.role === 'Admin';
 
@@ -553,7 +553,8 @@ export default function App() {
   }, [activeTab]);
 
 	  const apiPost = async (action: string, data: any, target?: string) => {
-    if (!apiUrl) return { success: false, error: 'No API URL configured' };
+    const effectiveApiUrl = apiUrl || '/api/init.php';
+    if (!effectiveApiUrl) return { success: false, error: 'No API URL configured' };
     setIsSyncing(true);
     setApiError(null);
 
@@ -622,7 +623,7 @@ export default function App() {
     };
 
 	    try {
-	      const response = await fetch(apiUrl, {
+	      const response = await fetch(effectiveApiUrl, {
 	        method: 'POST',
 	        headers: { 'Content-Type': 'text/plain' },
 	        body: JSON.stringify(payload),
@@ -684,13 +685,14 @@ export default function App() {
 
 
   const fetchDashboardSummary = useCallback(async () => {
-    if (!apiUrl || !currentUser) return;
+    const effectiveApiUrl = apiUrl || '/api/init.php';
+    if (!effectiveApiUrl || !currentUser) return;
     try {
       const userParam = encodeURIComponent(currentUser.name || '');
       const roleParam = encodeURIComponent(currentUser.role || '');
-      const separator = apiUrl.includes('?') ? '&' : '?';
+      const separator = effectiveApiUrl.includes('?') ? '&' : '?';
       const response = await fetch(
-        `${apiUrl}${separator}action=dashboardSummary&user=${userParam}&role=${roleParam}&_cb=${Date.now()}`,
+        `${effectiveApiUrl}${separator}action=dashboardSummary&user=${userParam}&role=${roleParam}&_cb=${Date.now()}`,
         { cache: 'no-store', mode: 'cors' }
       );
       const result = await safeJsonParse(response, 'Dashboard Summary');
@@ -707,7 +709,8 @@ export default function App() {
   const abortControllerRef = useRef<AbortController | null>(null);
 
       const fetchData = useCallback(async (showLoading = true, useQuickInit = false) => {
-		    if (!apiUrl) return;
+		    const effectiveApiUrl = apiUrl || '/api/init.php';
+    if (!effectiveApiUrl) return;
 		    if (showLoading) setIsLoading(true);
 		    else setIsSyncing(true);
 	    if (abortControllerRef.current) abortControllerRef.current.abort();
@@ -724,7 +727,7 @@ export default function App() {
         const mainTasksLimit = useQuickInit ? 300 : 0;
         const vendorTasksLimit = useQuickInit ? 150 : 0;
           const response = await fetch(
-            `${apiUrl}${apiUrl.includes('?') ? '&' : '?'}action=init&actionLogsLimit=${actionLogsLimit}&recurringActionsLimit=${recurringActionsLimit}&mainTasksLimit=${mainTasksLimit}&vendorTasksLimit=${vendorTasksLimit}&_cb=${Date.now()}`,
+            `${effectiveApiUrl}${effectiveApiUrl.includes('?') ? '&' : '?'}action=init&actionLogsLimit=${actionLogsLimit}&recurringActionsLimit=${recurringActionsLimit}&mainTasksLimit=${mainTasksLimit}&vendorTasksLimit=${vendorTasksLimit}&_cb=${Date.now()}`,
             {
 		        signal: abortControllerRef.current.signal,
 		        cache: 'no-store',
@@ -934,7 +937,8 @@ export default function App() {
 		  }, [apiUrl, persistCache]);
 
     useEffect(() => {
-      if (!apiUrl || !currentUser) return;
+      const effectiveApiUrl = apiUrl || '/api/init.php';
+    if (!effectiveApiUrl || !currentUser) return;
       const hadCache = hydrateFromCache();
       setHasFullDataLoaded(false);
       fetchDashboardSummary();
@@ -942,7 +946,8 @@ export default function App() {
     }, [fetchData, apiUrl, currentUser, hydrateFromCache, fetchDashboardSummary]);
 
     useEffect(() => {
-      if (!apiUrl || !currentUser) return;
+      const effectiveApiUrl = apiUrl || '/api/init.php';
+    if (!effectiveApiUrl || !currentUser) return;
       const interval = setInterval(() => fetchData(false, !hasFullDataLoaded), AUTO_SYNC_INTERVAL);
       return () => clearInterval(interval);
     }, [fetchData, apiUrl, currentUser, hasFullDataLoaded]);
