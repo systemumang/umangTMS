@@ -431,7 +431,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $mainTaskColumns = ['id', 'date', 'title', 'description', 'project', 'firm', 'category', 'owner', 'assignees', 'client', 'priority', 'status', 'dueDate', 'lastUpdateDate', 'lastUpdateRemarks', 'hours', 'time', 'goal'];
     $vendorTaskColumns = ['id', 'date', 'title', 'description', 'project', 'firm', 'category', 'owner', 'assignees', 'vendor', 'vendorCategory', 'priority', 'status', 'dueDate', 'lastUpdateDate', 'lastUpdateRemarks', 'hours', 'time', 'goal'];
     $actionLogColumns = ['id', 'taskId', 'taskTitle', 'taskDate', 'updateDate', 'project', 'firm', 'client', 'category', 'owner', 'assignees', 'vendor', 'status', 'remarks', 'hours', 'time', 'goal', 'updatedOn', 'timestamp'];
-    $recurringActionColumns = ['id', 'taskId', 'taskTitle', 'firm', 'owner', 'category', 'assignee', 'status', 'remarks', 'goal', 'updatedOn', 'timestamp'];
+    $recurringActionColumns = ['id', 'taskId', 'taskTitle', 'firm', 'owner', 'category', 'assignee', 'status', 'remarks', 'goal', 'photos', 'pdf', 'updatedOn', 'timestamp'];
 
     $mainTasks = fetchRowsWithColumns($conn, 'main_tasks', $mainTaskColumns, $mainTasksLimit > 0 ? $mainTasksLimit : null, $mainTasksOffset);
     $vendorTasks = fetchRowsWithColumns($conn, 'vendor_tasks', $vendorTaskColumns, $vendorTasksLimit > 0 ? $vendorTasksLimit : null, $vendorTasksOffset);
