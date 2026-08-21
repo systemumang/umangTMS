@@ -358,6 +358,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $vendorTasksLimit = isset($_GET['vendorTasksLimit']) ? (int)$_GET['vendorTasksLimit'] : 0;
     $actionLogsOffset = isset($_GET['actionLogsOffset']) ? (int)$_GET['actionLogsOffset'] : 0;
     $recurringActionsOffset = isset($_GET['recurringActionsOffset']) ? (int)$_GET['recurringActionsOffset'] : 0;
+    $recurringTasksLimit = isset($_GET['recurringTasksLimit']) ? (int)$_GET['recurringTasksLimit'] : 0;
+    $recurringTasksOffset = isset($_GET['recurringTasksOffset']) ? (int)$_GET['recurringTasksOffset'] : 0;
     $mainTasksOffset = isset($_GET['mainTasksOffset']) ? (int)$_GET['mainTasksOffset'] : 0;
     $vendorTasksOffset = isset($_GET['vendorTasksOffset']) ? (int)$_GET['vendorTasksOffset'] : 0;
 
@@ -432,11 +434,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $vendorTaskColumns = ['id', 'date', 'title', 'description', 'project', 'firm', 'category', 'owner', 'assignees', 'vendor', 'vendorCategory', 'priority', 'status', 'dueDate', 'lastUpdateDate', 'lastUpdateRemarks', 'hours', 'time', 'goal'];
     $actionLogColumns = ['id', 'taskId', 'taskTitle', 'taskDate', 'updateDate', 'project', 'firm', 'client', 'category', 'owner', 'assignees', 'vendor', 'status', 'remarks', 'hours', 'time', 'goal', 'updatedOn', 'timestamp'];
     $recurringActionColumns = ['id', 'taskId', 'taskTitle', 'firm', 'owner', 'category', 'assignee', 'status', 'remarks', 'goal', 'photos', 'pdf', 'updatedOn', 'timestamp'];
+    $recurringTaskColumns = ['id', 'title', 'notes', 'firm', 'category', 'assignee', 'frequencyType', 'frequencyDays', 'startDate', 'time', 'goal', 'status', 'lastUpdatedOn', 'lastUpdateRemarks'];
 
     $mainTasks = fetchRowsWithColumns($conn, 'main_tasks', $mainTaskColumns, $mainTasksLimit > 0 ? $mainTasksLimit : null, $mainTasksOffset);
     $vendorTasks = fetchRowsWithColumns($conn, 'vendor_tasks', $vendorTaskColumns, $vendorTasksLimit > 0 ? $vendorTasksLimit : null, $vendorTasksOffset);
     $actionLogs = fetchRowsWithColumns($conn, 'action_logs', $actionLogColumns, $actionLogsLimit > 0 ? $actionLogsLimit : null, $actionLogsOffset);
     $recurringActions = fetchRowsWithColumns($conn, 'recurring_actions', $recurringActionColumns, $recurringActionsLimit > 0 ? $recurringActionsLimit : null, $recurringActionsOffset);
+    $recurringTasks = fetchRowsWithColumns($conn, 'recurring_tasks', $recurringTaskColumns, $recurringTasksLimit > 0 ? $recurringTasksLimit : null, $recurringTasksOffset);
 
     sendJson([
         'success' => true,
@@ -454,7 +458,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'firms' => fetchAllRows($conn, 'firms', 'name'),
             'vendors' => fetchAllRows($conn, 'vendors', 'name'),
             'actionLogs' => $actionLogs,
-            'recurringTasks' => fetchAllRows($conn, 'recurring_tasks'),
+            'recurringTasks' => $recurringTasks,
             'recurringActions' => $recurringActions,
             'settings' => $settings,
             'meta' => [

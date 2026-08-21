@@ -737,10 +737,11 @@ export default function App() {
       try {
         const actionLogsLimit = useQuickInit ? 150 : 500;
         const recurringActionsLimit = useQuickInit ? 150 : 500;
+        const recurringTasksLimit = useQuickInit ? 200 : 0;
         const mainTasksLimit = useQuickInit ? 300 : 0;
         const vendorTasksLimit = useQuickInit ? 150 : 0;
           const response = await fetch(
-            `${effectiveApiUrl}${effectiveApiUrl.includes('?') ? '&' : '?'}action=init&actionLogsLimit=${actionLogsLimit}&recurringActionsLimit=${recurringActionsLimit}&mainTasksLimit=${mainTasksLimit}&vendorTasksLimit=${vendorTasksLimit}&_cb=${Date.now()}`,
+            `${effectiveApiUrl}${effectiveApiUrl.includes('?') ? '&' : '?'}action=init&actionLogsLimit=${actionLogsLimit}&recurringActionsLimit=${recurringActionsLimit}&recurringTasksLimit=${recurringTasksLimit}&mainTasksLimit=${mainTasksLimit}&vendorTasksLimit=${vendorTasksLimit}&_cb=${Date.now()}`,
             {
 		        signal: abortControllerRef.current.signal,
 		        cache: 'no-store',
