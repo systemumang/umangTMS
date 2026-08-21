@@ -293,7 +293,7 @@ export default function App() {
 	  });
   const [dashboardSummary, setDashboardSummary] = useState<{ pendingSimpleTasks?: number; pendingRecurringTasks?: number } | null>(null);
 
-  const CACHE_KEY = 'taskpro_init_cache_v1';
+  const CACHE_KEY = 'taskpro_init_cache_v2';
   const hasHydratedCacheRef = useRef(false);
   const [hasFullDataLoaded, setHasFullDataLoaded] = useState(false);
   const fullDataRequestInFlightRef = useRef(false);
@@ -308,6 +308,10 @@ export default function App() {
 
       const {
         cachedAt,
+        cachedApiUrl,
+        cachedWorkspaceId,
+        cachedUserName,
+        cachedUserRole,
         users: cachedUsers,
         projects: cachedProjects,
         clients: cachedClients,
@@ -324,6 +328,14 @@ export default function App() {
         recurringActions: cachedRecurringActions,
         settings: cachedSettings,
       } = parsed as any;
+
+      const isFreshEnough = !cachedAt || (Date.now() - Number(cachedAt) < 15 * 60 * 1000);
+      const matchesSession =
+        String(cachedApiUrl || '') === String(apiUrl || '/api/init.php') &&
+        String(cachedWorkspaceId || '') === String(workspaceId || '') &&
+        String(cachedUserName || '') === String(currentUser?.name || '') &&
+        String(cachedUserRole || '') === String(currentUser?.role || '');
+      if (!isFreshEnough || !matchesSession) return false;
 
       if (Array.isArray(cachedUsers)) setUsers(cachedUsers);
       if (Array.isArray(cachedProjects)) setProjects(cachedProjects);
@@ -346,15 +358,23 @@ export default function App() {
     } catch {
       return false;
     }
-  }, []);
+  }, [apiUrl, workspaceId, currentUser?.name, currentUser?.role, normalizeSettings]);
 
   const persistCache = useCallback((payload: any) => {
     try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify({ ...payload, cachedAt: Date.now() }));
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        ...payload,
+        cachedAt: Date.now(),
+        cachedApiUrl: apiUrl || '/api/init.php',
+        cachedWorkspaceId: workspaceId || '',
+        cachedUserName: currentUser?.name || '',
+        cachedUserRole: currentUser?.role || '',
+        cachedVersion: 2,
+      }));
     } catch {
       // ignore quota / serialization issues
     }
-  }, []);
+  }, [apiUrl, workspaceId, currentUser?.name, currentUser?.role]);
 
   // Master item IDs for filtering
   const masterIds = ['users', 'firms', 'categories', 'statuses', 'designations', 'departments', ...(VENDOR_MODULE_ENABLED ? ['vendor-categories', 'vendors'] : []), 'settings', 'telegram-setup'];
@@ -1780,4 +1800,3 @@ export default function App() {
 	    </div>
 	  );
 }
-
