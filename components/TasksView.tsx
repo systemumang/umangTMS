@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Plus, Download, FileText, Search, CheckSquare, LayoutGrid, LayoutList, Filter, X, Clock, AlertTriangle, Users, Trash2, AlertCircle, Tags, Menu } from 'lucide-react';
 import { TaskTable } from './TaskTable';
 import { UpdateTaskModal } from './UpdateTaskModal';
@@ -130,8 +130,9 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const [mobileViewMode, setMobileViewMode] = useState<'card' | 'table'>('card');
   const [showFilters, setShowFilters] = useState(false);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
-  const [sortKey, setSortKey] = useState<keyof Task>('date');
+  const [sortKey, setSortKey] = useState<keyof Task>('createdAt');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const previousTaskCountRef = useRef(tasks.length);
   
   const isAdmin = currentUser?.role === 'Admin';
   const [currentPage, setCurrentPage] = useState(1);
@@ -141,6 +142,13 @@ export const TasksView: React.FC<TasksViewProps> = ({
     setSelectedIds([]);
     setCurrentPage(1);
   }, [filterType, filterStatus, filterPriority, filterProject, filterClient, filterOwner, filterAssignee, filterCategory, filterFirm, filterVendor, dateFrom, dateTo, lastUpdateFrom, lastUpdateTo, searchTerm]);
+
+  useEffect(() => {
+    if (tasks.length > previousTaskCountRef.current) {
+      setCurrentPage(1);
+    }
+    previousTaskCountRef.current = tasks.length;
+  }, [tasks.length]);
 
   // Helper for generating filter summary string for reports
 	  const getFilterSummary = () => {
@@ -279,11 +287,17 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
   const finalSortedTasks = useMemo(() => {
     return [...filteredTasks].sort((a, b) => {
+        if (sortKey === 'createdAt') {
+          const aCreated = new Date(String(a.createdAt || 0)).getTime();
+          const bCreated = new Date(String(b.createdAt || 0)).getTime();
+          if (aCreated !== bCreated) return sortDir === 'asc' ? aCreated - bCreated : bCreated - aCreated;
+          return Number(b.id || 0) - Number(a.id || 0);
+        }
         const aVal = a[sortKey] || '';
         const bVal = b[sortKey] || '';
         if (aVal < bVal) return sortDir === 'asc' ? -1 : 1;
         if (aVal > bVal) return sortDir === 'asc' ? 1 : -1;
-        return 0;
+        return Number(b.id || 0) - Number(a.id || 0);
     });
   }, [filteredTasks, sortKey, sortDir]);
 

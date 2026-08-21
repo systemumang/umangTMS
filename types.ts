@@ -62,6 +62,7 @@ export interface Task {
   achieved?: number | string;
   photos?: string; // JSON stringified array of data URLs
   pdf?: string; // data URL
+  createdAt?: string;
 }
 
 export interface RecurringTask {

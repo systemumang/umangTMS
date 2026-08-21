@@ -561,6 +561,7 @@ export default function App() {
     const now = new Date();
     const timestamp = now.toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', '');
     const shortDate = now.toLocaleDateString('en-GB');
+    const createdAt = now.toISOString();
 
     const finalData = { ...data };
 
@@ -766,6 +767,7 @@ export default function App() {
 	                firm: String(item.firm || item.Firm || ''),
 	                photos: String(item.photos || ''),
 	                pdf: String(item.pdf || ''),
+                createdAt: String(item.createdAt || item.created_at || item.CreatedAt || ''),
                 project: (rawProject && rawClient && !rawProject.includes('('))
                     ? `${rawProject} (${rawClient})`
                     : rawProject || ''
@@ -1081,6 +1083,7 @@ export default function App() {
     const tempId = -uniqueId;
     const now = new Date();
     const shortDate = now.toLocaleDateString('en-GB');
+    const createdAt = now.toISOString();
     const tempTask: Task = {
       ...taskData,
       id: tempId,
@@ -1092,12 +1095,13 @@ export default function App() {
       dueDate: formatToIndianDate(taskData.dueDate),
       hours: 0,
       remarks: String(taskData.remarks || taskData.notes || taskData.description || ''),
+      createdAt,
     };
     setTasks(prev => [tempTask, ...prev]);
     setSyncingIds(prev => new Set(prev).add(tempId));
     try {
       const targetSheet = isVendor ? 'VendorTasks' : 'MainTasks';
-      await apiPost('addTask', { ...taskData, id: uniqueId }, targetSheet);
+      await apiPost('addTask', { ...taskData, id: uniqueId, createdAt }, targetSheet);
     } catch (err) {
       setTasks(prev => prev.filter(t => t.id !== tempId));
     } finally {
