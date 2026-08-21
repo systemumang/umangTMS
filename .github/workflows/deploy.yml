@@ -29,7 +29,7 @@ jobs:
         run: |
           rm -rf deploy
           mkdir -p deploy
-          cp -r dist/* deploy/
+          cp -r dist/. deploy/
           cp -r api deploy/api
 
       - name: Deploy to Hostinger (FTP)
