@@ -19,7 +19,7 @@ export const ActivityDashboardView: React.FC<ActivityDashboardViewProps> = ({ lo
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   const [showFilters, setShowFilters] = useState(false);
 
-  const isAdmin = currentUser?.role === 'Admin';
+  const isAdmin = String(currentUser?.role || '').trim().toLowerCase() === 'admin';
 
   const formatMinutesToHHMM = (totalMinutes: number) => {
     if (!totalMinutes || totalMinutes <= 0) return '';

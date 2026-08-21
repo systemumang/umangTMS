@@ -73,7 +73,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
   const [bulkCopyAssignee, setBulkCopyAssignee] = useState('');
   const [isBulkCopying, setIsBulkCopying] = useState(false);
 
-  const isAdmin = currentUser?.role === 'Admin';
+  const isAdmin = String(currentUser?.role || '').trim().toLowerCase() === 'admin';
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);

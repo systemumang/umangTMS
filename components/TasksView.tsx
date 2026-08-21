@@ -134,7 +134,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const previousTaskCountRef = useRef(tasks.length);
   
-  const isAdmin = currentUser?.role === 'Admin';
+  const isAdmin = String(currentUser?.role || '').trim().toLowerCase() === 'admin';
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 

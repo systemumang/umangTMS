@@ -250,7 +250,7 @@ export default function App() {
   const [workspaceId, setWorkspaceId] = useState<string>(() => localStorage.getItem('taskpro_workspace_id') || '');
   const [apiUrl, setApiUrl] = useState<string>(() => localStorage.getItem('taskpro_api_url') || '/api/init.php');
 
-  const isAdmin = currentUser?.role === 'Admin';
+  const isAdmin = String(currentUser?.role || '').trim().toLowerCase() === 'admin';
 
   const [activeTab, setActiveTab] = useState(() => {
     return 'dashboard';
@@ -410,9 +410,9 @@ export default function App() {
     if (!currentUser) return [];
     if (isAdmin) return tasks;
     return tasks.filter(t => {
-      const isOwner = String(t.owner || '').trim() === currentUser.name;
-      const isAssignee = String(t.assignees || '').split(',').map(s => s.trim()).includes(currentUser.name);
-      const isVendor = String(t.vendor || '').trim() === currentUser.name;
+      const isOwner = String(t.owner || '').trim().toLowerCase() === String(currentUser.name || '').trim().toLowerCase();
+      const isAssignee = String(t.assignees || '').split(',').map(s => s.trim().toLowerCase()).includes(String(currentUser.name || '').trim().toLowerCase());
+      const isVendor = String(t.vendor || '').trim().toLowerCase() === String(currentUser.name || '').trim().toLowerCase();
       return isOwner || isAssignee || isVendor;
     });
   }, [tasks, currentUser, isAdmin]);
@@ -421,9 +421,9 @@ export default function App() {
     if (!currentUser) return [];
     if (isAdmin) return actionLogs;
     return actionLogs.filter(l => {
-      const isOwner = String(l.owner || '').trim() === currentUser.name;
-      const isAssignee = String(l.assignees || '').split(',').map(s => s.trim()).includes(currentUser.name);
-      const isVendor = String(l.vendor || '').trim() === currentUser.name;
+      const isOwner = String(l.owner || '').trim().toLowerCase() === String(currentUser.name || '').trim().toLowerCase();
+      const isAssignee = String(l.assignees || '').split(',').map(s => s.trim().toLowerCase()).includes(String(currentUser.name || '').trim().toLowerCase());
+      const isVendor = String(l.vendor || '').trim().toLowerCase() === String(currentUser.name || '').trim().toLowerCase();
       return isOwner || isAssignee || isVendor;
     });
   }, [actionLogs, currentUser, isAdmin]);
@@ -433,8 +433,8 @@ export default function App() {
     if (isAdmin) return recurringTasks;
     // For recurring tasks, check both owner and assignee
     return recurringTasks.filter(t =>
-      String(t.owner || '').trim() === currentUser.name ||
-      String(t.assignee || '').trim() === currentUser.name
+      String(t.owner || '').trim().toLowerCase() === String(currentUser.name || '').trim().toLowerCase() ||
+      String(t.assignee || '').trim().toLowerCase() === String(currentUser.name || '').trim().toLowerCase()
     );
   }, [recurringTasks, currentUser, isAdmin]);
 
@@ -443,8 +443,8 @@ export default function App() {
     if (isAdmin) return recurringActions;
     // For recurring actions, check both owner and assignee
     return recurringActions.filter(a =>
-      String(a.owner || '').trim() === currentUser.name ||
-      String(a.assignee || '').trim() === currentUser.name
+      String(a.owner || '').trim().toLowerCase() === String(currentUser.name || '').trim().toLowerCase() ||
+      String(a.assignee || '').trim().toLowerCase() === String(currentUser.name || '').trim().toLowerCase()
     );
   }, [recurringActions, currentUser, isAdmin]);
 
@@ -1792,4 +1792,3 @@ export default function App() {
 	    </div>
 	  );
 }
-

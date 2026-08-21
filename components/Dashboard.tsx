@@ -179,12 +179,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const isCurrentUserAssignee = (assignees?: string) => {
     if (!currentUser) return false;
-    return String(assignees || '').split(',').map(name => name.trim()).includes(currentUser.name);
+    return String(assignees || '').split(',').map(name => name.trim().toLowerCase()).includes(String(currentUser.name || '').trim().toLowerCase());
   };
 
   const shouldShowAssignee = (owner?: string, assignees?: string) => {
     if (!currentUser) return false;
-    return String(owner || '').trim() === currentUser.name && !isCurrentUserAssignee(assignees);
+    return String(owner || '').trim().toLowerCase() === String(currentUser.name || '').trim().toLowerCase() && !isCurrentUserAssignee(assignees);
   };
 
   const employeePendingTasks = useMemo(() => {
@@ -698,4 +698,3 @@ export const Dashboard: React.FC<DashboardProps> = ({
     </div>
   );
 };
-
