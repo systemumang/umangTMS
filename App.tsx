@@ -293,7 +293,7 @@ export default function App() {
 	  });
   const [dashboardSummary, setDashboardSummary] = useState<{ pendingSimpleTasks?: number; pendingRecurringTasks?: number } | null>(null);
 
-  const CACHE_KEY = 'taskpro_init_cache_v2';
+  const CACHE_KEY = 'taskpro_init_cache_v3';
   const hasHydratedCacheRef = useRef(false);
   const [hasFullDataLoaded, setHasFullDataLoaded] = useState(false);
   const fullDataRequestInFlightRef = useRef(false);
@@ -322,10 +322,6 @@ export default function App() {
         vendorCategories: cachedVendorCategories,
         designations: cachedDesignations,
         departments: cachedDepartments,
-        tasks: cachedTasks,
-        actionLogs: cachedActionLogs,
-        recurringTasks: cachedRecurringTasks,
-        recurringActions: cachedRecurringActions,
         settings: cachedSettings,
       } = parsed as any;
 
@@ -346,10 +342,6 @@ export default function App() {
       if (Array.isArray(cachedStatuses)) setStatuses(cachedStatuses);
       if (Array.isArray(cachedVendorCategories)) setVendorCategories(cachedVendorCategories);
       if (Array.isArray(cachedDesignations)) setDesignations(cachedDesignations);
-      if (Array.isArray(cachedTasks)) setTasks(cachedTasks);
-      if (Array.isArray(cachedActionLogs)) setActionLogs(cachedActionLogs);
-      if (Array.isArray(cachedRecurringTasks)) setRecurringTasks(cachedRecurringTasks);
-      if (Array.isArray(cachedRecurringActions)) setRecurringActions(cachedRecurringActions);
       if (cachedSettings && typeof cachedSettings === 'object') setSettings(normalizeSettings(cachedSettings));
       if (cachedAt) setLastSynced(new Date(cachedAt));
 
@@ -369,7 +361,7 @@ export default function App() {
         cachedWorkspaceId: workspaceId || '',
         cachedUserName: currentUser?.name || '',
         cachedUserRole: currentUser?.role || '',
-        cachedVersion: 2,
+        cachedVersion: 3,
       }));
     } catch {
       // ignore quota / serialization issues
@@ -1800,3 +1792,4 @@ export default function App() {
 	    </div>
 	  );
 }
+
