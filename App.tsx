@@ -71,6 +71,8 @@ import {
 import { NavItem, Task, User, Designation, Department, Category, Project, Client, ActionLogEntry, Vendor, VendorCategory, RecurringTask, RecurringTaskAction, AppSettings, Firm, StatusMaster } from './types';
 
 const AUTO_SYNC_INTERVAL = 120000;
+const QUICK_INIT_TIMEOUT_MS = 240000;
+const FULL_INIT_TIMEOUT_MS = 360000;
 const VENDOR_MODULE_ENABLED = false;
 
 const PageLoader = () => (
@@ -730,7 +732,7 @@ export default function App() {
 	    abortControllerRef.current = new AbortController();
 	    const timeoutId = window.setTimeout(() => {
 	      try { abortControllerRef.current?.abort(); } catch {}
-	    }, useQuickInit ? 10000 : 30000);
+	    }, useQuickInit ? QUICK_INIT_TIMEOUT_MS : FULL_INIT_TIMEOUT_MS);
 
       let shouldFetchFullAfterQuick = false;
 
@@ -963,7 +965,10 @@ export default function App() {
     useEffect(() => {
       const effectiveApiUrl = apiUrl || '/api/init.php';
     if (!effectiveApiUrl || !currentUser) return;
-      const interval = setInterval(() => fetchData(false, !hasFullDataLoaded), AUTO_SYNC_INTERVAL);
+      const interval = setInterval(() => {
+        if (abortControllerRef.current) return;
+        fetchData(false, !hasFullDataLoaded);
+      }, AUTO_SYNC_INTERVAL);
       return () => clearInterval(interval);
     }, [fetchData, apiUrl, currentUser, hasFullDataLoaded]);
 
