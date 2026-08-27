@@ -11,7 +11,7 @@ interface RecurringTasksViewProps {
   onUpdate: (task: RecurringTask) => void;
   onEdit: (task: RecurringTask) => void;
   onViewHistory: (task: RecurringTask) => void;
-  onDelete: (id: number) => Promise<void>;
+  onDelete: (id: number, skipConfirm?: boolean) => Promise<void>;
   onBulkCopy?: (ids: number[], targetAssignee: string) => Promise<void>;
   assigneesList?: string[];
   title?: string;
@@ -485,7 +485,6 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
   const totalPages = Math.ceil(sortedTasks.length / itemsPerPage);
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this recurring task?')) return;
     setDeletingIds(prev => new Set(prev).add(id));
     try {
       await onDelete(id);
@@ -502,7 +501,7 @@ export const RecurringTasksView: React.FC<RecurringTasksViewProps> = ({
     setIsBulkDeleting(true);
     try {
       for (const id of selectedIds) {
-        await onDelete(id);
+        await onDelete(id, true);
       }
       setSelectedIds([]);
       setShowDeleteConfirm(false);

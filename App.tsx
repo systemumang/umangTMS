@@ -566,7 +566,7 @@ export default function App() {
     setLogDashboardFilter(null);
   }, [activeTab]);
 
-	  const apiPost = async (action: string, data: any, target?: string) => {
+	  const apiPost = async (action: string, data: any, target?: string, refresh = true) => {
     const effectiveApiUrl = apiUrl || '/api/init.php';
     if (!effectiveApiUrl) return { success: false, error: 'No API URL configured' };
     setIsSyncing(true);
@@ -646,11 +646,11 @@ export default function App() {
 	        redirect: 'follow'
 	      });
 	      const result = await safeJsonParse(response, action);
-	      if (result.success) setTimeout(() => fetchData(false), 1500);
+	      if (result.success && refresh) setTimeout(() => fetchData(false), 1500);
 	      return result;
 	    } catch (err: any) {
 	      console.error(`API Error:`, err.message);
-	      setTimeout(() => fetchData(false), 2000);
+	      if (refresh) setTimeout(() => fetchData(false), 2000);
 	      return { success: false, error: err?.message || 'Request failed' };
 	    } finally {
 	      setIsSyncing(false);
@@ -1337,8 +1337,8 @@ export default function App() {
 	      lastUpdateFrom, setLastUpdateFrom, lastUpdateTo, setLastUpdateTo, searchTerm, setSearchTerm, filterVendor, setFilterVendor,
       lastAddedCategory, lastAddedProject, lastAddedVendorCategory, onClearLastAdded: () => { setLastAddedCategory(''); setLastAddedProject(''); setLastAddedVendorCategory(''); },
       onUpdateTask: handleUpdateTaskOptimistic, onEditTask: handleEditTaskOptimistic,
-      onDeleteTask: (id: number, isVendor: boolean) => {
-        if (!confirmDelete('this task')) return;
+      onDeleteTask: (id: number, isVendor: boolean, skipConfirm = false) => {
+        if (!skipConfirm && !confirmDelete('this task')) return;
         setTasks(prev => prev.filter(t => t.id !== id));
         apiPost('deleteRecord', { id }, isVendor ? 'VendorTasks' : 'MainTasks');
       },
@@ -1433,8 +1433,8 @@ export default function App() {
       case 'pending-vendor-tasks': return <TasksView title={getViewLabel('pending-vendor-tasks', 'Pending Vendor Tasks')} tasks={visibleTasks.filter(t => t.vendor && t.vendor !== '')} {...commonTaskProps} isVendorView={true} filterType="pending" />;
       case 'completed-vendor-tasks': return <TasksView title={getViewLabel('completed-vendor-tasks', 'Completed Vendor Tasks')} tasks={visibleTasks.filter(t => t.vendor && t.vendor !== '')} {...commonTaskProps} isVendorView={true} filterType="completed" />;
       case 'vendor-action-log': return <ActionLogView logs={visibleActionLogs.filter(l => l.vendor && l.vendor !== '')} isAdmin={isAdmin} projects={projects} isVendorView={true} onDeleteLog={(logId, taskId) => handleDeleteLog(logId, taskId, true)} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
-      case 'due-recurring-tasks': return <RecurringTasksView title={getViewLabel('due-recurring-tasks', 'Due Recurring Tasks')} filterType="due" tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={async (id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); await apiPost('deleteRecord', { id }, 'RecurringTasks'); }} onBulkCopy={handleBulkCopyRecurringTasks} assigneesList={users.map((u) => u.name)} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
-      case 'recurring-tasks': return <RecurringTasksView title={getViewLabel('recurring-tasks', 'Recurring Tasks')} tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={async (id) => { if (!confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); await apiPost('deleteRecord', { id }, 'RecurringTasks'); }} onBulkCopy={handleBulkCopyRecurringTasks} assigneesList={users.map((u) => u.name)} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
+      case 'due-recurring-tasks': return <RecurringTasksView title={getViewLabel('due-recurring-tasks', 'Due Recurring Tasks')} filterType="due" tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={async (id, skipConfirm = false) => { if (!skipConfirm && !confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); await apiPost('deleteRecord', { id }, 'RecurringTasks'); }} onBulkCopy={handleBulkCopyRecurringTasks} assigneesList={users.map((u) => u.name)} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
+      case 'recurring-tasks': return <RecurringTasksView title={getViewLabel('recurring-tasks', 'Recurring Tasks')} tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={async (id, skipConfirm = false) => { if (!skipConfirm && !confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); await apiPost('deleteRecord', { id }, 'RecurringTasks'); }} onBulkCopy={handleBulkCopyRecurringTasks} assigneesList={users.map((u) => u.name)} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
       case 'recurring-actions': return <RecurringTaskActionsView actions={visibleRecurringActions} isAdmin={isAdmin} onDeleteAction={(logId, taskId) => { if (!confirmDelete('this recurring log')) return; apiPost('deleteRecord', { id: logId, taskId: taskId }, 'RecurringActions'); }} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
       case 'users': if (!isAdmin) return null; return <UsersView users={users} designations={designations} departments={categories as any} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} onAddUser={(u) => { setUsers(p => [...p, { ...u, id: Date.now(), isActive: true } as any]); apiPost('addMaster', u, 'Users'); }} onEditUser={(u) => { setUsers(p => p.map(x => x.id === u.id ? u : x)); apiPost('updateMaster', u, 'Users'); }} onToggleStatus={(id) => { const user = users.find(u => u.id === id); if (!user) return; const newStatus = !user.isActive; setUsers(prev => prev.map(u => u.id === id ? { ...u, isActive: newStatus } : u)); apiPost('updateMaster', { id, isActive: newStatus ? 'TRUE' : 'FALSE' }, 'Users'); }} onDeleteUser={(id) => { if (!confirmDelete('this user')) return; setUsers(p => p.filter(u => u.id !== id)); apiPost('deleteRecord', { id }, 'Users'); }} onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }} onAddDepartment={() => setIsCategoryModalOpen(true)} />;
       case 'designations': if (!isAdmin) return null; return <DesignationsView designations={designations} onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }} onEditDesignation={(designation) => { setEditingDesignation(designation); setIsDesignationModalOpen(true); }} onDeleteDesignation={async (id) => { if (!confirmDelete('this designation')) return; setDesignations(prev => prev.filter(x => x.id !== id)); await apiPost('deleteRecord', { id }, 'Designations'); }} />;
@@ -1786,7 +1786,11 @@ export default function App() {
             };
             setSelectedRecurringTask(updatedTask as any);
             setRecurringTasks(prev => prev.map(x => x.id === t.id ? updatedTask as any : x));
-            await apiPost("updateMaster", updatedTask as any, "RecurringTasks");
+            const result = await apiPost("updateMaster", updatedTask as any, "RecurringTasks", false);
+            if (!result?.success) {
+              throw new Error(result?.error || 'Failed to update recurring task.');
+            }
+            await fetchData(false);
           }}
           users={users}
           categories={categories}
