@@ -8,7 +8,7 @@ import { useLabels } from '../labelOverrides';
 interface AddUserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (user: Omit<User, 'id' | 'isActive'>) => void;
+  onSave: (user: Omit<User, 'id' | 'isActive'>) => void | Promise<void>;
   designations: Designation[];
   departments: Department[];
   onAddDesignation: () => void;
@@ -43,7 +43,8 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<{name?: string, email?: string, mobile?: string, employeeId?: string}>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<{name?: string, email?: string, mobile?: string, employeeId?: string, form?: string}>({});
   
   if (!isOpen) return null;
 
@@ -72,7 +73,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
   };
 
   const validate = () => {
-      const newErrors: {name?: string, email?: string, mobile?: string, employeeId?: string} = {};
+      const newErrors: {name?: string, email?: string, mobile?: string, employeeId?: string, form?: string} = {};
       if (users.some(u => u.name.toLowerCase().trim() === formData.name.toLowerCase().trim())) {
           newErrors.name = "This user name already exists.";
       }
@@ -91,34 +92,42 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
       return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    
-    onSave({
-      name: formData.name,
-      email: formData.email,
-      employeeId: formData.employeeId,
-      mobile: formData.mobile,
-      designation: formData.designation,
-      department: formData.department,
-      role: formData.role,
-      telegramUserName: formData.telegramUserName,
-      password: formData.password
-    });
 
-    setFormData({
-      name: '',
-      email: '',
-      employeeId: '',
-      mobile: '',
-      designation: '',
-      department: '',
-      role: 'Employee',
-      telegramUserName: '',
-      password: ''
-    });
-    onClose();
+    setIsSaving(true);
+    setErrors(prev => ({ ...prev, form: '' }));
+    try {
+      await onSave({
+        name: formData.name,
+        email: formData.email,
+        employeeId: formData.employeeId,
+        mobile: formData.mobile,
+        designation: formData.designation,
+        department: formData.department,
+        role: formData.role,
+        telegramUserName: formData.telegramUserName,
+        password: formData.password
+      });
+
+      setFormData({
+        name: '',
+        email: '',
+        employeeId: '',
+        mobile: '',
+        designation: '',
+        department: '',
+        role: 'Employee',
+        telegramUserName: '',
+        password: ''
+      });
+      onClose();
+    } catch (err: any) {
+      setErrors(prev => ({ ...prev, form: err?.message || 'Failed to add user.' }));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const designationOptions = designations.map(d => ({ value: d.title, label: d.title }));
@@ -265,8 +274,9 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
           </div>
 
           <div className="p-6 border-t border-gray-100 bg-gray-50 shrink-0 flex justify-end space-x-3">
-            <button type="button" onClick={onClose} className="px-6 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cancel</button>
-            <button type="submit" className="px-8 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all">Add User</button>
+            {errors.form && <p className="mr-auto self-center text-sm text-red-600">{errors.form}</p>}
+            <button type="button" onClick={onClose} disabled={isSaving} className="px-6 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-60">Cancel</button>
+            <button type="submit" disabled={isSaving} className="px-8 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all disabled:opacity-60">{isSaving ? 'Adding...' : 'Add User'}</button>
           </div>
         </form>
       </div>

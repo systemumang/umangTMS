@@ -14,7 +14,7 @@ interface UsersViewProps {
   departments: Department[];
   firms: Firm[];
   categories: Category[];
-  onAddUser: (user: Omit<User, 'id' | 'isActive'>) => void;
+  onAddUser: (user: Omit<User, 'id' | 'isActive'>) => void | Promise<void>;
   onEditUser: (user: User) => void;
   onToggleStatus: (id: number) => void;
   onDeleteUser: (id: number) => void;

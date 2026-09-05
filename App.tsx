@@ -1267,6 +1267,15 @@ export default function App() {
     await apiPost('addMaster', dept, 'Departments');
   };
 
+  const handleInstantAddUser = async (user: Omit<User, 'id' | 'isActive'>) => {
+    const result = await apiPost('addMaster', user, 'Users');
+    if (!result?.success) {
+      throw new Error(result?.error || 'Failed to add user.');
+    }
+    const insertedId = Number(result?.data?.id || Date.now());
+    setUsers(prev => [...prev, { ...user, id: insertedId, isActive: true } as User]);
+  };
+
   const renderContent = () => {
     const handleExportExcel = (tasksToExport: Task[]) => {
       const activeFilters: string[] = [];
@@ -1436,7 +1445,7 @@ export default function App() {
       case 'due-recurring-tasks': return <RecurringTasksView title={getViewLabel('due-recurring-tasks', 'Due Recurring Tasks')} filterType="due" tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={async (id, skipConfirm = false) => { if (!skipConfirm && !confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); await apiPost('deleteRecord', { id }, 'RecurringTasks'); }} onBulkCopy={handleBulkCopyRecurringTasks} assigneesList={users.map((u) => u.name)} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
       case 'recurring-tasks': return <RecurringTasksView title={getViewLabel('recurring-tasks', 'Recurring Tasks')} tasks={visibleRecurringTasks} actions={visibleRecurringActions} onAdd={() => setIsRecurringTaskModalOpen(true)} onUpdate={(t) => { setSelectedRecurringTask(t); setIsRecurringTaskUpdateModalOpen(true); }} onEdit={(t) => { setSelectedRecurringTask(t); setIsEditRecurringTaskModalOpen(true); }} onViewHistory={(t) => { setSelectedRecurringTask(t); setIsRecurringHistoryModalOpen(true); }} onDelete={async (id, skipConfirm = false) => { if (!skipConfirm && !confirmDelete('this recurring task')) return; setRecurringTasks(prev => prev.filter(t => t.id !== id)); await apiPost('deleteRecord', { id }, 'RecurringTasks'); }} onBulkCopy={handleBulkCopyRecurringTasks} assigneesList={users.map((u) => u.name)} currentUser={currentUser} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} />;
       case 'recurring-actions': return <RecurringTaskActionsView actions={visibleRecurringActions} isAdmin={isAdmin} onDeleteAction={(logId, taskId) => { if (!confirmDelete('this recurring log')) return; apiPost('deleteRecord', { id: logId, taskId: taskId }, 'RecurringActions'); }} dashboardFilter={logDashboardFilter} onClearDashboardFilter={() => setLogDashboardFilter(null)} />;
-      case 'users': if (!isAdmin) return null; return <UsersView users={users} designations={designations} departments={categories as any} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} onAddUser={(u) => { setUsers(p => [...p, { ...u, id: Date.now(), isActive: true } as any]); apiPost('addMaster', u, 'Users'); }} onEditUser={(u) => { setUsers(p => p.map(x => x.id === u.id ? u : x)); apiPost('updateMaster', u, 'Users'); }} onToggleStatus={(id) => { const user = users.find(u => u.id === id); if (!user) return; const newStatus = !user.isActive; setUsers(prev => prev.map(u => u.id === id ? { ...u, isActive: newStatus } : u)); apiPost('updateMaster', { id, isActive: newStatus ? 'TRUE' : 'FALSE' }, 'Users'); }} onDeleteUser={(id) => { if (!confirmDelete('this user')) return; setUsers(p => p.filter(u => u.id !== id)); apiPost('deleteRecord', { id }, 'Users'); }} onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }} onAddDepartment={() => setIsCategoryModalOpen(true)} />;
+      case 'users': if (!isAdmin) return null; return <UsersView users={users} designations={designations} departments={categories as any} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} onAddUser={handleInstantAddUser} onEditUser={(u) => { setUsers(p => p.map(x => x.id === u.id ? u : x)); apiPost('updateMaster', u, 'Users'); }} onToggleStatus={(id) => { const user = users.find(u => u.id === id); if (!user) return; const newStatus = !user.isActive; setUsers(prev => prev.map(u => u.id === id ? { ...u, isActive: newStatus } : u)); apiPost('updateMaster', { id, isActive: newStatus ? 'TRUE' : 'FALSE' }, 'Users'); }} onDeleteUser={(id) => { if (!confirmDelete('this user')) return; setUsers(p => p.filter(u => u.id !== id)); apiPost('deleteRecord', { id }, 'Users'); }} onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }} onAddDepartment={() => setIsCategoryModalOpen(true)} />;
       case 'designations': if (!isAdmin) return null; return <DesignationsView designations={designations} onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }} onEditDesignation={(designation) => { setEditingDesignation(designation); setIsDesignationModalOpen(true); }} onDeleteDesignation={async (id) => { if (!confirmDelete('this designation')) return; setDesignations(prev => prev.filter(x => x.id !== id)); await apiPost('deleteRecord', { id }, 'Designations'); }} />;
       case 'firms': if (!isAdmin) return null; return <FirmsView firms={firms} sidebarCollapsed={layoutMode === 'side' && isSidebarCollapsed} onAddFirm={() => setIsFirmModalOpen(true)} onDeleteFirm={(id) => { const target = firms.find(f => f.id === id); if (!target) return; if (String(target.name || '').trim().toUpperCase() === 'GENERAL') return; if (!confirmDelete('this firm')) return; setFirms(p => p.filter(f => f.id !== id)); apiPost('deleteRecord', { id }, 'Firms'); }} onEditFirm={(f) => { if (String(f.name || '').trim().toUpperCase() === 'GENERAL') return; setFirms(p => p.map(x => x.id === f.id ? f : x)); apiPost('updateMaster', f, 'Firms'); }} />;
       case 'clients': if (!isAdmin) return null; return <ClientsView clients={clients} projects={projects} onAddClient={handleInstantAddClient} onDeleteClient={(id) => { if (!confirmDelete('this client')) return; setClients(p => p.filter(c => c.id !== id)); apiPost('deleteRecord', { id }, 'Clients'); }} onEditClient={(c) => { setClients(p => p.map(x => x.id === c.id ? c : x)); apiPost('updateMaster', c, 'Clients'); }} onNavigateToProjectTasks={handleDashboardFilterChange.bind(null, 'project')} />;
@@ -1653,10 +1662,7 @@ export default function App() {
       {isUserModalOpen && <AddUserModal
         isOpen={isUserModalOpen}
         onClose={() => setIsUserModalOpen(false)}
-        onSave={(u) => {
-          setUsers(p => [...p, { ...u, id: Date.now(), isActive: true } as any]);
-          apiPost('addMaster', u, 'Users');
-        }}
+        onSave={handleInstantAddUser}
         designations={designations}
         departments={departments}
         onAddDesignation={() => { setEditingDesignation(null); setIsDesignationModalOpen(true); }}

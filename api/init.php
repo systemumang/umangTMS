@@ -531,7 +531,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$stmt) {
             sendJson(['success' => false, 'error' => 'Failed to prepare insert query.'], 500);
         }
-        $stmt->bind_param('sssssssssssi', $name, $email, $employee_id, $mobile, $role, $designation, $department, $telegram_user_name, $password, $isActive);
+        $stmt->bind_param('sssssssssi', $name, $email, $employee_id, $mobile, $role, $designation, $department, $telegram_user_name, $password, $isActive);
         $ok = $stmt->execute();
         $insertId = (int)$stmt->insert_id;
         $stmt->close();
@@ -581,7 +581,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $stmt = $conn->prepare("INSERT INTO vendor_tasks (id, date, title, description, project, firm, category, owner, assignees, vendor, vendorCategory, priority, status, dueDate, lastUpdateDate, lastUpdateRemarks, hours, time, goal, photos, pdf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             if (!$stmt) sendJson(['success' => false, 'error' => 'Failed to prepare vendor task insert.'], 500);
-            $stmt->bind_param('issssssssssssssdsssss', $id, $date, $title, $description, $project, $firm, $category, $owner, $assignees, $vendor, $vendorCategory, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf);
+            $stmt->bind_param('issssssssssssssdssss', $id, $date, $title, $description, $project, $firm, $category, $owner, $assignees, $vendor, $vendorCategory, $priority, $status, $dueDate, $lastUpdateDate, $lastUpdateRemarks, $hours, $time, $goal, $photos, $pdf);
         }
 
 	        $ok = $stmt->execute();
